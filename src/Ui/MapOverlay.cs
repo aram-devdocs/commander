@@ -17,6 +17,7 @@ namespace CommanderLayer.Ui
         private readonly List<Image> _markers = new List<Image>();
         private readonly List<Image> _lines = new List<Image>();
         private readonly List<Image> _hoverLines = new List<Image>();
+        private readonly List<Image> _hoverMarks = new List<Image>(); // highlight ring on each selected unit
         private Image _hoverRing;     // outer = unit pull radius
         private Image _hoverRingInner; // inner = area-of-operations (threat-assessment) radius
         private Image _hoverDot;
@@ -87,14 +88,38 @@ namespace CommanderLayer.Ui
             _hoverDot.color = canPlace ? NativeColors.Friendly : NativeColors.Hostile;
             _hoverDot.gameObject.SetActive(true);
 
-            // Lines to the units that would be assigned.
+            // Lines AND a bright highlight ring on every unit that would be assigned, so the player clearly
+            // sees exactly who responds before committing.
             int hi = 0;
             if (previewUnits != null)
             {
                 foreach (var uw in previewUnits)
-                    DrawLine(HoverLine(hi++), local, _projection.WorldToMapLocal(uw), NativeColors.Friendly);
+                {
+                    var u = _projection.WorldToMapLocal(uw);
+                    DrawLine(HoverLine(hi), local, u, NativeColors.Friendly);
+                    var mk = HoverMark(hi);
+                    ((RectTransform)mk.transform).localPosition = new Vector3(u.X, u.Y, 0f);
+                    mk.color = NativeColors.Friendly;
+                    hi++;
+                }
             }
             for (int i = hi; i < _hoverLines.Count; i++) _hoverLines[i].gameObject.SetActive(false);
+            for (int i = hi; i < _hoverMarks.Count; i++) _hoverMarks[i].gameObject.SetActive(false);
+        }
+
+        // A bright ring drawn over a unit that the pending order will select.
+        private Image HoverMark(int i)
+        {
+            while (_hoverMarks.Count <= i)
+            {
+                var img = UiFactory.Ring("CmdHoverMark" + _hoverMarks.Count, _layer, Color.white, dashed: false);
+                var rt = (RectTransform)img.transform;
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(26f, 26f);
+                _hoverMarks.Add(img);
+            }
+            _hoverMarks[i].gameObject.SetActive(true);
+            return _hoverMarks[i];
         }
 
         private void SizeRing(Image ring, Vector3 center, float meters, Color color, float alpha, float minLocal)
@@ -113,6 +138,7 @@ namespace CommanderLayer.Ui
             if (_hoverRingInner != null) _hoverRingInner.gameObject.SetActive(false);
             if (_hoverDot != null) _hoverDot.gameObject.SetActive(false);
             foreach (var l in _hoverLines) l.gameObject.SetActive(false);
+            foreach (var m in _hoverMarks) m.gameObject.SetActive(false);
         }
 
         /// <summary>Hide all overlay graphics (e.g. when the map closes).</summary>
