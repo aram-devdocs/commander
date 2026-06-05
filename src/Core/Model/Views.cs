@@ -70,16 +70,22 @@ namespace CommanderLayer.Core.Model
         public bool HasBuildings { get; }
         public bool HasAir { get; }
 
+        // Numeric counts the combined-arms phase gates threshold against.
+        public int AirDefenseCount { get; }
+        public int ArmorCount { get; }
+        public int AirCount { get; }
+        public int RadarCount { get; }
+
         public ThreatPicture(IReadOnlyList<EnemyView> enemies)
         {
             Enemies = enemies;
             foreach (var e in enemies)
             {
-                if (e.Cap.IsAirDefense) HasAirDefense = true;
-                if (e.Cap.Role == Role.GroundRadar || e.Cap.Role == Role.AwacsEw) HasRadar = true;
-                if (e.Cap.Role == Role.Armor || e.Cap.Role == Role.Ifv) HasArmor = true;
+                if (e.Cap.IsAirDefense) { HasAirDefense = true; AirDefenseCount++; }
+                if (e.Cap.Role == Role.GroundRadar || e.Cap.Role == Role.AwacsEw) { HasRadar = true; RadarCount++; }
+                if (e.Cap.Role == Role.Armor || e.Cap.Role == Role.Ifv) { HasArmor = true; ArmorCount++; }
                 if (e.Class == UnitClass.Building) HasBuildings = true;
-                if (e.Class == UnitClass.Aircraft) HasAir = true;
+                if (e.Class == UnitClass.Aircraft) { HasAir = true; AirCount++; }
             }
         }
 
