@@ -186,6 +186,7 @@ namespace CommanderLayer.Composition
         {
             if (_screen != null || _canvas == null) return;
             CaptureNativeButtonSprite();
+            CaptureNativeFont();
             _player.TryGetLocalFaction(out var faction);
             _theme = Theme.FromFaction(faction);
             _screen = new CommanderMapScreen(_canvas.transform, _theme,
@@ -197,6 +198,17 @@ namespace CommanderLayer.Composition
 
         private static bool IsPointerOverUi()
             => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
+        // Use the game's own HUD font (GameAssets.playerNameFont) so our labels read as native.
+        private static void CaptureNativeFont()
+        {
+            var assets = GameAssets.i;
+            if (assets != null && assets.playerNameFont != null)
+            {
+                UiFactory.Font = assets.playerNameFont;
+                Plugin.Log?.LogInfo("Using native game font (GameAssets.playerNameFont).");
+            }
+        }
 
         // Borrow a sliced sprite from a real game UI button so our panel buttons match the game's look.
         private static void CaptureNativeButtonSprite()
