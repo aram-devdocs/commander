@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CommanderLayer.Core.Model;
+using CommanderLayer.Core.Planning;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -93,7 +95,8 @@ namespace CommanderLayer.Ui
             if (_root != null) _root.gameObject.SetActive(visible);
         }
 
-        public void Render(IReadOnlyList<OrderState> orders, FactionInfo faction, OrderKind? armed, AssignmentPreview preview)
+        public void Render(IReadOnlyList<OrderState> orders, FactionInfo faction, OrderKind? armed, AssignmentPreview preview,
+            IReadOnlyDictionary<string, string> unitNames = null)
         {
             if (_root == null) return;
 
@@ -128,9 +131,7 @@ namespace CommanderLayer.Ui
                     var o = orders[i];
                     var r = _rows[i];
                     r.OrderId = o.Order.Id;
-                    int n = o.AssignedUnitIds.Count;
-                    string units = n > 0 ? $" · {n} unit{(n == 1 ? "" : "s")}" : "";
-                    r.Label.text = $"{o.Order.Kind.ToString().ToUpperInvariant()} · {CommanderLayer.Core.Planning.BattlePlan.Label(o.Phase)}{units}";
+                    r.Label.text = $"{o.Order.Kind.ToString().ToUpperInvariant()} · {BattlePlan.Label(o.Phase)}{UnitSuffix(o, unitNames)}";
                     r.Label.color = o.Status == OrderStatus.Failed ? new Color(1f, 0.5f, 0.5f)
                         : o.Status == OrderStatus.Complete ? _theme.Arrived
                         : OrderColors.For(o.Order.Kind);
@@ -142,6 +143,19 @@ namespace CommanderLayer.Ui
                     _rows[i].Go.SetActive(false);
                 }
             }
+        }
+
+        // The order row's assigned-unit list: up to a few names (or ids if no name map), with overflow count.
+        private static string UnitSuffix(OrderState o, IReadOnlyDictionary<string, string> names)
+        {
+            int n = o.AssignedUnitIds.Count;
+            if (n == 0) return "";
+            if (names == null) return $" · {n} unit{(n == 1 ? "" : "s")}";
+            const int show = 4;
+            string list = string.Join(", ", o.AssignedUnitIds.Take(show)
+                .Select(id => names.TryGetValue(id, out var nm) ? nm : id));
+            if (n > show) list += $" +{n - show}";
+            return " · " + list;
         }
 
         private Image ToggleButton(Transform parent, string text, Action onClick)

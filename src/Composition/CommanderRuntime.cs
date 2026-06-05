@@ -106,7 +106,7 @@ namespace CommanderLayer.Composition
             }
 
             _player.TryGetLocalFaction(out var faction);
-            _screen?.Render(_service.Orders, faction, _armed, _hoverPreview);
+            _screen?.Render(_service.Orders, faction, _armed, _hoverPreview, NamesById());
             _overlay?.Render(_service.Orders, PositionsById());
 
             if (_cmdLabel != null) _cmdLabel.color = ModalOpen ? new Color(0.4f, 1f, 0.5f) : _cmdLabelColor;
@@ -122,6 +122,13 @@ namespace CommanderLayer.Composition
         {
             var dict = new Dictionary<string, Vec3>();
             foreach (var u in _service.LastRoster) dict[u.Id] = u.Position;
+            return dict;
+        }
+
+        private Dictionary<string, string> NamesById()
+        {
+            var dict = new Dictionary<string, string>();
+            foreach (var u in _service.LastRoster) dict[u.Id] = u.Name;
             return dict;
         }
 

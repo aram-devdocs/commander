@@ -53,8 +53,9 @@ namespace CommanderLayer.Ui
             if (_container != null) _container.gameObject.SetActive(open);
         }
 
-        public void Render(IReadOnlyList<OrderState> orders, FactionInfo faction, OrderKind? armed, AssignmentPreview preview)
-            => _panel.Render(orders, faction, armed, preview);
+        public void Render(IReadOnlyList<OrderState> orders, FactionInfo faction, OrderKind? armed, AssignmentPreview preview,
+            IReadOnlyDictionary<string, string> unitNames = null)
+            => _panel.Render(orders, faction, armed, preview, unitNames);
 
         public string DebugInfo()
         {
