@@ -94,6 +94,9 @@ namespace CommanderLayer.Core.Planning
             return toIssue;
         }
 
+        /// <summary>Add a pre-built order state (e.g. a one-shot Build commission) without planning units.</summary>
+        public void AddExisting(OrderState state) => _orders.Add(state);
+
         public bool Clear(string orderId)
         {
             return _orders.RemoveAll(o => o.Order.Id == orderId) > 0;

@@ -15,6 +15,7 @@ namespace CommanderLayer.Game
         private readonly GameRoster _roster = new GameRoster();
         private readonly GameIntel _intel = new GameIntel();
         private readonly GameUnitCommands _cmds = new GameUnitCommands();
+        private readonly GameProduction _production = new GameProduction();
         private int _counter;
 
         public CommanderService(CommanderConfig cfg)
@@ -31,6 +32,17 @@ namespace CommanderLayer.Game
         /// <summary>Place an order at a world point: plan a suitable subset and command them. Host-side.</summary>
         public OrderState PlaceOrder(OrderKind kind, Vec3 world, DomainSet domains, float radius)
         {
+            // Build = commission-only: queue production at the base; no unit tasking, no rally.
+            if (kind == OrderKind.Build)
+            {
+                string result = _production.Commission();
+                var bo = new CommanderOrder("ord-" + (++_counter), kind, world, 0f, domains);
+                var bs = new OrderState(bo) { Status = OrderStatus.Complete, Summary = result };
+                _mgr.AddExisting(bs);
+                Plugin.Log?.LogInfo($"Build commission: {result}");
+                return bs;
+            }
+
             var roster = _roster.BuildRoster();
             LastRoster = roster;
             float r = radius > 0f ? radius : _cfg.SelectionRadius;

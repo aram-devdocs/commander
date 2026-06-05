@@ -22,7 +22,7 @@ namespace CommanderLayer.Ui
         private readonly TextMeshProUGUI _ordersHeader;
         private readonly Transform _ordersContainer;
         private readonly Image _airImg, _landImg, _seaImg;
-        private readonly Image _attackImg, _defendImg, _captureImg, _resupplyImg;
+        private readonly Image _attackImg, _defendImg, _captureImg, _resupplyImg, _buildImg;
         private readonly Action<string> _onClearOrder;
         private readonly List<RowWidgets> _rows = new List<RowWidgets>();
 
@@ -72,6 +72,7 @@ namespace CommanderLayer.Ui
             UiFactory.PreferredHeight(armRow2.gameObject, 30f);
             _captureImg = UiFactory.Button("Capture", armRow2.transform, "Capture", theme, () => onArm?.Invoke(OrderKind.Capture)).GetComponent<Image>();
             _resupplyImg = UiFactory.Button("Resupply", armRow2.transform, "Resupply", theme, () => onArm?.Invoke(OrderKind.Resupply)).GetComponent<Image>();
+            _buildImg = UiFactory.Button("Build", armRow2.transform, "Build", theme, () => onArm?.Invoke(OrderKind.Build)).GetComponent<Image>();
 
             var clearAll = UiFactory.Button("ClearAll", layout.transform, "Clear all orders", theme, () => onClearAll?.Invoke());
             UiFactory.PreferredHeight(clearAll.gameObject, 24f);
@@ -93,7 +94,11 @@ namespace CommanderLayer.Ui
             if (_root == null) return;
 
             _title.text = faction != null ? $"COMMANDER — {faction.Name}" : "COMMANDER";
-            if (armed.HasValue)
+            if (armed == OrderKind.Build)
+            {
+                _status.text = "Build: click the map to commission a convoy (queued at your base).";
+            }
+            else if (armed.HasValue)
             {
                 int n = preview != null ? preview.Count : 0;
                 string can = n > 0 ? $"{n} unit(s) will respond" : "no units in range — widen range or domains";
@@ -107,6 +112,7 @@ namespace CommanderLayer.Ui
             _defendImg.color = armed == OrderKind.Defend ? OrderColors.Defend : _theme.ButtonIdle;
             _captureImg.color = armed == OrderKind.Capture ? OrderColors.Capture : _theme.ButtonIdle;
             _resupplyImg.color = armed == OrderKind.Resupply ? OrderColors.Resupply : _theme.ButtonIdle;
+            _buildImg.color = armed == OrderKind.Build ? OrderColors.Build : _theme.ButtonIdle;
 
             _ordersHeader.text = $"Orders: {orders.Count}";
             EnsureRows(orders.Count);

@@ -81,8 +81,10 @@ namespace CommanderLayer.Composition
             _hoverPreview = null;
             if (_armed.HasValue && !IsPointerOverUi() && _projection.TryCursorToWorld(out var hover))
             {
-                _hoverPreview = _service.PreviewAt(_armed.Value, hover, _screen.Domains, _screen.RangeMeters);
-                _overlay?.SetHover(hover, _screen.RangeMeters, _armed.Value, _hoverPreview.CanPlace);
+                bool isBuild = _armed.Value == OrderKind.Build;
+                _hoverPreview = isBuild ? null : _service.PreviewAt(_armed.Value, hover, _screen.Domains, _screen.RangeMeters);
+                bool canPlace = isBuild || (_hoverPreview != null && _hoverPreview.CanPlace);
+                _overlay?.SetHover(hover, _screen.RangeMeters, _armed.Value, canPlace);
 
                 if (Input.GetMouseButtonDown(0))
                 {
