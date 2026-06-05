@@ -320,6 +320,38 @@ namespace CommanderLayer.Tests
         }
 
         [Fact]
+        public void ClearAll_frees_all_committed_units()
+        {
+            var mgr = new AssignmentManager(SizingCfg());
+            var roster = new List<UnitView> { Ground("mbt1", VehicleType.MBT, P(100, 0)) };
+            mgr.AddOrder(new CommanderOrder("a", OrderKind.Attack, P(0, 0), 5000f, DomainSet.Land), roster, ThreatPicture.Empty);
+            Assert.Contains("mbt1", mgr.CommittedUnitIds(roster));
+            mgr.ClearAll();
+            Assert.DoesNotContain("mbt1", mgr.CommittedUnitIds(roster));
+        }
+
+        [Fact]
+        public void Completed_order_releases_its_units()
+        {
+            var mgr = new AssignmentManager(SizingCfg());
+            var roster = new List<UnitView> { Ground("mbt1", VehicleType.MBT, P(50, 0)) }; // within ArriveRadius
+            mgr.AddOrder(new CommanderOrder("a", OrderKind.Attack, P(0, 0), 5000f, DomainSet.Land), roster, ThreatPicture.Empty);
+            mgr.Tick(roster, _ => ThreatPicture.Empty);                       // arrives + no threat -> completes
+            Assert.Equal(OrderStatus.Complete, mgr.Orders[0].Status);
+            Assert.DoesNotContain("mbt1", mgr.CommittedUnitIds(roster));      // a Complete order commits nothing
+        }
+
+        [Fact]
+        public void Preview_honors_excluded_ids()
+        {
+            var roster = new List<UnitView> { Ground("mbt1", VehicleType.MBT, P(100, 0)), Ground("mbt2", VehicleType.MBT, P(120, 0)) };
+            var order = new CommanderOrder("o", OrderKind.Attack, P(0, 0), 5000f, DomainSet.Land);
+            var prev = OrderPlanner.Preview(order, roster, Threat(5), SizingCfg(), new HashSet<string> { "mbt1" });
+            Assert.DoesNotContain(prev.Assignable, u => u.Id == "mbt1");
+            Assert.Contains(prev.Assignable, u => u.Id == "mbt2");
+        }
+
+        [Fact]
         public void Tick_completes_attack_when_area_clear()
         {
             var mgr = new AssignmentManager(Cfg());

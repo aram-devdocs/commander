@@ -31,6 +31,10 @@ namespace CommanderLayer.Game
         /// <summary>Roster from the last Place/Tick (refreshed on the throttled management loop).</summary>
         public IReadOnlyList<UnitView> LastRoster { get; private set; } = new List<UnitView>();
 
+        // Committed-units snapshot, refreshed on Place/Tick and reused by the per-frame hover preview so we
+        // don't rebuild it every frame (review S1).
+        private System.Collections.Generic.HashSet<string> _committed = new System.Collections.Generic.HashSet<string>();
+
         /// <summary>Place an order at a world point: plan a suitable subset and command them. Host-side.</summary>
         public OrderState PlaceOrder(OrderKind kind, Vec3 world, DomainSet domains, float radius)
         {
@@ -52,6 +56,7 @@ namespace CommanderLayer.Game
             var order = new CommanderOrder("ord-" + (++_counter), kind, world, r, domains);
             var plan = _mgr.AddOrder(order, roster, threat);
             foreach (var t in plan.Tasks) _cmds.Execute(t);
+            _committed = _mgr.CommittedUnitIds(roster);
             RefreshAirIntent();
             Plugin.Log?.LogInfo($"Order {order.Id} ({kind}, {domains}, r={r:0}) at {world}: {plan.Tasks.Count} unit(s) tasked.");
             return _mgr.Orders[_mgr.Orders.Count - 1];
@@ -64,8 +69,8 @@ namespace CommanderLayer.Game
             float r = radius > 0f ? radius : _cfg.SelectionRadius;
             var threat = ThreatAssessor.Assess(_intel.KnownEnemiesNear(world, r));
             var order = new CommanderOrder("preview", kind, world, r, domains);
-            // Honor cross-order exclusivity in the preview so the hover shows only *available* units.
-            return OrderPlanner.Preview(order, LastRoster, threat, _cfg, _mgr.CommittedUnitIds(LastRoster));
+            // Honor cross-order exclusivity using the cached committed snapshot (refreshed on Place/Tick).
+            return OrderPlanner.Preview(order, LastRoster, threat, _cfg, _committed);
         }
 
         /// <summary>Management tick (throttled by the runtime): validate/reassign/complete, re-issue tasks.</summary>
@@ -77,6 +82,7 @@ namespace CommanderLayer.Game
                 o => ThreatAssessor.Assess(_intel.KnownEnemiesNear(o.Position, _cfg.ThreatRadius)),
                 o => _capture.IsHeldByUs(o.Position));
             foreach (var t in reissue) _cmds.Execute(t);
+            _committed = _mgr.CommittedUnitIds(roster);
             RefreshAirIntent();
             _debug.Tick();   // S0 instrumentation (no-op unless CommanderDebug)
         }

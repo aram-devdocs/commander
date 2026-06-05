@@ -78,8 +78,9 @@ namespace CommanderLayer.Ui
             var center = new Vector3(local.X, local.Y, 0f);
             Color c = canPlace ? OrderColors.For(kind) : NativeColors.Hostile;
 
-            SizeRing(_hoverRing, center, pullMeters, c, 0.85f);
-            SizeRing(_hoverRingInner, center, aoMeters, c, 0.5f);
+            // Inner ring gets a smaller floor than the outer so the two don't collapse into one when zoomed out.
+            SizeRing(_hoverRing, center, pullMeters, c, 0.85f, RingMinLocal);
+            SizeRing(_hoverRingInner, center, aoMeters, c, 0.5f, RingMinLocal * 0.55f);
 
             var dt = (RectTransform)_hoverDot.transform;
             dt.localPosition = center;
@@ -96,9 +97,9 @@ namespace CommanderLayer.Ui
             for (int i = hi; i < _hoverLines.Count; i++) _hoverLines[i].gameObject.SetActive(false);
         }
 
-        private void SizeRing(Image ring, Vector3 center, float meters, Color color, float alpha)
+        private void SizeRing(Image ring, Vector3 center, float meters, Color color, float alpha, float minLocal)
         {
-            float diam = Mathf.Clamp(2f * meters * _projection.MapScale, RingMinLocal, RingMaxLocal);
+            float diam = Mathf.Clamp(2f * meters * _projection.MapScale, minLocal, RingMaxLocal);
             var rt = (RectTransform)ring.transform;
             rt.localPosition = center;
             rt.sizeDelta = new Vector2(diam, diam);
