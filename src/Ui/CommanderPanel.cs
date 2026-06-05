@@ -27,6 +27,11 @@ namespace CommanderLayer.Ui
         private readonly TextMeshProUGUI _modeLabel;
         private readonly GameObject _confirmButton;
         private readonly TextMeshProUGUI _confirmLabel;
+        private readonly Transform _opsContainer;
+        private readonly Action<string> _onToggleOpManual;
+        private readonly List<OpRow> _opRows = new List<OpRow>();
+
+        private struct OpRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string OpId; }
         private readonly Transform _ordersContainer;
         private readonly List<DomToggle> _domToggles = new List<DomToggle>();
         private readonly Image _attackImg, _defendImg, _captureImg, _resupplyImg, _buildImg, _moveImg;
@@ -45,10 +50,12 @@ namespace CommanderLayer.Ui
         private struct RowWidgets { public GameObject Go; public TextMeshProUGUI Label; public Button Clear; public string OrderId; }
 
         public CommanderPanel(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
-            Action<string> onClearOrder, Action onCycleAutonomy = null, Action onConfirmProposal = null)
+            Action<string> onClearOrder, Action onCycleAutonomy = null, Action onConfirmProposal = null,
+            Action<string> onToggleOpManual = null)
         {
             _theme = theme;
             _onClearOrder = onClearOrder;
+            _onToggleOpManual = onToggleOpManual;
             _root = UiFactory.Panel("CommanderPanel", parent, theme.PanelBackground);
             var layout = UiFactory.VerticalLayout("Layout", _root, 6f, new RectOffset(10, 10, 10, 10));
             UiFactory.Stretch((RectTransform)layout.transform);
@@ -109,6 +116,9 @@ namespace CommanderLayer.Ui
             _confirmButton = confirmBtn.gameObject;
             _confirmLabel = confirmBtn.GetComponentInChildren<TextMeshProUGUI>();
 
+            // Per-operation autonomy: one interactive row per op with an AUTO/MANUAL toggle (take a slice).
+            _opsContainer = UiFactory.VerticalLayout("HqOps", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+
             _hqBody = UiFactory.Label("HqBody", layout.transform, "", 12f, theme.Muted);
             UiFactory.PreferredHeight(_hqBody.gameObject, 120f);
 
@@ -130,12 +140,12 @@ namespace CommanderLayer.Ui
             {
                 _hqHeader.text = "";
                 _hqBody.text = "";
+                RenderOpRows(null);
                 return;
             }
             _hqHeader.text = $"{mode} COMMANDER · {hq.Operations.Count} op(s) · {hq.Squads.Count} squad(s)";
+            RenderOpRows(hq.Operations);   // interactive op rows (AUTO/MANUAL per op)
             var sb = new System.Text.StringBuilder();
-            foreach (var op in hq.Operations.Take(3))
-                sb.AppendLine($"• {op.Kind} — {op.Phase} [{op.Status}]");
             foreach (var sq in hq.Squads.Take(3))
                 sb.AppendLine($"▣ {sq.Name} · {sq.Family} ×{sq.Strength} [{sq.Status}]");
             // Assisted suggestions awaiting the player's confirm.
@@ -240,6 +250,50 @@ namespace CommanderLayer.Ui
                 if (t.Label != null) t.Label.text = (on ? "[x] " : "[ ] ") + t.Name; // unambiguous checkbox glyph
             }
             if (_rangeLabel != null) _rangeLabel.text = $"{_rangeKm}.0 km";
+        }
+
+        // Interactive per-operation rows in the HQ section: label + an AUTO/MANUAL toggle that takes that one
+        // operation off the AI (or hands it back). Pooled + index-captured like the order rows.
+        private void RenderOpRows(IReadOnlyList<CommanderLayer.Core.Command.OperationView> ops)
+        {
+            int count = ops?.Count ?? 0;
+            EnsureOpRows(System.Math.Min(count, 5)); // cap visible op rows
+            for (int i = 0; i < _opRows.Count; i++)
+            {
+                if (ops != null && i < count && i < 5)
+                {
+                    var op = ops[i];
+                    var r = _opRows[i];
+                    r.OpId = op.Id;
+                    r.Label.text = $"{op.Kind} — {op.Phase} [{op.Status}]";
+                    bool manual = op.Autonomy == CommanderLayer.Core.Command.AutonomyLevel.Manual;
+                    r.BtnLabel.text = manual ? "MANUAL" : "AUTO";
+                    r.BtnImg.color = manual ? _theme.Accent : _theme.ButtonIdle;
+                    r.Go.SetActive(true);
+                    _opRows[i] = r;
+                }
+                else
+                {
+                    _opRows[i].Go.SetActive(false);
+                }
+            }
+        }
+
+        private void EnsureOpRows(int count)
+        {
+            while (_opRows.Count < count)
+            {
+                var row = UiFactory.HorizontalLayout("OpRow" + _opRows.Count, _opsContainer, 4f);
+                UiFactory.PreferredHeight(row.gameObject, 18f);
+                var label = UiFactory.Label("L", row.transform, "", 12f, _theme.Text);
+                var btn = UiFactory.Button("Auto", row.transform, "AUTO", _theme, null);
+                var le = btn.gameObject.GetComponent<LayoutElement>() ?? btn.gameObject.AddComponent<LayoutElement>();
+                le.preferredWidth = 62f; le.flexibleWidth = 0f;
+                int idx = _opRows.Count;
+                btn.onClick.AddListener(() => { var id = _opRows[idx].OpId; if (id != null) _onToggleOpManual?.Invoke(id); });
+                _opRows.Add(new OpRow { Go = row.gameObject, Label = label, BtnImg = btn.GetComponent<Image>(),
+                    BtnLabel = btn.GetComponentInChildren<TextMeshProUGUI>() });
+            }
         }
 
         private void EnsureRows(int count)

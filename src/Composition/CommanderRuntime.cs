@@ -212,7 +212,8 @@ namespace CommanderLayer.Composition
                 onClearAll: () => _service.ClearAll(),
                 onClearOrder: id => _service.Clear(id),
                 onCycleAutonomy: () => _service.CycleCommanderAutonomy(),
-                onConfirmProposal: () => _service.ConfirmTopProposal());
+                onConfirmProposal: () => _service.ConfirmTopProposal(),
+                onToggleOpManual: id => _service.ToggleOperationManual(id));
             TryAddNativeBorder(_screen.PanelRoot, _theme.Accent);
             Plugin.Log?.LogInfo("Commander panel built.");
         }

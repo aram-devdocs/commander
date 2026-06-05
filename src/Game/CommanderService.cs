@@ -171,6 +171,18 @@ namespace CommanderLayer.Game
             if (_auto.Proposals.Count > 0) _auto.ConfirmProposal(_auto.Proposals[0].RefId);
         }
 
+        /// <summary>Take a single operation Manual (AI yields that slice) or hand it back to Auto — the per-op
+        /// autonomy control. Other operations keep running on their own.</summary>
+        public void ToggleOperationManual(string operationId)
+        {
+            foreach (var op in _auto.Operations)
+                if (op.Id == operationId)
+                {
+                    op.Autonomy = op.Autonomy == AutonomyLevel.Manual ? AutonomyLevel.Auto : AutonomyLevel.Manual;
+                    return;
+                }
+        }
+
         public IReadOnlyList<UnitView> CurrentRoster() => _roster.BuildRoster();
         public void Clear(string orderId) => _mgr.Clear(orderId);
         public void ClearAll() => _mgr.ClearAll();
