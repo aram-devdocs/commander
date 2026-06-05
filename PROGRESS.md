@@ -13,7 +13,7 @@ Gates per phase: ① Spec approved · ② Quality green · ③ Review clean · �
 load Commander Debug, open map, arm an order, hover, place two overlapping orders; paste the BepInEx log
 (esp. `[S0:*]` lines) + a screenshot. Meanwhile the loop builds P1/P2 pure-Core (no playtest needed).
 | P0.5 — sandbox + terrain | Backlog | depends on S0 terrain probe |
-| P1 — squads + operations + brain | P1a ✔ (squads) · building P1b | P1a Squad/Former/Roster pure+tested (d4c798b). Next P1b: Objective+Operation+ports; P1c: brain |
+| P1 — squads + operations + brain | P1a✔ P1b✔ P1c-core✔ · orchestration next | squads (d4c798b), Objective/Operation/Doctrine/ports (1271759), brain decisions (06f742c). 48 Core. Next: brain Tick + WorldSnapshot/CommanderState + flag-gated wiring (vertical slice — activate after playtest) |
 | P2 — combined-arms sequencing | Backlog | |
 | P3 — economy/production | Backlog | depends on S0 convoy spike |
 | P4 — intel board + reports | Backlog | |
