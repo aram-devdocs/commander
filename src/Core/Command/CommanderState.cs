@@ -21,6 +21,8 @@ namespace CommanderLayer.Core.Command
         public Vec3 HomeBase { get; set; }
         /// <summary>The battle feed — the brain appends events (op started/phase changed/completed) here.</summary>
         public BattleLog Log { get; } = new BattleLog();
+        /// <summary>Force compositions the brain couldn't field — the Game layer turns these into convoy buys.</summary>
+        public List<Composition> ProductionNeeds { get; } = new List<Composition>();
         /// <summary>Last objective each unit was tasked toward — so the brain only re-issues on change (no spam).</summary>
         public Dictionary<string, string> LastObjectiveByUnit { get; } = new Dictionary<string, string>();
 

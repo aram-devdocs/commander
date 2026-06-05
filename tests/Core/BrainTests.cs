@@ -47,6 +47,16 @@ namespace CommanderLayer.Tests
         }
 
         [Fact]
+        public void Tick_requests_production_when_no_force_is_available()
+        {
+            var state = new CommanderState(SquadCfg(), null, Cfg());
+            // Enemy present but NO friendly units -> objective generated, no squads, no operation -> production need.
+            CommanderBrain.Tick(new WorldSnapshot(new List<UnitView>(), new List<EnemyView> { E("e1", P(5000, 0)) }), state);
+            Assert.NotEmpty(state.ProductionNeeds);
+            Assert.True(state.ProductionNeeds[0].Total > 0);
+        }
+
+        [Fact]
         public void Tick_with_no_enemies_does_nothing()
         {
             var state = new CommanderState(SquadCfg(), null, Cfg());

@@ -109,6 +109,13 @@ namespace CommanderLayer.Core.Command
                     $"{obj.Kind} ({squadIds.Count} squad{(squadIds.Count == 1 ? "" : "s")})", op.Id));
             }
 
+            // 4b. Production needs: any objective we couldn't field a force for becomes a force request the
+            //     Game layer turns into convoy buys. Recomputed each tick.
+            state.ProductionNeeds.Clear();
+            foreach (var obj in state.Objectives)
+                if (state.OperationFor(obj.Id) == null)
+                    state.ProductionNeeds.Add(RequiredComposition(obj.Kind));
+
             // 5. Issue tasking — only when a unit's target objective CHANGED, so we don't re-spam SetDestination
             //    every tick and fight the game AI (S1).
             var tasked = new HashSet<string>();
@@ -144,6 +151,22 @@ namespace CommanderLayer.Core.Command
             foreach (var e in snapshot.KnownEnemies)
                 if (e != null && e.Position.HorizontalDistanceTo(point) <= radius) near.Add(e);
             return new ThreatPicture(near);
+        }
+
+        /// <summary>A sensible combined-arms force for an objective kind — the gap Production tries to fill.</summary>
+        private static Composition RequiredComposition(ObjectiveKind kind)
+        {
+            var c = new Composition();
+            switch (kind)
+            {
+                case ObjectiveKind.DestroyTarget: c.Add(RoleFamily.Armor, 2); c.Add(RoleFamily.Artillery, 1); break;
+                case ObjectiveKind.CapturePoint: c.Add(RoleFamily.Armor, 2); c.Add(RoleFamily.Infantry, 1); break;
+                case ObjectiveKind.DefendArea: c.Add(RoleFamily.AirDefense, 1); c.Add(RoleFamily.Armor, 1); break;
+                case ObjectiveKind.ControlAirspace: c.Add(RoleFamily.AirCombat, 2); break;
+                case ObjectiveKind.Resupply: c.Add(RoleFamily.Supply, 1); break;
+                default: c.Add(RoleFamily.Armor, 1); break;
+            }
+            return c;
         }
 
         private static int FighterStrength(Operation op, CommanderState state)
