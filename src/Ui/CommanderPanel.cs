@@ -105,16 +105,20 @@ namespace CommanderLayer.Ui
         public void RenderHq(CommanderLayer.Core.Command.HqSnapshot hq)
         {
             if (_hqHeader == null) return;
-            if (hq == null || (hq.Operations.Count == 0 && hq.Recent.Count == 0 && hq.Squads.Count == 0))
+            if (hq == null || (hq.Operations.Count == 0 && hq.Recent.Count == 0 && hq.Squads.Count == 0
+                && hq.Proposals.Count == 0))
             {
                 _hqHeader.text = "";
                 _hqBody.text = "";
                 return;
             }
-            _hqHeader.text = $"AUTO COMMANDER · {hq.Operations.Count} op(s) · {hq.Squads.Count} squad(s)";
+            string mode = hq.CommanderAutonomy.ToString().ToUpperInvariant();
+            _hqHeader.text = $"{mode} COMMANDER · {hq.Operations.Count} op(s) · {hq.Squads.Count} squad(s)";
             var sb = new System.Text.StringBuilder();
             foreach (var op in hq.Operations.Take(4))
                 sb.AppendLine($"• {op.Kind} — {op.Phase} [{op.Status}]");
+            // Assisted suggestions awaiting the player's confirm.
+            foreach (var p in hq.Proposals.Take(3)) sb.AppendLine($"? {p.Summary} — confirm to launch");
             foreach (var line in hq.Production.Take(2)) sb.AppendLine(line);
             foreach (var e in hq.Recent.Take(5)) sb.AppendLine($"· {e.Text}");
             _hqBody.text = sb.ToString().TrimEnd();

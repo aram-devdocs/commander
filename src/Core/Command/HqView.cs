@@ -62,15 +62,19 @@ namespace CommanderLayer.Core.Command
         public IReadOnlyList<string> Production { get; }
         public IReadOnlyList<ReportEvent> Recent { get; }
         public AutonomyLevel CommanderAutonomy { get; }
+        /// <summary>Pending Assisted suggestions the player can confirm (empty unless the commander is Assisted).</summary>
+        public IReadOnlyList<Proposal> Proposals { get; }
 
         public HqSnapshot(IReadOnlyList<OperationView> operations, IReadOnlyList<SquadView> squads,
-            IReadOnlyList<string> production, IReadOnlyList<ReportEvent> recent, AutonomyLevel commanderAutonomy)
+            IReadOnlyList<string> production, IReadOnlyList<ReportEvent> recent, AutonomyLevel commanderAutonomy,
+            IReadOnlyList<Proposal> proposals = null)
         {
             Operations = operations;
             Squads = squads;
             Production = production;
             Recent = recent;
             CommanderAutonomy = commanderAutonomy;
+            Proposals = proposals ?? new List<Proposal>();
         }
     }
 
@@ -102,7 +106,8 @@ namespace CommanderLayer.Core.Command
                 ? log.Recent(recentCount)
                 : (IReadOnlyList<ReportEvent>)new List<ReportEvent>();
 
-            return new HqSnapshot(operations, squads, productionLines, recent, state.Autonomy);
+            return new HqSnapshot(operations, squads, productionLines, recent, state.Autonomy,
+                state.Proposals.ToList());
         }
     }
 }

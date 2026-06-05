@@ -187,6 +187,40 @@ namespace CommanderLayer.Tests
         }
 
         [Fact]
+        public void Tick_assisted_proposes_instead_of_opening_an_operation()
+        {
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { Autonomy = AutonomyLevel.Assisted };
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            var known = new List<EnemyView> { E("e1", P(5000, 0)) };
+
+            var tasks = CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
+
+            Assert.Empty(tasks);                       // AI does not act on its own under Assisted
+            Assert.Empty(state.Operations);            // ...no operation opened
+            Assert.Single(state.Proposals);            // ...it proposes one
+            Assert.Equal(ProposalKind.OpenOperation, state.Proposals[0].Kind);
+            Assert.Empty(state.ProductionNeeds);       // force IS available — not a production gap
+        }
+
+        [Fact]
+        public void Tick_assisted_opens_the_operation_once_the_player_confirms()
+        {
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { Autonomy = AutonomyLevel.Assisted };
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            var known = new List<EnemyView> { E("e1", P(5000, 0)) };
+
+            CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
+            Assert.Single(state.Proposals);
+            state.ConfirmProposal(state.Proposals[0].RefId);   // player authorises it
+
+            var tasks = CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
+            Assert.Single(state.Operations);                   // now it opens
+            Assert.Equal(OperationStatus.Active, state.Operations[0].Status);
+            Assert.NotEmpty(tasks);                            // ...and tasks its force
+            Assert.Empty(state.Proposals);                     // no longer proposed (covered)
+        }
+
+        [Fact]
         public void MatchSquads_prefers_the_nearest_suitable_squad_when_positions_known()
         {
             var obj = new Objective("o", ObjectiveKind.DestroyTarget, P(0, 0), ObjectiveSource.Auto);

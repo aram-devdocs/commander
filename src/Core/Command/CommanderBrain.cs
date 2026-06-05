@@ -85,6 +85,8 @@ namespace CommanderLayer.Core.Command
             state.Objectives.RemoveAll(o => o.Source == ObjectiveSource.Auto
                 && state.OperationFor(o.Id) == null
                 && !AnyThreatNear(snapshot, o.Position, coverage));
+            // Drop stale confirmations whose objective is gone (no unbounded growth).
+            state.ConfirmedObjectives.RemoveWhere(id => !state.Objectives.Any(o => o.Id == id));
 
             // 3. New objectives from known enemy clusters not already covered.
             foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
@@ -94,6 +96,11 @@ namespace CommanderLayer.Core.Command
             // 4. Open an operation for each uncovered objective, matching a suitable free force. Squad
             //    positions (member centroids) let MatchSquads send the NEAREST suitable squad, not a
             //    cross-map one — combined arms that engages locally instead of streaming across the theater.
+            //    Under ASSISTED autonomy the brain does not open operations on its own — it surfaces a
+            //    Proposal per fieldable objective and waits for the player to confirm (autonomy ladder).
+            bool assisted = state.Autonomy == AutonomyLevel.Assisted;
+            state.Proposals.Clear();
+            var fieldable = new HashSet<string>(); // objectives we have a force for (opened OR proposed)
             var positions = new Dictionary<string, Vec3>();
             foreach (var u in snapshot.Roster) if (u != null) positions[u.Id] = u.Position;
             foreach (var obj in state.Objectives)
@@ -101,6 +108,14 @@ namespace CommanderLayer.Core.Command
                 if (state.OperationFor(obj.Id) != null) continue;
                 var squadIds = MatchSquads(obj, state.Squads.Squads, state.BrainConfig, positions);
                 if (squadIds.Count == 0) continue; // no force available — production request comes in P3
+                fieldable.Add(obj.Id);
+                if (assisted && !state.ConfirmedObjectives.Contains(obj.Id))
+                {
+                    // Propose, don't commit. RefId = objective id so ConfirmProposal can authorise it.
+                    state.Proposals.Add(new Proposal(ProposalKind.OpenOperation,
+                        $"{obj.Kind} ({squadIds.Count} squad{(squadIds.Count == 1 ? "" : "s")})", obj.Id, obj.Priority));
+                    continue;
+                }
                 var initial = ThreatNear(snapshot, obj.Position, coverage); // baseline for the soften gate
                 var op = new Operation(state.NextOperationId(), obj, squadIds)
                 {
@@ -119,7 +134,7 @@ namespace CommanderLayer.Core.Command
             //     Game layer turns into convoy buys. Recomputed each tick.
             state.ProductionNeeds.Clear();
             foreach (var obj in state.Objectives)
-                if (state.OperationFor(obj.Id) == null)
+                if (state.OperationFor(obj.Id) == null && !fieldable.Contains(obj.Id)) // not just awaiting a confirm
                     state.ProductionNeeds.Add(RequiredComposition(obj.Kind));
 
             // 5. Issue tasking — only when a unit's target objective CHANGED, so we don't re-spam SetDestination
