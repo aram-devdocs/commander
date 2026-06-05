@@ -32,15 +32,31 @@ The game is Unity (Mono backend) + uGUI/TextMeshPro. The mod:
   `SetHoldPosition` (the highest-priority AI behavior) — replacing the old faction-objective "stampede."
 - Drives its per-frame loop from a Harmony postfix on `DynamicMap.Update` (this game does not pump a
   MonoBehaviour `Update` on mod-created objects), and attaches the CMD button from a postfix on
-  `VirtualMFD.VirtualMFD_onMapMaximized`. (Aircraft tasking is a later phase — they're not commandable.)
+  `VirtualMFD.VirtualMFD_onMapMaximized`.
+- Tasks **aircraft** (which are *not* `ICommandable`) by steering the pilot's idle no-target state
+  (`AIPilotCombatModes.NoTarget`) toward Air-domain order points — deliberately **not** a faction
+  Objective, because the decompile shows idle ground vehicles and ships also seek the nearest objective
+  (the old "stampede"). Behind the `EnableAircraftTasking` config (off by default; needs in-game tuning).
+- Borrows the game's own look: native HUD font (`GameAssets.playerNameFont`) and a sliced button sprite.
 
-### Type-safety against the game
+### Type-safety against the game — a generated SDK
 
 The plugin **compiles against the real, unmodified `Assembly-CSharp.dll`** (not a publicized copy), so the
 C# compiler enforces the game's actual accessibility — any private access is a build error caught locally,
-never a runtime `FieldAccessException`. The few genuinely-private members we need (the `VirtualMFD` bezel
-button lists) are reached by reflection, and a **contract test suite** asserts those members exist with the
-expected types/accessibility against the real assembly.
+never a runtime `FieldAccessException`.
+
+On top of that, a **single declarative manifest** in `tools/CommanderLayer.CodeGen` lists every game member
+the mod depends on. Running the generator verifies all of them against the real assembly (failing loudly,
+listing every drift at once) and emits, all from that one source of truth:
+- `src/Core/Generated/GameEnums.generated.cs` — mirror enums so pure Core stays engine-free,
+- `src/Core/Generated/GameRef.generated.cs` — verified reflection member-name constants,
+- `src/Game/Generated/GameSdk.generated.cs` — **typed** reflection accessors (field types discovered from
+  the assembly, no magic strings),
+- `tests/GameContract/GameContract.Generated.cs` — a contract test asserting every member still exists.
+
+So when the game updates: **regenerate → codegen and/or the compiler and/or CI point at exactly where the
+mod no longer fits.** Bespoke contract checks (enum value-equality, reference resolution, interface graphs)
+live alongside in `tests/GameContract/`.
 
 ## Architecture (atomic / one-directional dependency flow)
 
@@ -53,9 +69,9 @@ src/Ui/          atomic uGUI — UiFactory atoms → CommanderPanel/MapOverlay �
 src/Patches/     Harmony seams (menu badge, map tick driver + pan guard, MFD CMD button)
 src/Composition/ CommanderRuntime — builds the graph, owns the loop
 src/Plugin.cs    BepInEx entry / composition root
-tools/CommanderLayer.CodeGen   generates src/Core/Generated/* (mirror enums + reflection names)
+tools/CommanderLayer.CodeGen   one manifest -> mirror enums + typed SDK accessors + contract tests
 tests/Core/      xUnit over Core only (no engine) — planner/classifier/manager
-tests/GameContract/  Mono.Cecil tests asserting the game-member + generated-enum contract
+tests/GameContract/  Mono.Cecil tests (generated manifest contract + bespoke checks)
 ```
 
 `Plugin → Composition → {Patches, Ui, Game} → Core`. The Core planner (`OrderPlanner`/`AssignmentManager`)

@@ -157,31 +157,11 @@ namespace CommanderLayer.GameContract.Tests
                 "Unresolved Assembly-CSharp references (game changed?):\n" + string.Join("\n", unresolved));
         }
 
-        // ---------- P2 (production/capture/logistics) + P4 (aircraft) member contract ----------
-        [Fact]
-        public void P2_and_P4_members_exist()
-        {
-            if (!Game.Available) return;
-
-            // P2 — production (commission)
-            Assert.Contains(Game.Type("NuclearOption.Networking.Player").Methods, m => m.Name == "CmdPurchaseConvoy");
-            Assert.Contains(Game.Type("Faction").Methods, m => m.Name == "GetConvoyGroups");
-            var cg = Game.Type("Faction/ConvoyGroup");
-            Assert.Contains(cg.Methods, m => m.Name == "GetCost");
-            Assert.Contains(cg.Fields, f => f.Name == "Name");
-            var fhq = Game.Type("FactionHQ");
-            Assert.True(fhq.Properties.Any(p => p.Name == "factionFunds") || fhq.Fields.Any(f => f.Name == "factionFunds"),
-                "FactionHQ.factionFunds required");
-
-            // P2 — capture + logistics
-            Assert.Contains(Game.Type("Unit").Properties, p => p.Name == "CaptureStrength");
-            Assert.NotNull(Game.Type("IRearmable"));
-            Assert.Contains(Game.Type("Airbase").Properties, p => p.Name == "CurrentHQ");
-
-            // P4 — aircraft target seam (aircraft-only AssessHQTargets; ChooseHQTarget is the shared chooser)
-            Assert.Contains(Game.Type("AIPilotCombatModes").Methods, m => m.Name == "AssessHQTargets");
-            Assert.Contains(Game.Type("CombatAI").Methods, m => m.Name == "ChooseHQTarget" && m.IsStatic);
-        }
+        // NOTE: plain member-existence/visibility/static contracts (production, capture, aircraft seams,
+        // DynamicMap/Unit/Faction fields, etc.) are GENERATED from the codegen manifest into
+        // GameContract.Generated.cs (GeneratedManifestTests). The tests below are the BESPOKE checks that
+        // need custom logic the manifest can't express (enum value-equality, reference resolution, interface
+        // graphs, constructor arity, generated-output validation).
 
         // ---------- generated enums must mirror the real assembly (single source of truth) ----------
         [Fact]
