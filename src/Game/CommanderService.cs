@@ -17,6 +17,7 @@ namespace CommanderLayer.Game
         private readonly GameUnitCommands _cmds = new GameUnitCommands();
         private readonly GameProduction _production = new GameProduction();
         private readonly GameCapture _capture = new GameCapture();
+        private readonly CommanderDebugProbe _debug = new CommanderDebugProbe();
         private int _counter;
 
         public CommanderService(CommanderConfig cfg)
@@ -77,6 +78,7 @@ namespace CommanderLayer.Game
                 o => _capture.IsHeldByUs(o.Position));
             foreach (var t in reissue) _cmds.Execute(t);
             RefreshAirIntent();
+            _debug.Tick();   // S0 instrumentation (no-op unless CommanderDebug)
         }
 
         // Publish the Air-domain order points as aircraft ingress zones (consumed by the NoTarget patch).

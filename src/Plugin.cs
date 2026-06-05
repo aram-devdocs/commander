@@ -24,6 +24,7 @@ namespace CommanderLayer
         internal static float ArriveRadius = 250f;
         internal static KeyCode ArmKey = KeyCode.G;
         internal static bool EnableAircraftTasking;
+        internal static bool CommanderDebug;
 
         internal static CommanderRuntime Runtime;
 
@@ -39,10 +40,14 @@ namespace CommanderLayer
                 "Optional key (while the map is open) to arm objective placement; then click the map.");
             var airCfg = Config.Bind("Commander", "EnableAircraftTasking", false,
                 "EXPERIMENTAL: steer idle friendly aircraft toward Air-domain commander orders (needs in-game tuning).");
+            var dbgCfg = Config.Bind("Commander", "CommanderDebug", false,
+                "S0 instrumentation: log [S0:*] lines (unit ids, kill tracking, terrain water/land) for one playtest.");
             ArriveRadius = arriveCfg.Value;
             ArmKey = keyCfg.Value;
             EnableAircraftTasking = airCfg.Value;
+            CommanderDebug = dbgCfg.Value;
             Game.AircraftIntent.Enabled = airCfg.Value;
+            dbgCfg.SettingChanged += (_, __) => CommanderDebug = dbgCfg.Value;
             arriveCfg.SettingChanged += (_, __) => ArriveRadius = arriveCfg.Value;
             keyCfg.SettingChanged += (_, __) => ArmKey = keyCfg.Value;
             airCfg.SettingChanged += (_, __) => { EnableAircraftTasking = airCfg.Value; Game.AircraftIntent.Enabled = airCfg.Value; };

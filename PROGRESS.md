@@ -6,8 +6,8 @@ Gates per phase: ① Spec approved · ② Quality green · ③ Review clean · �
 ## Phase status
 | Phase | State | Notes |
 |---|---|---|
-| S0 — de-risk spikes | Spec reviewed → awaiting ① | bundled probes behind `CommanderDebug` flag; needs 1 playtest log |
-| P0 — foundation fixes | Spec reviewed → awaiting ① | exclusivity, force-sizing, preview-who, two rings, toggle clarity, occlusion |
+| S0 — de-risk spikes | Spec ✔ → building probes | bundled probes behind `CommanderDebug` flag; needs 1 playtest log |
+| P0 — foundation fixes | Built · Quality ② ✔ | pure logic + UI committed (35f38ba, c8eb72e); 33 Core + 11 contract green. ③ code-review + ④ playtest pending |
 | P0.5 — sandbox + terrain | Backlog | depends on S0 terrain probe |
 | P1 — squads + operations + brain | Backlog | depends on S0 unit-id |
 | P2 — combined-arms sequencing | Backlog | |
