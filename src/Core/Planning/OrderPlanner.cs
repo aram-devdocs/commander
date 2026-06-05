@@ -5,28 +5,32 @@ using CommanderLayer.Core.Model;
 namespace CommanderLayer.Core.Planning
 {
     /// <summary>
-    /// Pure selection logic: given an order, the friendly roster, the threat picture, and config, choose a
-    /// *suitable subset* of units and emit their tasks. This is what replaces the "everyone stampedes"
-    /// behavior — only role-appropriate, in-range, commandable units are tasked. Fully unit-testable.
-    /// P1 scope: ground/ship Attack + Defend (aircraft join in P4 via the AI-intent path).
+    /// Pure selection logic — replaces "everyone stampedes." Picks a suitable subset within the order's
+    /// pull radius, filtered by the chosen domains (air/land/sea), excluding non-troops (missiles,
+    /// buildings) and non-commandable units. SelectUnits is shared by Plan (to issue tasks) and Preview
+    /// (for the live hover UI), so what you preview is exactly what gets tasked.
     /// </summary>
     public static class OrderPlanner
     {
-        public static TaskPlan Plan(CommanderOrder order, IReadOnlyList<UnitView> roster,
-            ThreatPicture threat, CommanderConfig cfg)
+        public static IReadOnlyList<UnitView> SelectUnits(CommanderOrder order, IReadOnlyList<UnitView> roster, CommanderConfig cfg)
         {
-            var candidates = roster
+            float radius = order.Radius > 0f ? order.Radius : cfg.SelectionRadius;
+            return roster
                 .Where(u => u != null && !u.Disabled && u.Commandable)
-                .Where(u => Suitable(u, order.Kind))
+                .Where(u => Suitable(u, order.Kind, order.Domains))
                 .Select(u => (u, dist: u.Position.HorizontalDistanceTo(order.Position)))
-                .Where(x => x.dist <= cfg.SelectionRadius)
+                .Where(x => x.dist <= radius)
                 .OrderBy(x => x.dist)
                 .Take(cfg.MaxUnitsPerOrder)
                 .Select(x => x.u)
                 .ToList();
+        }
 
-            var tasks = new List<UnitTask>(candidates.Count);
-            foreach (var u in candidates)
+        public static TaskPlan Plan(CommanderOrder order, IReadOnlyList<UnitView> roster, ThreatPicture threat, CommanderConfig cfg)
+        {
+            var selected = SelectUnits(order, roster, cfg);
+            var tasks = new List<UnitTask>(selected.Count);
+            foreach (var u in selected)
             {
                 switch (order.Kind)
                 {
@@ -37,7 +41,6 @@ namespace CommanderLayer.Core.Planning
                             tasks.Add(new UnitTask(u.Id, TaskVerb.MoveTo, order.Position));
                         break;
                     case OrderKind.Defend:
-                        // Move to cover the area; the manager flips arrivals to Hold (P3 refinement).
                         tasks.Add(new UnitTask(u.Id, TaskVerb.MoveTo, order.Position));
                         break;
                 }
@@ -45,16 +48,21 @@ namespace CommanderLayer.Core.Planning
             return new TaskPlan(order.Id, tasks);
         }
 
-        /// <summary>Role/capability suitability per order kind (excludes supply/radar/transport/carrier/UGV).</summary>
-        public static bool Suitable(UnitView u, OrderKind kind)
+        /// <summary>Live "what would happen" without mutating state — for the hover preview.</summary>
+        public static AssignmentPreview Preview(CommanderOrder order, IReadOnlyList<UnitView> roster, ThreatPicture threat, CommanderConfig cfg)
         {
+            return new AssignmentPreview(SelectUnits(order, roster, cfg), threat);
+        }
+
+        public static bool Suitable(UnitView u, OrderKind kind, DomainSet domains)
+        {
+            var dom = Model.Domains.Of(u.Role);
+            if (dom == null || !Model.Domains.InMask(dom.Value, domains)) return false; // excludes missiles/buildings + off-domain
             switch (kind)
             {
                 case OrderKind.Attack:
-                    // combat units that can hit ground targets
                     return u.Cap.CanEngageGround;
                 case OrderKind.Defend:
-                    // air-defense to cover, plus ground-capable combat units to garrison
                     return u.Cap.IsAirDefense || u.Cap.CanEngageGround;
                 default:
                     return false;

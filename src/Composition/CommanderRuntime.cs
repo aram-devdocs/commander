@@ -71,7 +71,7 @@ namespace CommanderLayer.Composition
             if (_armed.HasValue && Input.GetMouseButtonDown(0) && !IsPointerOverUi()
                 && _projection.TryCursorToWorld(out var world))
             {
-                var state = _service.PlaceOrder(_armed.Value, world);
+                var state = _service.PlaceOrder(_armed.Value, world, DomainSet.All, _service.Config.SelectionRadius);
                 Plugin.Log?.LogInfo($"Placed {state.Order.Kind} order: {state.Summary}");
                 _armed = null;
             }

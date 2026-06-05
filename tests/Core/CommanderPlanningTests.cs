@@ -39,8 +39,14 @@ namespace CommanderLayer.Tests
             return new UnitView(id, "jet", pos, UnitClass.Aircraft, false, false, cap, 1f, 1f, 0);
         }
 
+        private static UnitView Missile(string id, Vec3 pos)
+        {
+            var d = new UnitDescriptor(UnitClass.Missile, 1f, 0f, 0f, 0f, false, false, false, 0f, 0, commandable: true);
+            return new UnitView(id, "missile", pos, UnitClass.Missile, false, true, RoleClassifier.Classify(d), 1f, 0f, 0);
+        }
+
         private static Vec3 P(float x, float z) => new Vec3(x, 0, z);
-        private static CommanderOrder Attack(Vec3 p, string target = null) => new CommanderOrder("o1", OrderKind.Attack, p, 0f, target);
+        private static CommanderOrder Attack(Vec3 p, string target = null) => new CommanderOrder("o1", OrderKind.Attack, p, 0f, DomainSet.All, target);
         private static CommanderConfig Cfg() => new CommanderConfig { MaxUnitsPerOrder = 3, SelectionRadius = 5000f };
 
         // ---------- RoleClassifier ----------
@@ -108,6 +114,55 @@ namespace CommanderLayer.Tests
             var plan = OrderPlanner.Plan(order, roster, ThreatPicture.Empty, Cfg());
             var ids = plan.Tasks.Select(t => t.UnitId).OrderBy(x => x).ToList();
             Assert.Equal(new[] { "mbt", "sam" }, ids);
+        }
+
+        [Fact]
+        public void Attack_excludes_missiles_and_buildings()
+        {
+            var roster = new List<UnitView>
+            {
+                Ground("mbt", VehicleType.MBT, P(100, 0)),
+                Missile("msl", P(50, 0)), // commandable + antiSurface, but a munition — must be excluded
+            };
+            var plan = OrderPlanner.Plan(Attack(P(0, 0)), roster, ThreatPicture.Empty, Cfg());
+            Assert.Equal(new[] { "mbt" }, plan.Tasks.Select(t => t.UnitId).ToArray());
+        }
+
+        [Fact]
+        public void Domain_filter_limits_selection()
+        {
+            var roster = new List<UnitView>
+            {
+                Ground("mbt", VehicleType.MBT, P(100, 0)),  // Land
+                Ship("ffl", ShipType.FFL, P(150, 0)),       // Sea, CombatShip (can engage ground)
+            };
+            var landOnly = new CommanderOrder("o", OrderKind.Attack, P(0, 0), 0f, DomainSet.Land);
+            Assert.Equal(new[] { "mbt" }, OrderPlanner.Plan(landOnly, roster, ThreatPicture.Empty, Cfg()).Tasks.Select(t => t.UnitId).ToArray());
+            var seaOnly = new CommanderOrder("o", OrderKind.Attack, P(0, 0), 0f, DomainSet.Sea);
+            Assert.Equal(new[] { "ffl" }, OrderPlanner.Plan(seaOnly, roster, ThreatPicture.Empty, Cfg()).Tasks.Select(t => t.UnitId).ToArray());
+        }
+
+        [Fact]
+        public void Order_radius_overrides_config_selection_radius()
+        {
+            var roster = new List<UnitView>
+            {
+                Ground("near", VehicleType.MBT, P(200, 0)),
+                Ground("far", VehicleType.MBT, P(2000, 0)),
+            };
+            var tight = new CommanderOrder("o", OrderKind.Attack, P(0, 0), radius: 500f);
+            Assert.Equal(new[] { "near" }, OrderPlanner.Plan(tight, roster, ThreatPicture.Empty, Cfg()).Tasks.Select(t => t.UnitId).ToArray());
+        }
+
+        [Fact]
+        public void Preview_reports_assignable_and_can_place()
+        {
+            var roster = new List<UnitView> { Ground("mbt", VehicleType.MBT, P(100, 0)), Missile("m", P(10, 0)) };
+            var prev = OrderPlanner.Preview(Attack(P(0, 0)), roster, ThreatPicture.Empty, Cfg());
+            Assert.True(prev.CanPlace);
+            Assert.Equal(1, prev.Count);
+            var empty = OrderPlanner.Preview(Attack(P(99999, 0)), roster, ThreatPicture.Empty, Cfg());
+            Assert.False(empty.CanPlace);
         }
 
         [Fact]

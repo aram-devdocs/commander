@@ -17,16 +17,21 @@ namespace CommanderLayer.Core.Model
         public string Id { get; }
         public OrderKind Kind { get; }
         public Vec3 Position { get; }
+        /// <summary>The pull radius around the point: units within it are eligible. 0 = use config default.</summary>
         public float Radius { get; }
+        /// <summary>Which domains (air/land/sea) the player allows this order to commit.</summary>
+        public DomainSet Domains { get; }
         /// <summary>For Attack on a specific enemy; null = area attack.</summary>
         public string TargetId { get; }
 
-        public CommanderOrder(string id, OrderKind kind, Vec3 position, float radius, string targetId = null)
+        public CommanderOrder(string id, OrderKind kind, Vec3 position, float radius,
+            DomainSet domains = DomainSet.All, string targetId = null)
         {
             Id = id;
             Kind = kind;
             Position = position;
             Radius = radius;
+            Domains = domains;
             TargetId = targetId;
         }
     }

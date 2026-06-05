@@ -29,16 +29,27 @@ namespace CommanderLayer.Game
         public IReadOnlyList<UnitView> LastRoster { get; private set; } = new List<UnitView>();
 
         /// <summary>Place an order at a world point: plan a suitable subset and command them. Host-side.</summary>
-        public OrderState PlaceOrder(OrderKind kind, Vec3 world)
+        public OrderState PlaceOrder(OrderKind kind, Vec3 world, DomainSet domains, float radius)
         {
             var roster = _roster.BuildRoster();
             LastRoster = roster;
-            var threat = ThreatAssessor.Assess(_intel.KnownEnemiesNear(world, _cfg.ThreatRadius));
-            var order = new CommanderOrder("ord-" + (++_counter), kind, world, _cfg.ThreatRadius);
+            float r = radius > 0f ? radius : _cfg.SelectionRadius;
+            var threat = ThreatAssessor.Assess(_intel.KnownEnemiesNear(world, r));
+            var order = new CommanderOrder("ord-" + (++_counter), kind, world, r, domains);
             var plan = _mgr.AddOrder(order, roster, threat);
             foreach (var t in plan.Tasks) _cmds.Execute(t);
-            Plugin.Log?.LogInfo($"Order {order.Id} ({kind}) at {world}: {plan.Tasks.Count} unit(s) tasked.");
+            Plugin.Log?.LogInfo($"Order {order.Id} ({kind}, {domains}, r={r:0}) at {world}: {plan.Tasks.Count} unit(s) tasked.");
             return _mgr.Orders[_mgr.Orders.Count - 1];
+        }
+
+        /// <summary>Live preview of who'd be assigned at a hover point (uses the cached roster).</summary>
+        public AssignmentPreview PreviewAt(OrderKind kind, Vec3 world, DomainSet domains, float radius)
+        {
+            if (LastRoster.Count == 0) LastRoster = _roster.BuildRoster();
+            float r = radius > 0f ? radius : _cfg.SelectionRadius;
+            var threat = ThreatAssessor.Assess(_intel.KnownEnemiesNear(world, r));
+            var order = new CommanderOrder("preview", kind, world, r, domains);
+            return OrderPlanner.Preview(order, LastRoster, threat, _cfg);
         }
 
         /// <summary>Management tick (throttled by the runtime): validate/reassign/complete, re-issue tasks.</summary>
