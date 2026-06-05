@@ -29,7 +29,7 @@ namespace CommanderLayer.Game
                 foreach (var g in groups)
                 {
                     if (g == null) continue;
-                    options.Add(new ConvoyOption(g.Name, g.GetCost(), DeliversFor(g.Name), ContentsOf(g)));
+                    options.Add(new ConvoyOption(g.Name, SafeCost(g), DeliversFor(g.Name), ContentsOf(g)));
                 }
             }
             return new ConvoyCatalog(options);
@@ -40,23 +40,38 @@ namespace CommanderLayer.Game
         /// funds) dequeue it and purchase the convoy; stop at the first unaffordable request or when empty.
         /// Null-safe — does nothing without a local player/faction/HQ.
         /// </summary>
+        private float _lastPurchase = -1000f; // timeSinceLevelLoad of our last buy (game enforces a 60s cooldown)
+
         public void Drain(ProductionQueue queue)
         {
-            if (queue == null) return;
+            if (queue == null || queue.Pending.Count == 0) return;
             if (!GameManager.GetLocalPlayer<Player>(out var player) || player == null) return;
             if (!GameManager.GetLocalFaction(out var faction) || faction == null) return;
             if (!GameManager.GetLocalHQ(out var hq) || hq == null) return;
 
-            while (queue.Pending.Count > 0)
-            {
-                var req = queue.Pending[0];
-                if (req == null) { queue.Dequeue(); continue; }
-                if (req.Cost > hq.factionFunds) break; // unaffordable head -> stop (FIFO, no skipping)
+            // The game allows at most ONE convoy purchase per 60s (Player.CmdPurchaseConvoy); buying more in a
+            // burst silently no-ops. So drain a SINGLE affordable request per cooldown — never loop-dequeue.
+            if (UnityEngine.Time.timeSinceLevelLoad < _lastPurchase + 60f) return;
 
-                queue.Dequeue();
-                player.CmdPurchaseConvoy(req.ConvoyName);
-                Plugin.Log?.LogInfo($"Production purchase: {req.ConvoyName} (cost {req.Cost:0}, funds {hq.factionFunds:0})");
-            }
+            var req = queue.Pending[0];
+            if (req == null) { queue.Dequeue(); return; }
+            if (req.Cost > hq.factionFunds) return; // can't afford the head yet — leave it queued
+
+            queue.Dequeue();
+            player.CmdPurchaseConvoy(req.ConvoyName);
+            _lastPurchase = UnityEngine.Time.timeSinceLevelLoad;
+            Plugin.Log?.LogInfo($"Production purchase: {req.ConvoyName} (cost {req.Cost:0}, funds {hq.factionFunds:0})");
+        }
+
+        /// <summary>Cost of a convoy computed defensively from its constituents (the game's GetCost throws on a
+        /// null constituent Type). Mirrors the null-guarding in ContentsOf. 0 if unreadable.</summary>
+        private static float SafeCost(Faction.ConvoyGroup g)
+        {
+            if (g?.Constituents == null) return 0f;
+            float cost = 0f;
+            foreach (var c in g.Constituents)
+                if (c?.Type != null) cost += c.Type.value * c.Count;
+            return cost;
         }
 
         /// <summary>Real, human-readable contents of a convoy from the game's own data

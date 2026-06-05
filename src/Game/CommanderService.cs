@@ -22,6 +22,7 @@ namespace CommanderLayer.Game
         private readonly CommanderState _auto = new CommanderState();
         private readonly GameProductionService _prodService = new GameProductionService();
         private readonly ProductionQueue _prodQueue = new ProductionQueue();
+        private Core.Command.ConvoyCatalog _catalog = new Core.Command.ConvoyCatalog(new List<Core.Command.ConvoyOption>());
         private int _counter;
 
         public CommanderService(CommanderConfig cfg)
@@ -82,6 +83,7 @@ namespace CommanderLayer.Game
         {
             var roster = _roster.BuildRoster();
             LastRoster = roster;
+            _catalog = _prodService.Catalog(); // refresh the buy menu once per (throttled) tick, not per frame
             var reissue = _mgr.Tick(roster,
                 o => ThreatAssessor.Assess(_intel.KnownEnemiesNear(o.Position, _cfg.ThreatRadius)),
                 o => _capture.IsHeldByUs(o.Position));
@@ -105,7 +107,7 @@ namespace CommanderLayer.Game
                     var gap = new Core.Command.Composition();
                     foreach (var need in _auto.ProductionNeeds)
                         foreach (var kv in need.Items) gap.Add(kv.Key, kv.Value);
-                    foreach (var opt in ProductionPlanner.Plan(gap, _prodService.Catalog(), hq.factionFunds))
+                    foreach (var opt in ProductionPlanner.Plan(gap, _catalog, hq.factionFunds))
                     {
                         _prodQueue.Enqueue(new PurchaseRequest(opt.Name, opt.Cost, null, RoleFamily.Armor, opt.Contents, manual: false));
                         _auto.Log.Append(new ReportEvent(UnityEngine.Time.unscaledTime,
@@ -192,8 +194,9 @@ namespace CommanderLayer.Game
         }
 
         // ---- Manual production (buy troops) ----
-        /// <summary>The buyable convoy menu (name + cost + real contents) for the build UI.</summary>
-        public Core.Command.ConvoyCatalog BuildCatalog() => _prodService.Catalog();
+        /// <summary>The buyable convoy menu (name + cost + real contents) for the build UI. Cached: refreshed
+        /// on the throttled Tick, NOT rebuilt every frame.</summary>
+        public Core.Command.ConvoyCatalog BuildCatalog() => _catalog;
         /// <summary>Current faction funds (0 if no HQ) so the build UI can grey out unaffordable buys.</summary>
         public float Funds() => GameManager.GetLocalHQ(out var hq) && hq != null ? hq.factionFunds : 0f;
         /// <summary>Player queues a convoy buy by name; it drains (when affordable) like an AI buy but is
