@@ -58,13 +58,15 @@ namespace CommanderLayer.Ui
             var rt = (RectTransform)_hoverRing.transform;
             rt.localPosition = new Vector3(local.X, local.Y, 0f);
             rt.sizeDelta = new Vector2(diam, diam);
-            Color c = canPlace ? OrderColors.For(kind) : new Color(1f, 0.35f, 0.35f);
+            // Ring keeps the distinct per-order color when placeable; the game's native HUD-hostile color
+            // signals "can't place here" so the cue reads like the rest of the game.
+            Color c = canPlace ? OrderColors.For(kind) : NativeColors.Hostile;
             c.a = 0.85f; _hoverRing.color = c;
             _hoverRing.gameObject.SetActive(true);
 
             var dt = (RectTransform)_hoverDot.transform;
             dt.localPosition = new Vector3(local.X, local.Y, 0f);
-            _hoverDot.color = c;
+            _hoverDot.color = canPlace ? NativeColors.Friendly : NativeColors.Hostile;
             _hoverDot.gameObject.SetActive(true);
         }
 

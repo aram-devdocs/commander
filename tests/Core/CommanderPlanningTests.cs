@@ -224,6 +224,21 @@ namespace CommanderLayer.Tests
         }
 
         [Fact]
+        public void Attack_does_not_complete_until_a_unit_reaches_the_area()
+        {
+            var mgr = new AssignmentManager(Cfg());
+            mgr.AddOrder(Attack(P(0, 0)), new List<UnitView> { Ground("mbt", VehicleType.MBT, P(3000, 0)) }, ThreatPicture.Empty);
+
+            // No known threat, but the assigned unit is still far away -> NOT complete (don't "clear" on intel loss).
+            mgr.Tick(new List<UnitView> { Ground("mbt", VehicleType.MBT, P(3000, 0)) }, _ => ThreatPicture.Empty);
+            Assert.Equal(OrderStatus.Active, mgr.Orders[0].Status);
+
+            // Unit arrives in the area with no threat -> secure -> complete.
+            mgr.Tick(new List<UnitView> { Ground("mbt", VehicleType.MBT, P(100, 0)) }, _ => ThreatPicture.Empty);
+            Assert.Equal(OrderStatus.Complete, mgr.Orders[0].Status);
+        }
+
+        [Fact]
         public void Defend_issues_hold_on_arrival_once()
         {
             var mgr = new AssignmentManager(new CommanderConfig { MaxUnitsPerOrder = 3, SelectionRadius = 5000f, ArriveRadius = 250f });

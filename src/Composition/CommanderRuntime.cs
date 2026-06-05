@@ -199,14 +199,21 @@ namespace CommanderLayer.Composition
         private static bool IsPointerOverUi()
             => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
-        // Use the game's own HUD font (GameAssets.playerNameFont) so our labels read as native.
+        // Use the game's own HUD font + colors (GameAssets) so our labels and cues read as native.
         private static void CaptureNativeFont()
         {
             var assets = GameAssets.i;
-            if (assets != null && assets.playerNameFont != null)
+            if (assets == null) return;
+            if (assets.playerNameFont != null)
             {
                 UiFactory.Font = assets.playerNameFont;
                 Plugin.Log?.LogInfo("Using native game font (GameAssets.playerNameFont).");
+            }
+            if (!NativeColors.Captured)
+            {
+                NativeColors.Friendly = assets.HUDFriendly;
+                NativeColors.Hostile = assets.HUDHostile;
+                NativeColors.Captured = true;
             }
         }
 

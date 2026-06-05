@@ -13,8 +13,5 @@ namespace CommanderLayer.Core.Generated
         public const string VirtualMFD_rightScreens = "rightScreens";
         public const string PilotBaseState_aircraft = "aircraft";
         public const string PilotBaseState_destination = "destination";
-        public const string MapToolTip_circle1 = "circle1";
-        public const string MapToolTip_circle2 = "circle2";
-        public const string MapToolTip_line1 = "line1";
     }
 }

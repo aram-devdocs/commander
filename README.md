@@ -37,7 +37,8 @@ The game is Unity (Mono backend) + uGUI/TextMeshPro. The mod:
   (`AIPilotCombatModes.NoTarget`) toward Air-domain order points — deliberately **not** a faction
   Objective, because the decompile shows idle ground vehicles and ships also seek the nearest objective
   (the old "stampede"). Behind the `EnableAircraftTasking` config (off by default; needs in-game tuning).
-- Borrows the game's own look: native HUD font (`GameAssets.playerNameFont`) and a sliced button sprite.
+- Borrows the game's own look: native HUD font (`GameAssets.playerNameFont`), HUD friend/hostile colors
+  (`GameAssets.HUDFriendly/HUDHostile`) for the placement ring cue, and a sliced button sprite.
 
 ### Type-safety against the game — a generated SDK
 

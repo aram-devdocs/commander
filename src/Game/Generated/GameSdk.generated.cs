@@ -49,26 +49,5 @@ namespace CommanderLayer.Game.Generated
         /// <summary>PilotBaseState.destination — set.</summary>
         public static void PilotBaseState_destination_Set(global::PilotBaseState instance, global::GlobalPosition value) => _PilotBaseState_destination.SetValue(instance, value);
 
-        private static readonly global::System.Reflection.FieldInfo _MapToolTip_circle1 =
-            global::HarmonyLib.AccessTools.Field(typeof(global::MapToolTip), "circle1");
-        /// <summary>MapToolTip.circle1 (private Image) — get.</summary>
-        public static global::UnityEngine.UI.Image MapToolTip_circle1(global::MapToolTip instance) => (global::UnityEngine.UI.Image)_MapToolTip_circle1.GetValue(instance);
-        /// <summary>MapToolTip.circle1 — set.</summary>
-        public static void MapToolTip_circle1_Set(global::MapToolTip instance, global::UnityEngine.UI.Image value) => _MapToolTip_circle1.SetValue(instance, value);
-
-        private static readonly global::System.Reflection.FieldInfo _MapToolTip_circle2 =
-            global::HarmonyLib.AccessTools.Field(typeof(global::MapToolTip), "circle2");
-        /// <summary>MapToolTip.circle2 (private Image) — get.</summary>
-        public static global::UnityEngine.UI.Image MapToolTip_circle2(global::MapToolTip instance) => (global::UnityEngine.UI.Image)_MapToolTip_circle2.GetValue(instance);
-        /// <summary>MapToolTip.circle2 — set.</summary>
-        public static void MapToolTip_circle2_Set(global::MapToolTip instance, global::UnityEngine.UI.Image value) => _MapToolTip_circle2.SetValue(instance, value);
-
-        private static readonly global::System.Reflection.FieldInfo _MapToolTip_line1 =
-            global::HarmonyLib.AccessTools.Field(typeof(global::MapToolTip), "line1");
-        /// <summary>MapToolTip.line1 (private Image) — get.</summary>
-        public static global::UnityEngine.UI.Image MapToolTip_line1(global::MapToolTip instance) => (global::UnityEngine.UI.Image)_MapToolTip_line1.GetValue(instance);
-        /// <summary>MapToolTip.line1 — set.</summary>
-        public static void MapToolTip_line1_Set(global::MapToolTip instance, global::UnityEngine.UI.Image value) => _MapToolTip_line1.SetValue(instance, value);
-
     }
 }

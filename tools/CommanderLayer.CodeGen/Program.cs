@@ -86,32 +86,18 @@ var deps = new List<Dep>
 
     // ---- P4: aircraft tasking (steer IDLE aircraft via the pilot's own no-target state — NOT a faction
     //         Objective, which the decompile shows also pulls idle ground/ships = the stampede). ----
-    new("AIPilotCombatModes", "AssessHQTargets", "method"),
     new("AIPilotCombatModes", "NoTarget", "method"),         // postfix target (private)
     new("PilotBaseState", "aircraft",    "field", Reflected: true),  // protected Aircraft
     new("PilotBaseState", "destination", "field", Reflected: true),  // protected GlobalPosition (we override)
-    new("CombatAI", "ChooseHQTarget", "method", Static: true),
 
-    // ---- Reuse: native UI theme (GameAssets singleton — colors + font) ----
+    // ---- Reuse: native UI theme (GameAssets singleton — font + HUD colors for the placement ring) ----
     new("GameAssets", "i", "property", Static: true),
+    new("GameAssets", "playerNameFont", "field", Public: true),
     new("GameAssets", "HUDFriendly", "field", Public: true),
     new("GameAssets", "HUDHostile",  "field", Public: true),
-    new("GameAssets", "HUDNeutral",  "field", Public: true),
-    new("GameAssets", "playerNameFont", "field", Public: true),
 
-    // ---- Reuse: native map tooltip range circles + lines (private — reflected) ----
-    new("MapToolTip", "circle1", "field", Reflected: true),
-    new("MapToolTip", "circle2", "field", Reflected: true),
-    new("MapToolTip", "line1",   "field", Reflected: true),
-
-    // ---- Reuse: game threat/intel queries (instead of re-deriving) ----
-    new("FactionHQ", "trackingDatabase",   "field", Public: true),
-    new("FactionHQ", "GetTargetsWithinRange", "method", Public: true),
-    new("FactionHQ", "GetNearestGroundEnemy", "method", Public: true),
-    new("FactionHQ", "GetAircraftThreat",     "method", Public: true),
-
-    // ---- Reuse: game's own role/weapon suitability scoring ----
-    new("RoleIdentity", "OpportunityAgainst", "method"),
+    // ---- Reuse: game role data the classifier reads (fog-of-war intel uses trackingDatabase) ----
+    new("FactionHQ", "trackingDatabase", "field", Public: true),
     new("RoleIdentity", "antiSurface", "field", Public: true),
     new("RoleIdentity", "antiAir",     "field", Public: true),
 };

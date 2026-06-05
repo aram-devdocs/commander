@@ -63,12 +63,20 @@ namespace CommanderLayer.Core.Planning
                 s.AssignedUnitIds.RemoveAll(id => !alive.Contains(id));
                 var threat = threatFor != null ? threatFor(s.Order) : ThreatPicture.Empty;
 
-                // Completion: an Attack with no known enemies left in the area is done.
+                // Completion: an Attack is done when no known enemies remain AND we've actually contested the
+                // area — i.e. an assigned unit reached it. Gating on arrival avoids a false "clear" that
+                // fires merely because the enemy slipped out of our fog-of-war sight before we engaged.
+                // Air-only orders (no commandable units assigned) fall back to the intel-clear signal.
                 if (s.Order.Kind == OrderKind.Attack && threat.Count == 0)
                 {
-                    s.Status = OrderStatus.Complete;
-                    s.Summary = "Area clear.";
-                    continue;
+                    bool unitInArea = s.AssignedUnitIds.Any(id =>
+                        posById.TryGetValue(id, out var p) && p.HorizontalDistanceTo(s.Order.Position) <= _cfg.ArriveRadius);
+                    if (unitInArea || s.AssignedUnitIds.Count == 0)
+                    {
+                        s.Status = OrderStatus.Complete;
+                        s.Summary = "Area secure.";
+                        continue;
+                    }
                 }
 
                 // Completion: a Capture whose objective now flies our flag is done (game-supplied poll).
