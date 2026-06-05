@@ -45,5 +45,27 @@ namespace CommanderLayer.Core.Command
 
         /// <summary>Families we actually form squads from (Other = munitions/buildings, never squadable).</summary>
         public static bool IsSquadable(RoleFamily f) => f != RoleFamily.Other;
+
+        /// <summary>Which squad families are suited to carry out an objective.</summary>
+        public static System.Collections.Generic.HashSet<RoleFamily> SuitableFor(ObjectiveKind kind)
+        {
+            switch (kind)
+            {
+                case ObjectiveKind.DestroyTarget:
+                    return new System.Collections.Generic.HashSet<RoleFamily> { RoleFamily.Armor, RoleFamily.Artillery, RoleFamily.AirCombat };
+                case ObjectiveKind.CapturePoint:
+                    return new System.Collections.Generic.HashSet<RoleFamily> { RoleFamily.Armor, RoleFamily.Infantry };
+                case ObjectiveKind.DefendArea:
+                    return new System.Collections.Generic.HashSet<RoleFamily> { RoleFamily.AirDefense, RoleFamily.Armor };
+                case ObjectiveKind.ControlAirspace:
+                    return new System.Collections.Generic.HashSet<RoleFamily> { RoleFamily.AirCombat };
+                case ObjectiveKind.Resupply:
+                    return new System.Collections.Generic.HashSet<RoleFamily> { RoleFamily.Supply };
+                case ObjectiveKind.Recon:
+                    return new System.Collections.Generic.HashSet<RoleFamily> { RoleFamily.Recon, RoleFamily.AirCombat };
+                default:
+                    return new System.Collections.Generic.HashSet<RoleFamily> { RoleFamily.Armor };
+            }
+        }
     }
 }
