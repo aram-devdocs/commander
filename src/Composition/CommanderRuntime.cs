@@ -210,7 +210,9 @@ namespace CommanderLayer.Composition
             _screen = new CommanderMapScreen(_canvas.transform, _theme,
                 onArm: k => _armed = k,
                 onClearAll: () => _service.ClearAll(),
-                onClearOrder: id => _service.Clear(id));
+                onClearOrder: id => _service.Clear(id),
+                onCycleAutonomy: () => _service.CycleCommanderAutonomy(),
+                onConfirmProposal: () => _service.ConfirmTopProposal());
             TryAddNativeBorder(_screen.PanelRoot, _theme.Accent);
             Plugin.Log?.LogInfo("Commander panel built.");
         }

@@ -135,6 +135,20 @@ namespace CommanderLayer.Game
         /// <summary>Render-ready snapshot of the autonomous commander (ops/squads/production/feed) for the HQ UI.</summary>
         public Core.Command.HqSnapshot AutoHq() => Core.Command.HqView.Build(_auto, _auto.Log, _prodQueue);
 
+        /// <summary>Cycle the commander's autonomy Auto -> Assisted -> Manual (the HQ MODE button).</summary>
+        public void CycleCommanderAutonomy() => _auto.Autonomy = _auto.Autonomy switch
+        {
+            AutonomyLevel.Auto => AutonomyLevel.Assisted,
+            AutonomyLevel.Assisted => AutonomyLevel.Manual,
+            _ => AutonomyLevel.Auto,
+        };
+
+        /// <summary>Authorise the top Assisted suggestion (the HQ Confirm button). No-op if none pending.</summary>
+        public void ConfirmTopProposal()
+        {
+            if (_auto.Proposals.Count > 0) _auto.ConfirmProposal(_auto.Proposals[0].RefId);
+        }
+
         public IReadOnlyList<UnitView> CurrentRoster() => _roster.BuildRoster();
         public void Clear(string orderId) => _mgr.Clear(orderId);
         public void ClearAll() => _mgr.ClearAll();

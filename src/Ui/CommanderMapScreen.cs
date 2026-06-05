@@ -16,7 +16,8 @@ namespace CommanderLayer.Ui
         private readonly RectTransform _container;
         private bool _open;
 
-        public CommanderMapScreen(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll, Action<string> onClearOrder)
+        public CommanderMapScreen(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
+            Action<string> onClearOrder, Action onCycleAutonomy = null, Action onConfirmProposal = null)
         {
             _container = UiFactory.Panel("CommanderScreen", parent, new Color(0f, 0f, 0f, 0f));
             UiFactory.AnchorTopLeft(_container, new Vector2(360f, 520f), new Vector2(90f, 90f));
@@ -31,7 +32,7 @@ namespace CommanderLayer.Ui
             UiFactory.Stretch(grab.rectTransform);
             header.gameObject.AddComponent<DragHandle>().Target = _container;
 
-            _panel = new CommanderPanel(_container, theme, onArm, onClearAll, onClearOrder);
+            _panel = new CommanderPanel(_container, theme, onArm, onClearAll, onClearOrder, onCycleAutonomy, onConfirmProposal);
             var p = _panel.Root;
             p.anchorMin = Vector2.zero;
             p.anchorMax = Vector2.one;

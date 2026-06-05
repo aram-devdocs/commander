@@ -24,7 +24,7 @@ namespace CommanderLayer
         internal static float ArriveRadius = 250f;
         internal static KeyCode ArmKey = KeyCode.G;
         internal static bool EnableAircraftTasking;
-        internal static bool EnableAutoCommander;
+        internal static bool EnableAutoCommander = true; // the commander runs the war by default — the whole point
         internal static bool CommanderDebug;
 
         internal static CommanderRuntime Runtime;
@@ -41,8 +41,8 @@ namespace CommanderLayer
                 "Optional key (while the map is open) to arm objective placement; then click the map.");
             var airCfg = Config.Bind("Commander", "EnableAircraftTasking", false,
                 "EXPERIMENTAL: steer idle friendly aircraft toward Air-domain commander orders (needs in-game tuning).");
-            var autoCfg = Config.Bind("Commander", "EnableAutoCommander", false,
-                "EXPERIMENTAL: the autonomous commander brain auto-generates objectives and tasks squads. Needs playtest validation; may overlap with manual orders. Off = the game runs as normal.");
+            var autoCfg = Config.Bind("Commander", "EnableAutoCommander", true,
+                "The autonomous commander runs the war: generates objectives and tasks squads so the side fights even if you do nothing. On by default; turn off to command purely by hand.");
             var dbgCfg = Config.Bind("Commander", "CommanderDebug", false,
                 "S0 instrumentation: log [S0:*] lines (unit ids, kill tracking, terrain water/land) for one playtest.");
             ArriveRadius = arriveCfg.Value;

@@ -24,6 +24,9 @@ namespace CommanderLayer.Ui
         private readonly TextMeshProUGUI _ordersHeader;
         private readonly TextMeshProUGUI _hqHeader;
         private readonly TextMeshProUGUI _hqBody;
+        private readonly TextMeshProUGUI _modeLabel;
+        private readonly GameObject _confirmButton;
+        private readonly TextMeshProUGUI _confirmLabel;
         private readonly Transform _ordersContainer;
         private readonly List<DomToggle> _domToggles = new List<DomToggle>();
         private readonly Image _attackImg, _defendImg, _captureImg, _resupplyImg, _buildImg, _moveImg;
@@ -41,7 +44,8 @@ namespace CommanderLayer.Ui
 
         private struct RowWidgets { public GameObject Go; public TextMeshProUGUI Label; public Button Clear; public string OrderId; }
 
-        public CommanderPanel(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll, Action<string> onClearOrder)
+        public CommanderPanel(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
+            Action<string> onClearOrder, Action onCycleAutonomy = null, Action onConfirmProposal = null)
         {
             _theme = theme;
             _onClearOrder = onClearOrder;
@@ -92,9 +96,19 @@ namespace CommanderLayer.Ui
             UiFactory.PreferredHeight(_ordersHeader.gameObject, 22f);
             _ordersContainer = UiFactory.VerticalLayout("Orders", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
 
-            // Autonomous-commander HQ readout (populates when EnableAutoCommander is on).
+            // Autonomous-commander HQ readout + controls (the commander runs by default).
             _hqHeader = UiFactory.Label("HqHeader", layout.transform, "", 14f, theme.Accent);
             UiFactory.PreferredHeight(_hqHeader.gameObject, 22f);
+
+            // MODE: cycle Auto -> Assisted -> Manual; Confirm: authorise the top Assisted suggestion.
+            var hqControls = UiFactory.HorizontalLayout("HqControls", layout.transform, 6f);
+            UiFactory.PreferredHeight(hqControls.gameObject, 26f);
+            var modeBtn = UiFactory.Button("Mode", hqControls.transform, "MODE: AUTO", theme, () => onCycleAutonomy?.Invoke());
+            _modeLabel = modeBtn.GetComponentInChildren<TextMeshProUGUI>();
+            var confirmBtn = UiFactory.Button("Confirm", hqControls.transform, "Confirm", theme, () => onConfirmProposal?.Invoke());
+            _confirmButton = confirmBtn.gameObject;
+            _confirmLabel = confirmBtn.GetComponentInChildren<TextMeshProUGUI>();
+
             _hqBody = UiFactory.Label("HqBody", layout.transform, "", 12f, theme.Muted);
             UiFactory.PreferredHeight(_hqBody.gameObject, 120f);
 
@@ -105,6 +119,12 @@ namespace CommanderLayer.Ui
         public void RenderHq(CommanderLayer.Core.Command.HqSnapshot hq)
         {
             if (_hqHeader == null) return;
+            string mode = hq != null ? hq.CommanderAutonomy.ToString().ToUpperInvariant() : "AUTO";
+            if (_modeLabel != null) _modeLabel.text = "MODE: " + mode;             // reflect + cycle autonomy
+            int proposalCount = hq?.Proposals.Count ?? 0;
+            if (_confirmButton != null) _confirmButton.SetActive(proposalCount > 0); // only when a suggestion waits
+            if (_confirmLabel != null) _confirmLabel.text = proposalCount > 0 ? $"Confirm ({proposalCount})" : "Confirm";
+
             if (hq == null || (hq.Operations.Count == 0 && hq.Recent.Count == 0 && hq.Squads.Count == 0
                 && hq.Proposals.Count == 0))
             {
@@ -112,7 +132,6 @@ namespace CommanderLayer.Ui
                 _hqBody.text = "";
                 return;
             }
-            string mode = hq.CommanderAutonomy.ToString().ToUpperInvariant();
             _hqHeader.text = $"{mode} COMMANDER · {hq.Operations.Count} op(s) · {hq.Squads.Count} squad(s)";
             var sb = new System.Text.StringBuilder();
             foreach (var op in hq.Operations.Take(4))
