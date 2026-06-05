@@ -13,6 +13,7 @@ namespace CommanderLayer.Game
     {
         private int _tick;
         private bool _terrainLogged;
+        private bool _uiLogged;
         private readonly Dictionary<string, int> _firstSeenTick = new Dictionary<string, int>();
 
         public void Tick()
@@ -22,6 +23,38 @@ namespace CommanderLayer.Game
             LogRoster();   // UID stability
             LogTracking(); // KILL / prune detection
             if (!_terrainLogged) { _terrainLogged = true; LogTerrain(); } // one-shot grid for the sandbox
+            if (!_uiLogged && LogNativeUi()) _uiLogged = true;            // P6.2 harvest de-risk (one-shot)
+        }
+
+        // P6.2 UI-HARVEST: which native UI components are present & cloneable? Logs counts + scene-vs-asset
+        // split + a sample for each game UI type we want to clone, so the real NativeUi re-base targets
+        // what actually exists in a live mission. Returns true once it has logged (UI was present).
+        private bool LogNativeUi()
+        {
+            int border = CountNative<NuclearOption.UI.BetterBorder>("BetterBorder");
+            int box     = CountNative<NuclearOption.UI.BoxToggle>("BoxToggle");
+            int slider  = CountNative<NuclearOption.UI.SliderToggle>("SliderToggle");
+            int group   = CountNative<NuclearOption.UI.BetterToggleGroup>("BetterToggleGroup");
+            int buttons = CountNative<UnityEngine.UI.Button>("Button");
+            // Consider UI "present" once any of the game-specific controls show up.
+            return (border + box + slider + group) > 0 || buttons > 0;
+        }
+
+        // Log how many instances of T exist, how many are live scene objects (cloneable) vs assets/prefabs,
+        // and a representative name/path. Mirrors the harvest filter used by UiFactory.CaptureNativeButtonSprite.
+        private static int CountNative<T>(string label) where T : Component
+        {
+            var all = Resources.FindObjectsOfTypeAll<T>();
+            int scene = 0; string sample = null;
+            foreach (var c in all)
+            {
+                if (c == null) continue;
+                bool inScene = c.gameObject.scene.IsValid();
+                if (inScene) scene++;
+                if (sample == null) sample = $"{c.name}{(inScene ? " (scene)" : " (asset)")}";
+            }
+            Plugin.Log?.LogInfo($"[S0:UI] {label} total={all.Length} sceneInstances={scene} sample={sample ?? "none"}");
+            return all.Length;
         }
 
         // UID: friendly unit persistent ids over time — are they stable & non-reused after death?
