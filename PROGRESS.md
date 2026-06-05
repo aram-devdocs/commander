@@ -28,11 +28,16 @@ first, and ONLY add new files (never edit shared files — stale base would reve
 file wiring myself during integration windows.
 - Wave 1 ✅ BattleLog (8342de3), Production (761ba20), ThreatBoard (8de2823).
 - Wave 2 ✅ TargetPrioritizer (aaf91aa), HqView (175bfcf). **98 Core + 11 contract.**
-- Wave 3 in flight: P5 Proposals (Assisted-mode).
-- **NEXT = WIRING CYCLE (mine, shared files):** make the brain USE the modules — ThreatBoard+TargetPrioritizer
-  for objective generation/ranking; emit BattleLog events (op opened/phase-changed/completed); Production
-  gap-fill via GameProductionService→CmdPurchaseConvoy; HqView consumed by the UI. This turns the built
-  depth into actual autonomous behavior. Then P6 codegen UI (mine). Then playtest.
+- Wave 3 ✅ Proposals (4d83397). **Module backlog complete: 6 modules, 108 Core + 11 contract.**
+- Module code-review ✅ (no blockers); robustness fixed (2fbd4af): ThreatGroup guard+Members, HomeBase, +3 tests. **111 Core.**
+- **WIRING CYCLE (mine, in progress):**
+  - ✅ BattleLog → brain emits feed (op started/phase/complete/blocked) (9c0b130).
+  - NEXT (big one): ThreatBoard+TargetPrioritizer → brain GenerateObjectives (consolidate the duplicated
+    clustering per review #1; rank with TargetPrioritizer using state.HomeBase; set DestroyTarget TargetId
+    from group.Members).
+  - TODO: Production gap-fill → GameProductionService→CmdPurchaseConvoy.
+  - TODO: HqView + Proposals consumed by the UI (P5 panel).
+- Then P6 codegen native UI (mine). Then playtest.
 
 ## S0 findings (filled after the playtest)
 | Unknown | Result | Detail |
