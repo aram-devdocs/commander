@@ -20,6 +20,8 @@ namespace CommanderLayer.Game
         private readonly GameCapture _capture = new GameCapture();
         private readonly CommanderDebugProbe _debug = new CommanderDebugProbe();
         private readonly CommanderState _auto = new CommanderState();
+        private readonly GameProductionService _prodService = new GameProductionService();
+        private readonly ProductionQueue _prodQueue = new ProductionQueue();
         private int _counter;
 
         public CommanderService(CommanderConfig cfg)
@@ -95,6 +97,19 @@ namespace CommanderLayer.Game
                 var known = _intel.KnownEnemiesNear(new Vec3(0f, 0f, 0f), float.MaxValue); // all tracked enemies
                 var snapshot = new WorldSnapshot(roster, known, 0f, _committed, UnityEngine.Time.unscaledTime);
                 foreach (var t in CommanderBrain.Tick(snapshot, _auto)) _cmds.Execute(t);
+
+                // Auto-production: turn the brain's force gaps into convoy buys (within funds). Plan only
+                // when the queue is empty so we don't pile up; the service drains affordable buys each tick.
+                if (_prodQueue.Pending.Count == 0 && _auto.ProductionNeeds.Count > 0
+                    && GameManager.GetLocalHQ(out var hq) && hq != null)
+                {
+                    var gap = new Core.Command.Composition();
+                    foreach (var need in _auto.ProductionNeeds)
+                        foreach (var kv in need.Items) gap.Add(kv.Key, kv.Value);
+                    foreach (var opt in ProductionPlanner.Plan(gap, _prodService.Catalog(), hq.factionFunds))
+                        _prodQueue.Enqueue(new PurchaseRequest(opt.Name, opt.Cost, null, RoleFamily.Armor));
+                }
+                _prodService.Drain(_prodQueue);
             }
 
             _debug.Tick();   // S0 instrumentation (no-op unless CommanderDebug)

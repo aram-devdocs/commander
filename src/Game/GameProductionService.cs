@@ -1,0 +1,90 @@
+using System.Collections.Generic;
+using CommanderLayer.Core.Command;
+using NuclearOption.Networking;
+
+namespace CommanderLayer.Game
+{
+    /// <summary>
+    /// Game adapter that turns the pure Core production plan into real convoy purchases. Reads the local
+    /// faction's convoy groups to build a <see cref="ConvoyCatalog"/>, and drains a <see cref="ProductionQueue"/>
+    /// into <see cref="Player.CmdPurchaseConvoy"/> calls as long as funds allow. Null-safe: with no local
+    /// player/faction/HQ it degrades to an empty catalog / no-op drain.
+    /// </summary>
+    public sealed class GameProductionService
+    {
+        /// <summary>
+        /// Snapshot the local faction's buyable convoys as a <see cref="ConvoyCatalog"/>. The delivered
+        /// <see cref="Composition"/> is derived from a name heuristic (see DeliversFor) because the convoy's
+        /// unit contents aren't reliably readable from the public game API. Empty catalog when no local faction.
+        /// </summary>
+        public ConvoyCatalog Catalog()
+        {
+            var options = new List<ConvoyOption>();
+            if (!GameManager.GetLocalFaction(out var faction) || faction == null)
+                return new ConvoyCatalog(options);
+
+            var groups = faction.GetConvoyGroups();
+            if (groups != null)
+            {
+                foreach (var g in groups)
+                {
+                    if (g == null) continue;
+                    options.Add(new ConvoyOption(g.Name, g.GetCost(), DeliversFor(g.Name)));
+                }
+            }
+            return new ConvoyCatalog(options);
+        }
+
+        /// <summary>
+        /// Pay down the production queue: while the head request is affordable (Cost &lt;= current faction
+        /// funds) dequeue it and purchase the convoy; stop at the first unaffordable request or when empty.
+        /// Null-safe — does nothing without a local player/faction/HQ.
+        /// </summary>
+        public void Drain(ProductionQueue queue)
+        {
+            if (queue == null) return;
+            if (!GameManager.GetLocalPlayer<Player>(out var player) || player == null) return;
+            if (!GameManager.GetLocalFaction(out var faction) || faction == null) return;
+            if (!GameManager.GetLocalHQ(out var hq) || hq == null) return;
+
+            while (queue.Pending.Count > 0)
+            {
+                var req = queue.Pending[0];
+                if (req == null) { queue.Dequeue(); continue; }
+                if (req.Cost > hq.factionFunds) break; // unaffordable head -> stop (FIFO, no skipping)
+
+                queue.Dequeue();
+                player.CmdPurchaseConvoy(req.ConvoyName);
+                Plugin.Log?.LogInfo($"Production purchase: {req.ConvoyName} (cost {req.Cost:0}, funds {hq.factionFunds:0})");
+            }
+        }
+
+        /// <summary>
+        /// Name-heuristic mapping a convoy's display name to the role families it delivers. The convoy's real
+        /// contents are unknown/S0-gated, so we infer from keywords; each matched keyword adds one of that
+        /// family. A name with no keyword falls back to a single Armor (a safe, squadable default). One table
+        /// so it's easy to tune as more convoy names are observed in-game.
+        /// </summary>
+        private static Core.Command.Composition DeliversFor(string name)
+        {
+            var delivers = new Core.Command.Composition();
+            string n = (name ?? string.Empty).ToLowerInvariant();
+
+            if (n.Contains("armor") || n.Contains("tank") || n.Contains("mbt") || n.Contains("afv"))
+                delivers.Add(RoleFamily.Armor);
+            if (n.Contains("sam") || n.Contains("aa") || n.Contains("air defen") || n.Contains("flak"))
+                delivers.Add(RoleFamily.AirDefense);
+            if (n.Contains("artillery") || n.Contains("howitzer") || n.Contains("mlrs"))
+                delivers.Add(RoleFamily.Artillery);
+            if (n.Contains("supply") || n.Contains("truck") || n.Contains("logistic") || n.Contains("fuel") || n.Contains("ammo"))
+                delivers.Add(RoleFamily.Supply);
+            if (n.Contains("radar") || n.Contains("awacs"))
+                delivers.Add(RoleFamily.Recon);
+            if (n.Contains("infantry") || n.Contains("troop"))
+                delivers.Add(RoleFamily.Infantry);
+
+            if (delivers.Total == 0) delivers.Add(RoleFamily.Armor); // safe default: one Armor
+            return delivers;
+        }
+    }
+}
