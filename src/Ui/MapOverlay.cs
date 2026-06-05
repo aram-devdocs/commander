@@ -150,7 +150,15 @@ namespace CommanderLayer.Ui
                 var img = UiFactory.LineImage("CmdMarker" + _markers.Count, _layer, Color.white);
                 var rt = (RectTransform)img.transform;
                 rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.sizeDelta = new Vector2(14f, 14f);
+                // Use the game's own target sprite so the marker reads as native iconography (tinted by the
+                // order color). Falls back to a plain square only if assets aren't captured (headless / early).
+                if (NativeIcons.Warhead != null)
+                {
+                    img.sprite = NativeIcons.Warhead;
+                    img.preserveAspect = true;
+                    rt.sizeDelta = new Vector2(20f, 20f);
+                }
+                else rt.sizeDelta = new Vector2(14f, 14f);
                 _markers.Add(img);
             }
             _markers[i].gameObject.SetActive(true);
