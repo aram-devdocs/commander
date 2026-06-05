@@ -7,7 +7,7 @@
         "Path": "Terrain_naval"
     },
     "missionSettings": {
-        "description": "Commander Layer mod debug sandbox. You fly a Boscali trainer; two friendly corvettes sit idle (holdPosition off). Open the map, pick the Commander tab, Place Objective, then click the map: the corvettes should steer to your objective. One Primeva corvette to the north is a target.",
+        "description": "Commander v2 sandbox (naval). You fly a Boscali trainer; a carrier + 3 corvettes sit idle. Open the map, click CMD, pick SEA + a range, then Attack/Defend and click the map. Only suitable ships are tasked (the carrier stays). Two Primeva corvettes sit ~10-12km north as targets. See SCENARIOS.md.",
         "allowEventContent": false,
         "Tags": [],
         "playerMode": 0,
@@ -120,9 +120,37 @@
         },
         {
             "type": "Corvette1",
+            "faction": "Boscali",
+            "UniqueName": "BDF Corvette Charlie",
+            "globalPosition": { "x": 200.0, "y": 5.0, "z": 5200.0 },
+            "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+            "CaptureStrength": { "IsOverride": false, "Value": 0.0 },
+            "CaptureDefense": { "IsOverride": false, "Value": 0.0 },
+            "unitCustomID": "",
+            "spawnTiming": "",
+            "holdPosition": false,
+            "skill": 0.7,
+            "waypoints": []
+        },
+        {
+            "type": "Corvette1",
             "faction": "Primeva",
-            "UniqueName": "PRA Corvette",
-            "globalPosition": { "x": 0.0, "y": 5.0, "z": 8000.0 },
+            "UniqueName": "PRA Vanguard",
+            "globalPosition": { "x": 0.0, "y": 5.0, "z": 13000.0 },
+            "rotation": { "x": 0.0, "y": 1.0, "z": 0.0, "w": 0.0 },
+            "CaptureStrength": { "IsOverride": false, "Value": 0.0 },
+            "CaptureDefense": { "IsOverride": false, "Value": 0.0 },
+            "unitCustomID": "",
+            "spawnTiming": "",
+            "holdPosition": true,
+            "skill": 0.7,
+            "waypoints": []
+        },
+        {
+            "type": "Corvette1",
+            "faction": "Primeva",
+            "UniqueName": "PRA Escort",
+            "globalPosition": { "x": 2200.0, "y": 5.0, "z": 15000.0 },
             "rotation": { "x": 0.0, "y": 1.0, "z": 0.0, "w": 0.0 },
             "CaptureStrength": { "IsOverride": false, "Value": 0.0 },
             "CaptureDefense": { "IsOverride": false, "Value": 0.0 },
