@@ -204,7 +204,7 @@ namespace CommanderLayer.Composition
         {
             if (_screen != null || _canvas == null) return;
             CaptureNativeButtonSprite();
-            CaptureNativeFont();
+            CaptureNativeAssets();
             _player.TryGetLocalFaction(out var faction);
             _theme = Theme.FromFaction(faction);
             _screen = new CommanderMapScreen(_canvas.transform, _theme,
@@ -240,11 +240,15 @@ namespace CommanderLayer.Composition
             }
         }
 
-        // Use the game's own HUD font + colors (GameAssets) so our labels and cues read as native.
-        private static void CaptureNativeFont()
+        // Capture the game's own visual resources (font, HUD colors, map/threat icons) from the single
+        // codegen'd source of truth — NativeAssets, a typed snapshot of GameAssets — and mirror them into
+        // the Ui-layer caches so our labels/cues/icons read as native. One read point; no scattered
+        // GameAssets reads, no hardcoded/duplicated values. Drift in any asset fails the contract test.
+        private static void CaptureNativeAssets()
         {
-            var assets = GameAssets.i;
+            var assets = CommanderLayer.Game.Generated.NativeAssets.Capture();
             if (assets == null) return;
+
             if (assets.playerNameFont != null)
             {
                 UiFactory.Font = assets.playerNameFont;
@@ -254,7 +258,17 @@ namespace CommanderLayer.Composition
             {
                 NativeColors.Friendly = assets.HUDFriendly;
                 NativeColors.Hostile = assets.HUDHostile;
+                NativeColors.Neutral = assets.HUDNeutral;
                 NativeColors.Captured = true;
+            }
+            if (!NativeIcons.Captured)
+            {
+                NativeIcons.Airbase = assets.airbaseSprite;
+                NativeIcons.EnemyContact = assets.targetUnitSprite;
+                NativeIcons.FriendlyContact = assets.targetUnitSpriteFriendly;
+                NativeIcons.MissileWarning = assets.missileWarningSprite;
+                NativeIcons.Warhead = assets.warheadSprite;
+                NativeIcons.Captured = true;
             }
         }
 

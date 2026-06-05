@@ -5,7 +5,10 @@ using UnityEngine;
 namespace CommanderLayer.Ui
 {
     /// <summary>
-    /// Centralized palette so atoms never hardcode colors. Accent derives from the local faction color.
+    /// Centralized palette so atoms never hardcode colors. <see cref="Accent"/> mirrors the local faction
+    /// color (a game value). The panel-chrome colors (backgrounds, text, muted, state cues) are MOD-OWNED
+    /// — the mod's own window styling, with no game equivalent — not copies of game colors. Native HUD
+    /// colors/icons live in <see cref="NativeColors"/> / <see cref="NativeIcons"/>.
     /// </summary>
     public sealed class Theme
     {

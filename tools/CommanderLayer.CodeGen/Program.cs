@@ -90,11 +90,24 @@ var deps = new List<Dep>
     new("PilotBaseState", "aircraft",    "field", Reflected: true),  // protected Aircraft
     new("PilotBaseState", "destination", "field", Reflected: true),  // protected GlobalPosition (we override)
 
-    // ---- Reuse: native UI theme (GameAssets singleton — font + HUD colors for the placement ring) ----
+    // ---- P6: native UI single-source-of-truth. GameAssets is the game's visual-resource singleton; every
+    //         asset the mod uses is captured ONCE into a generated NativeAssets snapshot (Asset:true) so no
+    //         color/font/icon value is ever hardcoded or duplicated in our UI. Cecil discovers each field's
+    //         real type; the contract test guards them; a game update => regenerate => compiler points at
+    //         exactly what drifted. ----
     new("GameAssets", "i", "property", Static: true),
-    new("GameAssets", "playerNameFont", "field", Public: true),
-    new("GameAssets", "HUDFriendly", "field", Public: true),
-    new("GameAssets", "HUDHostile",  "field", Public: true),
+    new("GameAssets", "playerNameFont", "field", Public: true, Asset: true), // native HUD font
+    new("GameAssets", "HUDFriendly", "field", Public: true, Asset: true),    // friendly color
+    new("GameAssets", "HUDHostile",  "field", Public: true, Asset: true),    // hostile color
+    new("GameAssets", "HUDNeutral",  "field", Public: true, Asset: true),    // neutral color
+    new("GameAssets", "HUDFriendlySelected", "field", Public: true, Asset: true),
+    new("GameAssets", "HUDHostileSelected",  "field", Public: true, Asset: true),
+    new("GameAssets", "HUDAirbaseNotAvailable", "field", Public: true, Asset: true),
+    new("GameAssets", "airbaseSprite", "field", Public: true, Asset: true),  // map: airbase icon
+    new("GameAssets", "targetUnitSprite", "field", Public: true, Asset: true), // map: enemy contact icon
+    new("GameAssets", "targetUnitSpriteFriendly", "field", Public: true, Asset: true), // map: friendly icon
+    new("GameAssets", "missileWarningSprite", "field", Public: true, Asset: true),     // threat: missile warning
+    new("GameAssets", "warheadSprite", "field", Public: true, Asset: true),  // threat/strike icon
 
     // ---- Reuse: game role data the classifier reads (fog-of-war intel uses trackingDatabase) ----
     new("FactionHQ", "trackingDatabase", "field", Public: true),
@@ -206,6 +219,44 @@ s.AppendLine("}");
 Directory.CreateDirectory(gameGenDir);
 File.WriteAllText(Path.Combine(gameGenDir, "GameSdk.generated.cs"), s.ToString());
 
+// ---- 3b. NativeAssets snapshot (P6): typed one-shot capture of GameAssets visual resources, so the UI
+//          reads native font/colors/icons from a SINGLE source instead of hardcoding/duplicating them. ----
+var assetDeps = resolved.Where(x => x.Dep.Asset).ToList();
+foreach (var (d, _, m) in assetDeps)
+    if (m is not FieldDefinition) throw new Exception($"Asset member {d.Type}.{d.Member} must be a public field.");
+var na = Header("by tools/CommanderLayer.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
+                "Typed snapshot of GameAssets visual resources — the single source of truth for native UI.");
+na.AppendLine("namespace CommanderLayer.Game.Generated");
+na.AppendLine("{");
+na.AppendLine("    /// <summary>One-shot typed snapshot of the game's <c>GameAssets</c> visual resources (font,");
+na.AppendLine("    /// HUD colors, map/threat icons). Captured once from <c>GameAssets.i</c>; the UI reads native");
+na.AppendLine("    /// values from here so nothing is hardcoded or duplicated. Regenerated from the manifest —");
+na.AppendLine("    /// any drift fails the GameContract test.</summary>");
+na.AppendLine("    public sealed class NativeAssets");
+na.AppendLine("    {");
+foreach (var (d, _, m) in assetDeps)
+{
+    var fd = (FieldDefinition)m;
+    na.AppendLine($"        /// <summary>GameAssets.{d.Member} ({fd.FieldType.Name}).</summary>");
+    na.AppendLine($"        public readonly {CSharp(fd.FieldType)} {d.Member};");
+}
+na.AppendLine();
+na.AppendLine("        private NativeAssets(global::GameAssets a)");
+na.AppendLine("        {");
+foreach (var (d, _, _) in assetDeps)
+    na.AppendLine($"            {d.Member} = a.{d.Member};");
+na.AppendLine("        }");
+na.AppendLine();
+na.AppendLine("        /// <summary>Capture the live snapshot, or <c>null</c> if GameAssets isn't loaded yet.</summary>");
+na.AppendLine("        public static NativeAssets Capture()");
+na.AppendLine("        {");
+na.AppendLine("            var a = global::GameAssets.i;");
+na.AppendLine("            return a == null ? null : new NativeAssets(a);");
+na.AppendLine("        }");
+na.AppendLine("    }");
+na.AppendLine("}");
+File.WriteAllText(Path.Combine(gameGenDir, "NativeAssets.generated.cs"), na.ToString());
+
 // ---- 4. generated contract test (Cecil-based; one test, lists all drift) ----
 var c = Header("by tools/CommanderLayer.CodeGen. DO NOT EDIT.",
                "One test asserting every manifest member still exists with the expected shape.");
@@ -244,7 +295,7 @@ c.AppendLine("    }");
 c.AppendLine("}");
 File.WriteAllText(Path.Combine(testGenDir, "GameContract.Generated.cs"), c.ToString());
 
-Console.WriteLine($"Generated {enumsToMirror.Length} enum(s), {reflected.Count} typed accessor(s), {resolved.Count} contract assertion(s).");
+Console.WriteLine($"Generated {enumsToMirror.Length} enum(s), {reflected.Count} typed accessor(s), {assetDeps.Count} native asset(s), {resolved.Count} contract assertion(s).");
 return 0;
 
 // ---------- helpers ----------
@@ -306,4 +357,4 @@ static string FindRepoRoot()
     return null;
 }
 
-record Dep(string Type, string Member, string Kind, bool? Public = null, bool Static = false, bool Reflected = false);
+record Dep(string Type, string Member, string Kind, bool? Public = null, bool Static = false, bool Reflected = false, bool Asset = false);

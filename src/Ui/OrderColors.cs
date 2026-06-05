@@ -3,7 +3,9 @@ using UnityEngine;
 
 namespace CommanderLayer.Ui
 {
-    /// <summary>Distinct, order-type-coded colors for the map overlay + panel rows.</summary>
+    /// <summary>Distinct, order-type-coded colors for the map overlay + panel rows. These are
+    /// MOD-OWNED — the game has no per-order-kind palette, so they are deliberately the mod's own values
+    /// (not copies of any game color). Native game colors live in <see cref="NativeColors"/>.</summary>
     public static class OrderColors
     {
         public static readonly Color Attack = new Color(1f, 0.70f, 0.20f);   // amber
