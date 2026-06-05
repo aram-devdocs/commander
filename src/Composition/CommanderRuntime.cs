@@ -200,11 +200,34 @@ namespace CommanderLayer.Composition
                 onArm: k => _armed = k,
                 onClearAll: () => _service.ClearAll(),
                 onClearOrder: id => _service.Clear(id));
+            TryAddNativeBorder(_screen.PanelRoot, _theme.Accent);
             Plugin.Log?.LogInfo("Commander panel built.");
         }
 
         private static bool IsPointerOverUi()
             => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
+        // Frame the panel with the game's own procedural border component (NuclearOption.UI.BetterBorder)
+        // so it reads as a native window. Guarded — a styling failure must never break the working panel.
+        private static void TryAddNativeBorder(RectTransform panel, Color accent)
+        {
+            if (panel == null) return;
+            try
+            {
+                var go = new GameObject("NativeBorder", typeof(RectTransform));
+                go.transform.SetParent(panel, false);
+                UiFactory.Stretch((RectTransform)go.transform);
+                var border = go.AddComponent<NuclearOption.UI.BetterBorder>();
+                border.BorderThickness = 2f;
+                border.color = new Color(accent.r, accent.g, accent.b, 0.9f); // border = faction accent
+                border.FillColor = new Color(0f, 0f, 0f, 0f);                 // transparent fill (panel bg shows)
+                border.raycastTarget = false;
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log?.LogWarning("Native border styling skipped: " + e.Message);
+            }
+        }
 
         // Use the game's own HUD font + colors (GameAssets) so our labels and cues read as native.
         private static void CaptureNativeFont()

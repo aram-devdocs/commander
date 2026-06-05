@@ -44,6 +44,7 @@ namespace CommanderLayer.Ui
         public bool IsOpen => _open;
         public DomainSet Domains => _panel.Domains;
         public float RangeMeters => _panel.RangeMeters;
+        public RectTransform PanelRoot => _panel.Root;
 
         public void Toggle() => SetOpen(!_open);
 
