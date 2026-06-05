@@ -41,7 +41,8 @@ namespace CommanderLayer.Core.Planning
         /// that must be (re)issued this tick (e.g. from reassignment). <paramref name="threatFor"/> yields
         /// the current fog-of-war threat near a given order.
         /// </summary>
-        public IReadOnlyList<UnitTask> Tick(IReadOnlyList<UnitView> roster, Func<CommanderOrder, ThreatPicture> threatFor)
+        public IReadOnlyList<UnitTask> Tick(IReadOnlyList<UnitView> roster, Func<CommanderOrder, ThreatPicture> threatFor,
+            Func<CommanderOrder, bool> captureDone = null)
         {
             var alive = new HashSet<string>();
             var posById = new Dictionary<string, Vec3>();
@@ -63,6 +64,14 @@ namespace CommanderLayer.Core.Planning
                 {
                     s.Status = OrderStatus.Complete;
                     s.Summary = "Area clear.";
+                    continue;
+                }
+
+                // Completion: a Capture whose objective now flies our flag is done (game-supplied poll).
+                if (s.Order.Kind == OrderKind.Capture && captureDone != null && captureDone(s.Order))
+                {
+                    s.Status = OrderStatus.Complete;
+                    s.Summary = "Objective captured.";
                     continue;
                 }
 

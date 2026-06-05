@@ -16,6 +16,7 @@ namespace CommanderLayer.Game
         private readonly GameIntel _intel = new GameIntel();
         private readonly GameUnitCommands _cmds = new GameUnitCommands();
         private readonly GameProduction _production = new GameProduction();
+        private readonly GameCapture _capture = new GameCapture();
         private int _counter;
 
         public CommanderService(CommanderConfig cfg)
@@ -70,7 +71,8 @@ namespace CommanderLayer.Game
             var roster = _roster.BuildRoster();
             LastRoster = roster;
             var reissue = _mgr.Tick(roster,
-                o => ThreatAssessor.Assess(_intel.KnownEnemiesNear(o.Position, _cfg.ThreatRadius)));
+                o => ThreatAssessor.Assess(_intel.KnownEnemiesNear(o.Position, _cfg.ThreatRadius)),
+                o => _capture.IsHeldByUs(o.Position));
             foreach (var t in reissue) _cmds.Execute(t);
         }
 

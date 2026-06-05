@@ -237,6 +237,22 @@ namespace CommanderLayer.Tests
         }
 
         [Fact]
+        public void Capture_completes_when_objective_held()
+        {
+            var mgr = new AssignmentManager(Cfg());
+            var order = new CommanderOrder("c", OrderKind.Capture, P(0, 0), 0f);
+            mgr.AddOrder(order, new List<UnitView> { Ground("mbt", VehicleType.MBT, P(100, 0)) }, ThreatPicture.Empty);
+
+            // Not captured yet → stays active.
+            mgr.Tick(new List<UnitView> { Ground("mbt", VehicleType.MBT, P(50, 0)) }, _ => ThreatPicture.Empty, _ => false);
+            Assert.Equal(OrderStatus.Active, mgr.Orders[0].Status);
+
+            // Objective flips to us → complete.
+            mgr.Tick(new List<UnitView> { Ground("mbt", VehicleType.MBT, P(20, 0)) }, _ => ThreatPicture.Empty, _ => true);
+            Assert.Equal(OrderStatus.Complete, mgr.Orders[0].Status);
+        }
+
+        [Fact]
         public void Tick_reassigns_when_all_units_lost()
         {
             var enemies = new List<EnemyView> { new EnemyView("e1", P(0, 0), UnitClass.GroundVehicle, default, true, 1f, 1) };
