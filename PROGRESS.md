@@ -6,8 +6,12 @@ Gates per phase: ① Spec approved · ② Quality green · ③ Review clean · �
 ## Phase status
 | Phase | State | Notes |
 |---|---|---|
-| S0 — de-risk spikes | Spec ✔ → building probes | bundled probes behind `CommanderDebug` flag; needs 1 playtest log |
+| S0 — de-risk spikes | Built · awaiting playtest | probes committed (879736b); set `CommanderDebug=true`, run sandbox, paste [S0:*] log |
 | P0 — foundation fixes | Built · Quality ② ✔ | pure logic + UI committed (35f38ba, c8eb72e); 33 Core + 11 contract green. ③ code-review + ④ playtest pending |
+
+**↳ NEXT PLAYTEST (one run unblocks P0 acceptance + P0.5):** enable `Commander/CommanderDebug` (F1 config),
+load Commander Debug, open map, arm an order, hover, place two overlapping orders; paste the BepInEx log
+(esp. `[S0:*]` lines) + a screenshot. Meanwhile the loop builds P1/P2 pure-Core (no playtest needed).
 | P0.5 — sandbox + terrain | Backlog | depends on S0 terrain probe |
 | P1 — squads + operations + brain | Backlog | depends on S0 unit-id |
 | P2 — combined-arms sequencing | Backlog | |
