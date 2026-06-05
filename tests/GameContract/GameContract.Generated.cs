@@ -59,9 +59,6 @@ namespace CommanderLayer.GameContract.Tests
             if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "HUDFriendly" && x.IsPublic)) fail.Add("GameAssets.HUDFriendly (field,public)");
             if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "HUDHostile" && x.IsPublic)) fail.Add("GameAssets.HUDHostile (field,public)");
             if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "HUDNeutral" && x.IsPublic)) fail.Add("GameAssets.HUDNeutral (field,public)");
-            if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "HUDFriendlySelected" && x.IsPublic)) fail.Add("GameAssets.HUDFriendlySelected (field,public)");
-            if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "HUDHostileSelected" && x.IsPublic)) fail.Add("GameAssets.HUDHostileSelected (field,public)");
-            if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "HUDAirbaseNotAvailable" && x.IsPublic)) fail.Add("GameAssets.HUDAirbaseNotAvailable (field,public)");
             if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "airbaseSprite" && x.IsPublic)) fail.Add("GameAssets.airbaseSprite (field,public)");
             if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "targetUnitSprite" && x.IsPublic)) fail.Add("GameAssets.targetUnitSprite (field,public)");
             if (!Game.Type("GameAssets").Fields.Any(x => x.Name == "targetUnitSpriteFriendly" && x.IsPublic)) fail.Add("GameAssets.targetUnitSpriteFriendly (field,public)");

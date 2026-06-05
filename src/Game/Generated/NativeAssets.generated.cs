@@ -18,12 +18,6 @@ namespace CommanderLayer.Game.Generated
         public readonly global::UnityEngine.Color HUDHostile;
         /// <summary>GameAssets.HUDNeutral (Color).</summary>
         public readonly global::UnityEngine.Color HUDNeutral;
-        /// <summary>GameAssets.HUDFriendlySelected (Color).</summary>
-        public readonly global::UnityEngine.Color HUDFriendlySelected;
-        /// <summary>GameAssets.HUDHostileSelected (Color).</summary>
-        public readonly global::UnityEngine.Color HUDHostileSelected;
-        /// <summary>GameAssets.HUDAirbaseNotAvailable (Color).</summary>
-        public readonly global::UnityEngine.Color HUDAirbaseNotAvailable;
         /// <summary>GameAssets.airbaseSprite (Sprite).</summary>
         public readonly global::UnityEngine.Sprite airbaseSprite;
         /// <summary>GameAssets.targetUnitSprite (Sprite).</summary>
@@ -41,9 +35,6 @@ namespace CommanderLayer.Game.Generated
             HUDFriendly = a.HUDFriendly;
             HUDHostile = a.HUDHostile;
             HUDNeutral = a.HUDNeutral;
-            HUDFriendlySelected = a.HUDFriendlySelected;
-            HUDHostileSelected = a.HUDHostileSelected;
-            HUDAirbaseNotAvailable = a.HUDAirbaseNotAvailable;
             airbaseSprite = a.airbaseSprite;
             targetUnitSprite = a.targetUnitSprite;
             targetUnitSpriteFriendly = a.targetUnitSpriteFriendly;

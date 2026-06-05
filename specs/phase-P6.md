@@ -27,9 +27,12 @@ The *rendering/behavior* of cloned native components is **playtest-gated** (I ca
 - **Single capture point:** the composition root captures `NativeAssets` once and pushes into the
   Ui-layer caches (`NativeColors`, `UiFactory.Font`, new `NativeIcons`). No more scattered
   `GameAssets.i` reads.
-- **Re-base colors onto native source:** `NativeColors` gains `Neutral` (← `HUDNeutral`); Ui reads
-  friend/hostile/neutral from the captured snapshot. `Theme` panel chrome + `OrderColors` per-order
-  hues stay **mod-owned, explicitly commented** (no game equivalent) — not copies of game values.
+- **Re-base colors onto native source:** Ui reads friend/hostile from the captured snapshot **now**
+  (`MapOverlay`); `NativeColors` also gains `Neutral` and `NativeIcons` holds the map sprites, both
+  **captured ready for the P6.2 overlay render** (no consumer yet — same deferral as the icons). `Theme`
+  panel chrome + `OrderColors` per-order hues stay **mod-owned, explicitly commented** (no game
+  equivalent) — not copies of game values. Manifest discipline: only assets the mod uses (now or in the
+  committed P6.2 overlay set) are listed — no speculative `*Selected`/`AirbaseNotAvailable`.
 - **Files:** `tools/CommanderLayer.CodeGen/Program.cs` (manifest+emitter), generated
   `src/Game/Generated/NativeAssets.generated.cs`, `tests/GameContract/GameContract.Generated.cs`
   (regenerated), `src/Ui/NativeColors.cs`, `src/Ui/NativeIcons.cs` (new), `src/Composition/CommanderRuntime.cs`

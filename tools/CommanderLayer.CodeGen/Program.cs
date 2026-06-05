@@ -96,13 +96,10 @@ var deps = new List<Dep>
     //         real type; the contract test guards them; a game update => regenerate => compiler points at
     //         exactly what drifted. ----
     new("GameAssets", "i", "property", Static: true),
-    new("GameAssets", "playerNameFont", "field", Public: true, Asset: true), // native HUD font
-    new("GameAssets", "HUDFriendly", "field", Public: true, Asset: true),    // friendly color
-    new("GameAssets", "HUDHostile",  "field", Public: true, Asset: true),    // hostile color
-    new("GameAssets", "HUDNeutral",  "field", Public: true, Asset: true),    // neutral color
-    new("GameAssets", "HUDFriendlySelected", "field", Public: true, Asset: true),
-    new("GameAssets", "HUDHostileSelected",  "field", Public: true, Asset: true),
-    new("GameAssets", "HUDAirbaseNotAvailable", "field", Public: true, Asset: true),
+    new("GameAssets", "playerNameFont", "field", Public: true, Asset: true), // native HUD font (used now)
+    new("GameAssets", "HUDFriendly", "field", Public: true, Asset: true),    // friendly color (used now)
+    new("GameAssets", "HUDHostile",  "field", Public: true, Asset: true),    // hostile color (used now)
+    new("GameAssets", "HUDNeutral",  "field", Public: true, Asset: true),    // neutral color (P6.2 overlay)
     new("GameAssets", "airbaseSprite", "field", Public: true, Asset: true),  // map: airbase icon
     new("GameAssets", "targetUnitSprite", "field", Public: true, Asset: true), // map: enemy contact icon
     new("GameAssets", "targetUnitSpriteFriendly", "field", Public: true, Asset: true), // map: friendly icon
