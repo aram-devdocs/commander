@@ -93,6 +93,7 @@ namespace CommanderLayer.Game
             if (Plugin.EnableAutoCommander)
             {
                 var known = _intel.KnownEnemiesNear(new Vec3(0f, 0f, 0f), float.MaxValue); // all tracked enemies
+                _auto.HomeBase = ForceCentroid(roster); // proximity reference for target prioritization
                 var snapshot = new WorldSnapshot(roster, known, 0f, _committed, UnityEngine.Time.unscaledTime);
                 foreach (var t in CommanderBrain.Tick(snapshot, _auto)) _cmds.Execute(t);
 
@@ -137,6 +138,16 @@ namespace CommanderLayer.Game
                 zones.Add(op.Objective.Position);
             }
             AircraftIntent.SetZones(zones);
+        }
+
+        // Centroid of the live friendly force — a sensible "home" reference for target prioritization
+        // (prefer targets near our own forces). Zero when there's no roster.
+        private static Vec3 ForceCentroid(IReadOnlyList<UnitView> roster)
+        {
+            if (roster == null || roster.Count == 0) return new Vec3(0f, 0f, 0f);
+            float x = 0f, y = 0f, z = 0f;
+            foreach (var u in roster) { x += u.Position.X; y += u.Position.Y; z += u.Position.Z; }
+            return new Vec3(x / roster.Count, y / roster.Count, z / roster.Count);
         }
 
         /// <summary>Render-ready snapshot of the autonomous commander (ops/squads/production/feed) for the HQ UI.</summary>

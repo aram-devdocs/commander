@@ -23,8 +23,11 @@ namespace CommanderLayer
         // Config (tunable live from the F1 menu). Read once by the runtime/controller at build time.
         internal static float ArriveRadius = 250f;
         internal static KeyCode ArmKey = KeyCode.G;
-        internal static bool EnableAircraftTasking = true; // jets join the combined-arms war (idle-aircraft steering)
-        internal static bool EnableAutoCommander = true;   // the commander runs the war by default — the whole point
+        // Default OFF so the mod WORKS WITH the native game AI, not against it: do nothing and the game's own
+        // AI runs the war as normal. Turn these on to hand idle forces to the Commander layer (it then directs
+        // them via the game's own command API — a coordination overlay, not a replacement).
+        internal static bool EnableAircraftTasking;
+        internal static bool EnableAutoCommander;
         internal static bool CommanderDebug;
 
         internal static CommanderRuntime Runtime;
@@ -39,10 +42,10 @@ namespace CommanderLayer
                 "Distance (m) within which a unit counts as 'arrived' at the objective.");
             var keyCfg = Config.Bind("Commander", "ArmPlacementKey", KeyCode.G,
                 "Optional key (while the map is open) to arm objective placement; then click the map.");
-            var airCfg = Config.Bind("Commander", "EnableAircraftTasking", true,
-                "Steer idle friendly aircraft toward commander air objectives (air-superiority/SEAD/strike phases). On by default.");
-            var autoCfg = Config.Bind("Commander", "EnableAutoCommander", true,
-                "The autonomous commander runs the war: generates objectives and tasks squads so the side fights even if you do nothing. On by default; turn off to command purely by hand.");
+            var airCfg = Config.Bind("Commander", "EnableAircraftTasking", false,
+                "Let the Commander steer IDLE friendly aircraft toward its air objectives (they revert to the game's combat AI on contact). Off by default so the native AI flies them.");
+            var autoCfg = Config.Bind("Commander", "EnableAutoCommander", false,
+                "Hand idle forces to the autonomous Commander: it generates objectives and directs auto-formed squads via the game's own command API. Off by default = the native game AI runs the war; turn on to let the Commander coordinate.");
             var dbgCfg = Config.Bind("Commander", "CommanderDebug", false,
                 "S0 instrumentation: log [S0:*] lines (unit ids, kill tracking, terrain water/land) for one playtest.");
             ArriveRadius = arriveCfg.Value;
