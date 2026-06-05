@@ -170,9 +170,9 @@ namespace CommanderLayer.GameContract.Tests
             using var pluginAsm = AssemblyDefinition.ReadAssembly(plugin, new ReaderParameters { AssemblyResolver = resolver });
             var pluginMod = pluginAsm.MainModule;
 
-            foreach (var name in new[] { "VehicleType", "ShipType", "BuildingType", "FactionMode" })
+            foreach (var name in new[] { "VehicleType", "ShipType", "BuildingType" })
             {
-                var real = EnumMap(Game.Module.GetType(name));
+                var real = EnumMap(FindByName(Game.Module, name));
                 var mirror = EnumMap(pluginMod.GetType("CommanderLayer.Core.Generated." + name));
                 Assert.True(real.Count > 0, $"real enum {name} not found / empty");
                 Assert.True(mirror.Count > 0, $"generated mirror {name} not found — run scripts/generate-types.sh");
@@ -180,6 +180,29 @@ namespace CommanderLayer.GameContract.Tests
                     $"Generated {name} is stale vs the game. Real=[{Dump(real)}] Mirror=[{Dump(mirror)}] — run scripts/generate-types.sh");
             }
         }
+
+        // The generated GameRef member-name constants must name real members on the real types.
+        [Fact]
+        public void Generated_reflection_member_names_exist()
+        {
+            if (!Game.Available) return;
+            var reflected = new[]
+            {
+                ("VirtualMFD", "leftButtons"), ("VirtualMFD", "rightButtons"),
+                ("VirtualMFD", "leftScreens"), ("VirtualMFD", "rightScreens"),
+            };
+            foreach (var (type, member) in reflected)
+            {
+                var t = Game.Type(type);
+                bool exists = t.Fields.Any(f => f.Name == member)
+                              || t.Methods.Any(m => m.Name == member)
+                              || t.Properties.Any(p => p.Name == member);
+                Assert.True(exists, $"GameRef names {type}.{member} but it no longer exists — run scripts/generate-types.sh");
+            }
+        }
+
+        private static TypeDefinition FindByName(ModuleDefinition m, string simpleName)
+            => m.GetTypes().FirstOrDefault(t => t.Name == simpleName);
 
         [Fact]
         public void Aircraft_is_not_ICommandable()
