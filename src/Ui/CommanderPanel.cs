@@ -31,9 +31,17 @@ namespace CommanderLayer.Ui
         private readonly TextMeshProUGUI _confirmLabel;
         private readonly Transform _opsContainer;
         private readonly Action<string> _onToggleOpManual;
+        private readonly Action<string> _onToggleSquadManual;
+        private readonly Action<string> _onBuyConvoy;
         private readonly List<OpRow> _opRows = new List<OpRow>();
+        private readonly Transform _squadsContainer;
+        private readonly List<EntityRow> _squadRows = new List<EntityRow>();
+        private readonly Transform _buildContainer;
+        private readonly List<EntityRow> _buildRows = new List<EntityRow>();
 
         private struct OpRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string OpId; }
+        // Generic interactive row: a label + an action button carrying an id (squad id / convoy name).
+        private struct EntityRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string Id; }
         private struct ModeBtn { public Image Img; public CommanderLayer.Core.Command.CommanderMode Mode; }
 
         // One-line description shown under the selector for the active mode (the "definitive selections").
@@ -66,11 +74,14 @@ namespace CommanderLayer.Ui
 
         public CommanderPanel(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
             Action<string> onClearOrder, Action<CommanderLayer.Core.Command.CommanderMode> onSetMode = null,
-            Action onConfirmProposal = null, Action<string> onToggleOpManual = null)
+            Action onConfirmProposal = null, Action<string> onToggleOpManual = null,
+            Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null)
         {
             _theme = theme;
             _onClearOrder = onClearOrder;
             _onToggleOpManual = onToggleOpManual;
+            _onToggleSquadManual = onToggleSquadManual;
+            _onBuyConvoy = onBuyConvoy;
             _root = UiFactory.Panel("CommanderPanel", parent, theme.PanelBackground);
             var layout = UiFactory.VerticalLayout("Layout", _root, 6f, new RectOffset(10, 10, 10, 10));
             UiFactory.Stretch((RectTransform)layout.transform);
@@ -134,11 +145,22 @@ namespace CommanderLayer.Ui
             _confirmButton = confirmBtn.gameObject;
             _confirmLabel = confirmBtn.GetComponentInChildren<TextMeshProUGUI>();
 
-            // Per-operation autonomy: one interactive row per op with an AUTO/MANUAL toggle (take a slice).
+            // OPERATIONS — one interactive row per op with an AUTO/MANUAL toggle (take a slice).
+            UiFactory.PreferredHeight(UiFactory.Label("OpsHdr", layout.transform, "OPERATIONS", 12f, theme.Accent).gameObject, 18f);
             _opsContainer = UiFactory.VerticalLayout("HqOps", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
 
+            // SQUADS — name + what it's doing + an AUTO/MANUAL toggle (manage each squad).
+            UiFactory.PreferredHeight(UiFactory.Label("SquadsHdr", layout.transform, "SQUADS", 12f, theme.Accent).gameObject, 18f);
+            _squadsContainer = UiFactory.VerticalLayout("HqSquads", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+
+            // BUILD — buy troops: a row per convoy (name + contents + cost) with a BUY button.
+            UiFactory.PreferredHeight(UiFactory.Label("BuildHdr", layout.transform, "BUILD — buy troops", 12f, theme.Accent).gameObject, 18f);
+            _buildContainer = UiFactory.VerticalLayout("HqBuild", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+
+            // FEED — production status + recent battle events (what the commander is doing).
+            UiFactory.PreferredHeight(UiFactory.Label("FeedHdr", layout.transform, "FEED", 12f, theme.Accent).gameObject, 18f);
             _hqBody = UiFactory.Label("HqBody", layout.transform, "", 12f, theme.Muted);
-            UiFactory.PreferredHeight(_hqBody.gameObject, 120f);
+            UiFactory.PreferredHeight(_hqBody.gameObject, 110f);
 
             RefreshControls();
         }
@@ -151,7 +173,7 @@ namespace CommanderLayer.Ui
         }
 
         /// <summary>Render the commander mode selector (always) + the HQ readout (when the commander is on).</summary>
-        public void RenderHq(Cmd.HqSnapshot hq, Cmd.CommanderMode mode)
+        public void RenderHq(Cmd.HqSnapshot hq, Cmd.CommanderMode mode, Cmd.ConvoyCatalog catalog, float funds)
         {
             if (_modeDesc == null) return;
             // Mode selector — always shown so OFF can be switched on; active mode highlighted + described.
@@ -163,22 +185,93 @@ namespace CommanderLayer.Ui
             if (_confirmButton != null) _confirmButton.SetActive(showConfirm);
             if (_confirmLabel != null) _confirmLabel.text = $"Confirm next proposal ({proposalCount})";
 
-            // HQ body only when the commander is actually running.
+            // BUILD menu is available whenever a faction/catalog exists (buy in any mode, even OFF).
+            RenderBuildRows(catalog, funds);
+
+            // Operations/squads/feed only when the commander is actually running.
             if (hq == null || mode == Cmd.CommanderMode.Off)
             {
                 _hqBody.text = "";
                 RenderOpRows(null);
+                RenderSquadRows(null);
                 return;
             }
-            RenderOpRows(hq.Operations);   // interactive op rows (AUTO/MANUAL per op)
+            RenderOpRows(hq.Operations);     // interactive op rows (AUTO/MANUAL per op)
+            RenderSquadRows(hq.Squads);      // interactive squad rows (AUTO/MANUAL + activity)
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"{hq.Operations.Count} operation(s) · {hq.Squads.Count} squad(s)");
-            foreach (var sq in hq.Squads.Take(4))
-                sb.AppendLine($"▣ {sq.Name} · {sq.Family} ×{sq.Strength} [{sq.Status}]");
             foreach (var p in hq.Proposals.Take(3)) sb.AppendLine($"? {p.Summary} — press Confirm");
-            foreach (var line in hq.Production.Take(2)) sb.AppendLine(line);
-            foreach (var e in hq.Recent.Take(4)) sb.AppendLine($"· {e.Text}");
+            foreach (var line in hq.Production.Take(3)) sb.AppendLine(line);
+            foreach (var e in hq.Recent.Take(5)) sb.AppendLine($"· {e.Text}");
             _hqBody.text = sb.ToString().TrimEnd();
+        }
+
+        // Squad rows: "Name · Family ×N — activity" + an AUTO/MANUAL toggle. Pooled + index-captured.
+        private void RenderSquadRows(System.Collections.Generic.IReadOnlyList<Cmd.SquadView> squads)
+        {
+            int count = squads?.Count ?? 0;
+            EnsureEntityRows(_squadRows, _squadsContainer, System.Math.Min(count, 6), "Squad",
+                id => _onToggleSquadManual?.Invoke(id));
+            for (int i = 0; i < _squadRows.Count; i++)
+            {
+                var r = _squadRows[i];
+                if (squads != null && i < count && i < 6)
+                {
+                    var s = squads[i];
+                    r.Id = s.Id;
+                    r.Label.text = $"{s.Name} · {s.Family} ×{s.Strength} — {s.Activity}";
+                    bool manual = s.Autonomy == Cmd.AutonomyLevel.Manual;
+                    r.BtnLabel.text = manual ? "MANUAL" : "AUTO";
+                    r.BtnImg.color = manual ? _theme.Accent : _theme.ButtonIdle;
+                    r.Go.SetActive(true);
+                    _squadRows[i] = r;
+                }
+                else r.Go.SetActive(false);
+            }
+        }
+
+        // Build rows: "name [contents] · cost" + a BUY button (greyed when unaffordable). Pooled.
+        private void RenderBuildRows(Cmd.ConvoyCatalog catalog, float funds)
+        {
+            var opts = catalog?.Options;
+            int count = opts?.Count ?? 0;
+            EnsureEntityRows(_buildRows, _buildContainer, System.Math.Min(count, 6), "Build",
+                id => _onBuyConvoy?.Invoke(id));
+            for (int i = 0; i < _buildRows.Count; i++)
+            {
+                var r = _buildRows[i];
+                if (opts != null && i < count && i < 6)
+                {
+                    var o = opts[i];
+                    r.Id = o.Name;
+                    string contents = string.IsNullOrEmpty(o.Contents) ? "" : $" [{o.Contents}]";
+                    r.Label.text = $"{o.Name}{contents} · {o.Cost:0}";
+                    bool afford = funds >= o.Cost;
+                    r.BtnLabel.text = "BUY";
+                    r.BtnImg.color = afford ? _theme.Accent : _theme.ButtonIdle;
+                    r.Go.SetActive(true);
+                    _buildRows[i] = r;
+                }
+                else r.Go.SetActive(false);
+            }
+        }
+
+        // Build/grow a pool of generic label+button rows in a container; button calls onClick(row.Id).
+        private void EnsureEntityRows(List<EntityRow> pool, Transform container, int count, string tag,
+            Action<string> onClick)
+        {
+            while (pool.Count < count)
+            {
+                var row = UiFactory.HorizontalLayout(tag + "Row" + pool.Count, container, 4f);
+                UiFactory.PreferredHeight(row.gameObject, 18f);
+                var label = UiFactory.Label("L", row.transform, "", 12f, _theme.Text);
+                var btn = UiFactory.Button("B", row.transform, "", _theme, null);
+                var le = btn.gameObject.GetComponent<LayoutElement>() ?? btn.gameObject.AddComponent<LayoutElement>();
+                le.preferredWidth = 64f; le.flexibleWidth = 0f;
+                int idx = pool.Count;
+                btn.onClick.AddListener(() => { var id = pool[idx].Id; if (id != null) onClick?.Invoke(id); });
+                pool.Add(new EntityRow { Go = row.gameObject, Label = label, BtnImg = btn.GetComponent<Image>(),
+                    BtnLabel = btn.GetComponentInChildren<TextMeshProUGUI>() });
+            }
         }
 
         public void SetVisible(bool visible)

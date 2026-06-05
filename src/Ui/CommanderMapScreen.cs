@@ -18,7 +18,8 @@ namespace CommanderLayer.Ui
 
         public CommanderMapScreen(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
             Action<string> onClearOrder, Action<CommanderLayer.Core.Command.CommanderMode> onSetMode = null,
-            Action onConfirmProposal = null, Action<string> onToggleOpManual = null)
+            Action onConfirmProposal = null, Action<string> onToggleOpManual = null,
+            Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null)
         {
             // Left-docked, fixed size, tall enough that all sections fit without compressing (the jerk).
             _container = UiFactory.Panel("CommanderScreen", parent, new Color(0f, 0f, 0f, 0f));
@@ -35,7 +36,7 @@ namespace CommanderLayer.Ui
             header.gameObject.AddComponent<DragHandle>().Target = _container;
 
             _panel = new CommanderPanel(_container, theme, onArm, onClearAll, onClearOrder, onSetMode,
-                onConfirmProposal, onToggleOpManual);
+                onConfirmProposal, onToggleOpManual, onToggleSquadManual, onBuyConvoy);
             var p = _panel.Root;
             p.anchorMin = Vector2.zero;
             p.anchorMax = Vector2.one;
@@ -62,8 +63,9 @@ namespace CommanderLayer.Ui
             IReadOnlyDictionary<string, string> unitNames = null)
             => _panel.Render(orders, faction, armed, preview, unitNames);
 
-        public void RenderHq(CommanderLayer.Core.Command.HqSnapshot hq, CommanderLayer.Core.Command.CommanderMode mode)
-            => _panel.RenderHq(hq, mode);
+        public void RenderHq(CommanderLayer.Core.Command.HqSnapshot hq, CommanderLayer.Core.Command.CommanderMode mode,
+            CommanderLayer.Core.Command.ConvoyCatalog catalog, float funds)
+            => _panel.RenderHq(hq, mode, catalog, funds);
 
         public string DebugInfo()
         {
