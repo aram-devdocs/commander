@@ -31,13 +31,13 @@ file wiring myself during integration windows.
 - Wave 3 ✅ Proposals (4d83397). **Module backlog complete: 6 modules, 108 Core + 11 contract.**
 - Module code-review ✅ (no blockers); robustness fixed (2fbd4af): ThreatGroup guard+Members, HomeBase, +3 tests. **111 Core.**
 - **WIRING CYCLE (mine, in progress):**
-  - ✅ BattleLog → brain emits feed (op started/phase/complete/blocked) (9c0b130).
-  - NEXT (big one): ThreatBoard+TargetPrioritizer → brain GenerateObjectives (consolidate the duplicated
-    clustering per review #1; rank with TargetPrioritizer using state.HomeBase; set DestroyTarget TargetId
-    from group.Members).
-  - TODO: Production gap-fill → GameProductionService→CmdPurchaseConvoy.
-  - TODO: HqView + Proposals consumed by the UI (P5 panel).
-- Then P6 codegen native UI (mine). Then playtest.
+  - ✅ BattleLog → brain emits feed (9c0b130).
+  - ✅ ThreatBoard+TargetPrioritizer → brain GenerateObjectives, consolidated clustering, ranked (b0d64b4). 112 Core.
+  - TODO: Production gap-fill — brain detects force gaps → ProductionPlanner → ProductionQueue; new
+    GameProductionService drains queue via CmdPurchaseConvoy + builds ConvoyCatalog from faction.GetConvoyGroups
+    (auto-production partly S0-gated: convoy contents unknown → fallback name→roles table).
+  - TODO: HqView + Proposals consumed by the UI (P5 HQ panel surface).
+- Then P6 codegen native UI (mine). Then playtest. (DestroyTarget TargetId deferred — executor ignores it; id-space mismatch per review S3.)
 
 ## S0 findings (filled after the playtest)
 | Unknown | Result | Detail |
