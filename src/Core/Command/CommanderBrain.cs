@@ -35,21 +35,50 @@ namespace CommanderLayer.Core.Command
             var tasks = new List<UnitTask>();
             if (state.Autonomy == AutonomyLevel.Manual) return tasks; // player took the whole commander
 
-            state.Squads.Reconcile(snapshot.Roster);
+            float coverage = state.BrainConfig.CoverageRadius;
+            // Manual-owned units are excluded so the brain and manual orders never task the same unit (S2).
+            state.Squads.Reconcile(snapshot.Roster, snapshot.CommittedUnitIds);
 
-            // Drop operations whose squads are gone (disbanded/dead) so their objectives can be re-planned.
+            // 1. Advance each live operation: drop dead squads, COMPLETE when its threat is gone, FAIL when it
+            //    has lost its whole force.
             foreach (var op in state.Operations)
             {
                 if (op.IsTerminal) continue;
                 op.SquadIds.RemoveAll(sid => state.Squads.ById(sid) == null);
-                if (op.SquadIds.Count == 0) op.Status = OperationStatus.Failed;
+                bool threatGone = !AnyThreatNear(snapshot, op.Objective.Position, coverage);
+                if (threatGone && op.Objective.Kind == ObjectiveKind.DestroyTarget)
+                {
+                    op.Status = OperationStatus.Complete;
+                    op.Phase = OrderPhase.Complete;
+                }
+                else if (op.SquadIds.Count == 0)
+                {
+                    op.Status = OperationStatus.Failed;
+                }
             }
 
-            // New objectives from known enemy clusters not already covered.
+            // 2. Free squads from terminal operations (B1), then drop the terminal ops and prune auto
+            //    objectives whose threat is gone and have no live operation (B2 — no unbounded growth, no
+            //    squad stuck moving to a dead target).
+            foreach (var op in state.Operations)
+            {
+                if (!op.IsTerminal) continue;
+                foreach (var sid in op.SquadIds)
+                {
+                    var s = state.Squads.ById(sid);
+                    if (s != null && s.AssignedOperationId == op.Id) s.AssignedOperationId = null;
+                }
+            }
+            state.Operations.RemoveAll(op => op.IsTerminal);
+            state.Objectives.RemoveAll(o => o.Source == ObjectiveSource.Auto
+                && state.OperationFor(o.Id) == null
+                && !AnyThreatNear(snapshot, o.Position, coverage));
+
+            // 3. New objectives from known enemy clusters not already covered.
             foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig))
                 state.Objectives.Add(obj);
 
-            // Open an operation for each uncovered objective, matching a suitable free force.
+            // 4. Open an operation for each uncovered objective, matching a suitable free force.
             foreach (var obj in state.Objectives)
             {
                 if (state.OperationFor(obj.Id) != null) continue;
@@ -60,7 +89,9 @@ namespace CommanderLayer.Core.Command
                 state.Operations.Add(op);
             }
 
-            // Issue tasking: each active operation moves/attacks with its assigned squads' units.
+            // 5. Issue tasking — only when a unit's target objective CHANGED, so we don't re-spam SetDestination
+            //    every tick and fight the game AI (S1).
+            var tasked = new HashSet<string>();
             foreach (var op in state.Operations)
             {
                 if (op.Status != OperationStatus.Active) continue;
@@ -71,10 +102,26 @@ namespace CommanderLayer.Core.Command
                     var squad = state.Squads.ById(sid);
                     if (squad == null) continue;
                     foreach (var uid in squad.MemberUnitIds)
+                    {
+                        tasked.Add(uid);
+                        if (state.LastObjectiveByUnit.TryGetValue(uid, out var last) && last == op.Objective.Id) continue;
                         tasks.Add(new UnitTask(uid, verb, op.Objective.Position, op.Objective.TargetId));
+                        state.LastObjectiveByUnit[uid] = op.Objective.Id;
+                    }
                 }
             }
+            // Forget units no longer tasked so they re-task cleanly if re-engaged.
+            foreach (var k in state.LastObjectiveByUnit.Keys.Where(k => !tasked.Contains(k)).ToList())
+                state.LastObjectiveByUnit.Remove(k);
+
             return tasks;
+        }
+
+        private static bool AnyThreatNear(WorldSnapshot snapshot, Vec3 point, float radius)
+        {
+            foreach (var e in snapshot.KnownEnemies)
+                if (e != null && e.Position.HorizontalDistanceTo(point) <= radius) return true;
+            return false;
         }
 
         /// <summary>

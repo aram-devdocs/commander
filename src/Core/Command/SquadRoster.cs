@@ -22,11 +22,14 @@ namespace CommanderLayer.Core.Command
         public Squad ById(string id) => _squads.FirstOrDefault(s => s.Id == id);
         public void Add(Squad squad) => _squads.Add(squad); // player-created
 
-        public void Reconcile(IReadOnlyList<UnitView> roster)
+        /// <summary><paramref name="excludeIds"/> = units owned by the manual layer; treated as unavailable
+        /// (pruned from squads, never auto-formed) so the autonomous brain and manual orders don't fight.</summary>
+        public void Reconcile(IReadOnlyList<UnitView> roster, IReadOnlyCollection<string> excludeIds = null)
         {
             var alive = new HashSet<string>();
             foreach (var u in roster ?? new List<UnitView>())
-                if (u != null && !u.Disabled && u.Commandable) alive.Add(u.Id);
+                if (u != null && !u.Disabled && u.Commandable && (excludeIds == null || !excludeIds.Contains(u.Id)))
+                    alive.Add(u.Id);
 
             // Prune dead members; disband empty AUTO squads (player squads survive as Reserve).
             foreach (var s in _squads) s.MemberUnitIds.RemoveAll(id => !alive.Contains(id));
@@ -39,9 +42,9 @@ namespace CommanderLayer.Core.Command
                 s.Status = StatusFor(s);
             }
 
-            // Auto-form whatever's left loose into fresh squads.
+            // Auto-form whatever's left loose into fresh squads (alive already excludes committed/dead units).
             var loose = (roster ?? new List<UnitView>())
-                .Where(u => u != null && !u.Disabled && u.Commandable && !inSquad.Contains(u.Id)).ToList();
+                .Where(u => u != null && alive.Contains(u.Id) && !inSquad.Contains(u.Id)).ToList();
             if (loose.Count > 0)
                 _squads.AddRange(SquadFormer.Form(loose, _cfg, "auto" + _batch++));
         }

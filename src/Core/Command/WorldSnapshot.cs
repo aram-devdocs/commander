@@ -12,12 +12,16 @@ namespace CommanderLayer.Core.Command
         public IReadOnlyList<UnitView> Roster { get; }
         public IReadOnlyList<EnemyView> KnownEnemies { get; }
         public float Funds { get; }
+        /// <summary>Units the MANUAL layer already committed — the autonomous brain must not poach them.</summary>
+        public IReadOnlyCollection<string> CommittedUnitIds { get; }
 
-        public WorldSnapshot(IReadOnlyList<UnitView> roster, IReadOnlyList<EnemyView> knownEnemies, float funds = 0f)
+        public WorldSnapshot(IReadOnlyList<UnitView> roster, IReadOnlyList<EnemyView> knownEnemies, float funds = 0f,
+            IReadOnlyCollection<string> committedUnitIds = null)
         {
             Roster = roster ?? new List<UnitView>();
             KnownEnemies = knownEnemies ?? new List<EnemyView>();
             Funds = funds;
+            CommittedUnitIds = committedUnitIds ?? new List<string>();
         }
     }
 }

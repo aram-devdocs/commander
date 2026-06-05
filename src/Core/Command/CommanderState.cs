@@ -16,6 +16,8 @@ namespace CommanderLayer.Core.Command
         public Doctrine Doctrine { get; }
         public BrainConfig BrainConfig { get; }
         public AutonomyLevel Autonomy { get; set; } = AutonomyLevel.Auto;
+        /// <summary>Last objective each unit was tasked toward — so the brain only re-issues on change (no spam).</summary>
+        public Dictionary<string, string> LastObjectiveByUnit { get; } = new Dictionary<string, string>();
 
         private int _opId;
 

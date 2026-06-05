@@ -54,6 +54,45 @@ namespace CommanderLayer.Tests
         }
 
         [Fact]
+        public void Tick_completes_operation_when_threat_gone_and_frees_squad()
+        {
+            var state = new CommanderState(SquadCfg(), null, Cfg());
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            CommanderBrain.Tick(new WorldSnapshot(roster, new List<EnemyView> { E("e1", P(5000, 0)) }), state);
+            Assert.Single(state.Operations);
+            var sqId = state.Operations[0].SquadIds[0];
+            Assert.Equal(state.Operations[0].Id, state.Squads.ById(sqId).AssignedOperationId);
+
+            // Threat dies: op completes + is removed, objective pruned, squad freed (B1+B2).
+            CommanderBrain.Tick(new WorldSnapshot(roster, new List<EnemyView>()), state);
+            Assert.Empty(state.Operations);
+            Assert.Empty(state.Objectives);
+            Assert.Null(state.Squads.ById(sqId).AssignedOperationId);
+        }
+
+        [Fact]
+        public void Tick_does_not_re_task_unchanged_units()
+        {
+            var state = new CommanderState(SquadCfg(), null, Cfg());
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            var first = CommanderBrain.Tick(new WorldSnapshot(roster, new List<EnemyView> { E("e1", P(5000, 0)) }), state);
+            Assert.Single(first);                                   // a1 tasked once
+            var second = CommanderBrain.Tick(new WorldSnapshot(roster, new List<EnemyView> { E("e1", P(5000, 0)) }), state);
+            Assert.Empty(second);                                   // same objective -> no re-spam (S1)
+        }
+
+        [Fact]
+        public void Tick_excludes_manually_committed_units()
+        {
+            var state = new CommanderState(SquadCfg(), null, Cfg());
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            var snap = new WorldSnapshot(roster, new List<EnemyView> { E("e1", P(5000, 0)) }, 0f, new HashSet<string> { "a1" });
+            var tasks = CommanderBrain.Tick(snap, state);
+            Assert.Empty(tasks);                                    // manually-owned -> not auto-squadded (S2)
+            Assert.Empty(state.Squads.Squads);
+        }
+
+        [Fact]
         public void Tick_does_nothing_when_commander_is_manual()
         {
             var state = new CommanderState(SquadCfg(), null, Cfg()) { Autonomy = AutonomyLevel.Manual };

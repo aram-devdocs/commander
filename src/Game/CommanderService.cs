@@ -93,8 +93,8 @@ namespace CommanderLayer.Game
             if (Plugin.EnableAutoCommander)
             {
                 var known = _intel.KnownEnemiesNear(new Vec3(0f, 0f, 0f), float.MaxValue); // all tracked enemies
-                foreach (var t in CommanderBrain.Tick(new WorldSnapshot(roster, known), _auto))
-                    _cmds.Execute(t);
+                var snapshot = new WorldSnapshot(roster, known, 0f, _committed); // exclude manually-owned units
+                foreach (var t in CommanderBrain.Tick(snapshot, _auto)) _cmds.Execute(t);
             }
 
             _debug.Tick();   // S0 instrumentation (no-op unless CommanderDebug)
