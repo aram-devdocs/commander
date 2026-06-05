@@ -36,10 +36,15 @@ namespace CommanderLayer.Game
             else if (def is ShipDefinition sd) ship = (Gen.ShipType)(int)sd.shipType;
             else if (def is BuildingDefinition bd) bld = (Gen.BuildingType)(int)bd.buildingType;
 
+            // Troop/cargo carriers (transport helos/aircraft, amphibs): captureCapacity = embarked troops
+            // that can capture/garrison; CanSlingLoad = can carry slung cargo.
+            bool hasTroops = def != null && def.captureCapacity > 0;
+            bool hasCargo = def != null && def.CanSlingLoad;
+
             return new UnitDescriptor(
                 cls,
                 role.antiSurface, role.antiAir, role.antiRadar, role.antiMissile,
-                hasRadar: hasRadar, hasTroops: false, hasCargo: false, // troops/cargo mount flags: P4 refinement
+                hasRadar: hasRadar, hasTroops: hasTroops, hasCargo: hasCargo,
                 captureStrength: u.CaptureStrength,
                 armorTier: def != null ? (int)def.armorTier : 0,
                 commandable: u is ICommandable,
