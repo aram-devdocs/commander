@@ -41,6 +41,8 @@ namespace CommanderLayer.Core.Planning
                             tasks.Add(new UnitTask(u.Id, TaskVerb.MoveTo, order.Position));
                         break;
                     case OrderKind.Defend:
+                    case OrderKind.Capture:
+                    case OrderKind.Resupply:
                         tasks.Add(new UnitTask(u.Id, TaskVerb.MoveTo, order.Position));
                         break;
                 }
@@ -64,6 +66,10 @@ namespace CommanderLayer.Core.Planning
                     return u.Cap.CanEngageGround;
                 case OrderKind.Defend:
                     return u.Cap.IsAirDefense || u.Cap.CanEngageGround;
+                case OrderKind.Capture:
+                    return u.Cap.CanCapture;   // manned, capture-capable ground/ships only
+                case OrderKind.Resupply:
+                    return u.Cap.IsSupply;     // supply trucks
                 default:
                     return false;
             }

@@ -22,7 +22,7 @@ namespace CommanderLayer.Ui
         private readonly TextMeshProUGUI _ordersHeader;
         private readonly Transform _ordersContainer;
         private readonly Image _airImg, _landImg, _seaImg;
-        private readonly Image _attackImg, _defendImg;
+        private readonly Image _attackImg, _defendImg, _captureImg, _resupplyImg;
         private readonly Action<string> _onClearOrder;
         private readonly List<RowWidgets> _rows = new List<RowWidgets>();
 
@@ -67,6 +67,12 @@ namespace CommanderLayer.Ui
             UiFactory.PreferredHeight(armRow.gameObject, 30f);
             _attackImg = UiFactory.Button("Attack", armRow.transform, "Attack", theme, () => onArm?.Invoke(OrderKind.Attack)).GetComponent<Image>();
             _defendImg = UiFactory.Button("Defend", armRow.transform, "Defend", theme, () => onArm?.Invoke(OrderKind.Defend)).GetComponent<Image>();
+
+            var armRow2 = UiFactory.HorizontalLayout("Arm2", layout.transform, 6f);
+            UiFactory.PreferredHeight(armRow2.gameObject, 30f);
+            _captureImg = UiFactory.Button("Capture", armRow2.transform, "Capture", theme, () => onArm?.Invoke(OrderKind.Capture)).GetComponent<Image>();
+            _resupplyImg = UiFactory.Button("Resupply", armRow2.transform, "Resupply", theme, () => onArm?.Invoke(OrderKind.Resupply)).GetComponent<Image>();
+
             var clearAll = UiFactory.Button("ClearAll", layout.transform, "Clear all orders", theme, () => onClearAll?.Invoke());
             UiFactory.PreferredHeight(clearAll.gameObject, 24f);
 
@@ -99,6 +105,8 @@ namespace CommanderLayer.Ui
             }
             _attackImg.color = armed == OrderKind.Attack ? OrderColors.Attack : _theme.ButtonIdle;
             _defendImg.color = armed == OrderKind.Defend ? OrderColors.Defend : _theme.ButtonIdle;
+            _captureImg.color = armed == OrderKind.Capture ? OrderColors.Capture : _theme.ButtonIdle;
+            _resupplyImg.color = armed == OrderKind.Resupply ? OrderColors.Resupply : _theme.ButtonIdle;
 
             _ordersHeader.text = $"Orders: {orders.Count}";
             EnsureRows(orders.Count);

@@ -166,6 +166,31 @@ namespace CommanderLayer.Tests
         }
 
         [Fact]
+        public void Capture_selects_only_capture_capable_units()
+        {
+            var roster = new List<UnitView>
+            {
+                Ground("mbt", VehicleType.MBT, P(100, 0)),   // manned, captureStrength>0
+                Ground("ugv", VehicleType.UGV, P(50, 0)),    // unmanned — cannot capture
+                Ground("truck", VehicleType.TRUCK, P(60, 0)),// no capture strength
+            };
+            var order = new CommanderOrder("c", OrderKind.Capture, P(0, 0), 0f);
+            Assert.Equal(new[] { "mbt" }, OrderPlanner.Plan(order, roster, ThreatPicture.Empty, Cfg()).Tasks.Select(t => t.UnitId).ToArray());
+        }
+
+        [Fact]
+        public void Resupply_selects_only_supply_units()
+        {
+            var roster = new List<UnitView>
+            {
+                Ground("truck", VehicleType.TRUCK, P(100, 0)),
+                Ground("mbt", VehicleType.MBT, P(50, 0)),
+            };
+            var order = new CommanderOrder("r", OrderKind.Resupply, P(0, 0), 0f);
+            Assert.Equal(new[] { "truck" }, OrderPlanner.Plan(order, roster, ThreatPicture.Empty, Cfg()).Tasks.Select(t => t.UnitId).ToArray());
+        }
+
+        [Fact]
         public void Planner_respects_max_units()
         {
             var roster = Enumerable.Range(0, 10).Select(i => Ground("u" + i, VehicleType.MBT, P(i, 0))).Cast<UnitView>().ToList();
