@@ -23,9 +23,13 @@ load Commander Debug, open map, arm an order, hover, place two overlapping order
 Spec: `specs/phase-S0-P0.md`.
 
 **Loop = supervise parallel agent teams (worktree-isolated), integrate behind the quality gate, never idle.**
-In flight: P4 BattleLog · P4 ThreatBoard · P3 ProductionQueue (3 background build agents). On completion I
-write their files → build + Core + GameContract → commit. Next to dispatch: P4 TargetPrioritizer; I wire
-ThreatBoard/BattleLog/Production into the brain/service (shared files) myself.
+NOTE: agent worktrees branch from an OLD commit (~fbbac77) — agents must `git merge --ff-only commander-v2`
+first, and ONLY add new files (never edit shared files — stale base would revert my work). I do all shared-
+file wiring myself during integration windows.
+- Wave 1 ✅ integrated+committed: BattleLog (8342de3), Production (761ba20), ThreatBoard (8de2823). 84 Core.
+- Wave 2 in flight: P4 TargetPrioritizer · P5 HqView (HQ view-models).
+- My wiring TODO (shared files): ThreatBoard→brain objective-gen, BattleLog events in brain, Production
+  GameProductionService→CmdPurchaseConvoy, TargetPrioritizer→brain objective ranking.
 
 ## S0 findings (filled after the playtest)
 | Unknown | Result | Detail |
