@@ -85,7 +85,8 @@ namespace CommanderLayer.Core.Command
                 && !AnyThreatNear(snapshot, o.Position, coverage));
 
             // 3. New objectives from known enemy clusters not already covered.
-            foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig))
+            foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
+                         state.HomeBase, state.Doctrine))
                 state.Objectives.Add(obj);
 
             // 4. Open an operation for each uncovered objective, matching a suitable free force.
@@ -164,42 +165,30 @@ namespace CommanderLayer.Core.Command
         }
 
         /// <summary>
-        /// Generate DestroyTarget objectives for known enemy clusters that no existing objective already
-        /// covers. Highest strategic-priority enemies seed clusters first; deterministic.
+        /// Generate objectives from the fog-of-war intel: cluster known enemies into a <see cref="ThreatBoard"/>,
+        /// rank the pockets with <see cref="TargetPrioritizer"/> (strategic value + proximity to home, doctrine-
+        /// weighted), and emit a DestroyTarget objective at each pocket no existing objective already covers
+        /// (priority = the pocket's score, so operations open against the best targets first). One clustering
+        /// implementation, shared with the threat board.
         /// </summary>
         public static IReadOnlyList<Objective> GenerateObjectives(
-            IReadOnlyList<EnemyView> known, IReadOnlyList<Objective> existing, BrainConfig cfg)
+            IReadOnlyList<EnemyView> known, IReadOnlyList<Objective> existing, BrainConfig cfg,
+            Vec3 homeBase = default(Vec3), Doctrine doctrine = null)
         {
             var result = new List<Objective>();
-            var pool = (known ?? new List<EnemyView>())
-                .Where(e => e != null)
-                .OrderByDescending(e => e.StrategicPriority).ThenBy(e => e.Id) // deterministic
-                .ToList();
-            var used = new bool[pool.Count];
+            var groups = ThreatBoard.Build(known, cfg.ClusterRadius);
+            var ranked = TargetPrioritizer.Rank(groups, homeBase, doctrine ?? new Doctrine());
             int idx = 0;
 
-            for (int i = 0; i < pool.Count; i++)
+            foreach (var st in ranked)
             {
-                if (used[i]) continue;
-                var seed = pool[i];
-                float priority = seed.StrategicPriority;
-                used[i] = true;
-                for (int j = i + 1; j < pool.Count; j++)
-                {
-                    if (used[j]) continue;
-                    if (pool[j].Position.HorizontalDistanceTo(seed.Position) <= cfg.ClusterRadius)
-                    {
-                        used[j] = true;
-                        priority += pool[j].StrategicPriority;
-                    }
-                }
-
+                var center = st.Group.Center;
                 bool covered = existing != null &&
-                    existing.Any(o => o.Position.HorizontalDistanceTo(seed.Position) <= cfg.CoverageRadius);
+                    existing.Any(o => o.Position.HorizontalDistanceTo(center) <= cfg.CoverageRadius);
                 if (covered) continue;
 
-                result.Add(new Objective($"auto-obj-{idx++}", ObjectiveKind.DestroyTarget, seed.Position,
-                    ObjectiveSource.Auto, priority: priority));
+                result.Add(new Objective($"auto-obj-{idx++}", ObjectiveKind.DestroyTarget, center,
+                    ObjectiveSource.Auto, priority: st.Score));
             }
             return result;
         }

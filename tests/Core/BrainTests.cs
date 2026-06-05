@@ -143,6 +143,17 @@ namespace CommanderLayer.Tests
         }
 
         [Fact]
+        public void GenerateObjectives_ranks_pockets_by_threat_value()
+        {
+            var known = new List<EnemyView> { E("low", P(5000, 0), 1f), E("high", P(50000, 0), 20f) };
+            var objs = CommanderBrain.GenerateObjectives(known, new List<Objective>(), Cfg(), P(0, 0),
+                new Doctrine { RiskTolerance = 0.5f });
+
+            Assert.Equal(2, objs.Count);
+            Assert.True(objs[0].Priority > objs[1].Priority); // high-value pocket ranked first
+        }
+
+        [Fact]
         public void GenerateObjectives_skips_areas_already_covered()
         {
             var known = new List<EnemyView> { E("e1", P(0, 0)) };
