@@ -19,7 +19,7 @@ namespace CommanderLayer.Patches
         {
             try
             {
-                var go = MainMenuBadge.Create($"Commander mod loaded  ▸  v{Plugin.Version}");
+                var go = MainMenuBadge.Create($"Commander mod loaded  -  v{Plugin.Version}");
                 Created = go != null;
                 Plugin.Log?.LogInfo(Created ? "Main-menu badge created." : "Main-menu badge: no canvas (IMGUI fallback).");
             }

@@ -31,43 +31,48 @@ namespace CommanderLayer.Game
             if (!_uiLogged && LogNativeUi()) _uiLogged = true;            // P6.2 harvest de-risk (one-shot)
         }
 
-        // One-shot, flag-free terrain map: a coarse water/land + height grid PLUS the terrain result at every
-        // unit's spawn — so the next mission pass can place ground/airbases on real land at real heights.
-        // Returns true once it has logged (terrain present). Lines are prefixed [TERRAIN] for easy capture.
+        // One-shot, flag-free terrain map via RAYCAST (the naval map has no Unity Terrain, so SampleHeight is
+        // unavailable). Casts straight down at a coarse grid PLUS at every unit's spawn, reporting the surface
+        // height + water/land so the next mission pass can place ground/airbases on real land at real heights.
+        // Gated on a loaded mission (local HQ present). Lines are prefixed [TERRAIN] for easy capture.
         private bool AutoTerrainDump()
         {
-            var terrain = Terrain.activeTerrain;
-            if (terrain == null) return false;
-            float baseY = terrain.transform.position.y;
+            if (!GameManager.GetLocalHQ(out var hq) || hq == null) return false;
             float sea = Datum.SeaLevel.y;
-            Plugin.Log?.LogInfo($"[TERRAIN] === Terrain map for mission placement === active={terrain.name} sea={sea:0.0}");
+            Plugin.Log?.LogInfo($"[TERRAIN] === raycast surface map (down-cast) === sea={sea:0.0}");
 
-            // Coarse grid over the playable area.
-            for (int gz = -20000; gz <= 20000; gz += 5000)
+            for (int gz = -25000; gz <= 25000; gz += 5000)
             {
                 var sb = new System.Text.StringBuilder();
                 sb.Append($"[TERRAIN] z={gz,6}:");
-                for (int gx = -20000; gx <= 20000; gx += 5000)
+                for (int gx = -25000; gx <= 25000; gx += 5000)
                 {
-                    float h = terrain.SampleHeight(new Vector3(gx, 0f, gz)) + baseY;
-                    sb.Append(h <= sea ? "  ~~~~" : $" {h,5:0}"); // ~~~~ = water, number = land height
+                    float h = SurfaceHeight(gx, gz, sea);
+                    sb.Append(h <= sea + 1f ? "  ~~~~" : $" {h,5:0}"); // ~~~~ = water, number = land height
                 }
                 Plugin.Log?.LogInfo(sb.ToString());
             }
 
-            // Exact terrain at every unit's spawn position (tells us who is mis-placed and the real height).
             var units = UnitRegistry.allUnits;
             if (units != null)
                 foreach (var u in units)
                 {
                     if (u == null) continue;
                     var p = u.transform.position;
-                    float h = terrain.SampleHeight(new Vector3(p.x, 0f, p.z)) + baseY;
-                    string kind = h <= sea ? "WATER" : "land";
-                    Plugin.Log?.LogInfo($"[TERRAIN] unit {u.unitName,-18} pos=({p.x,7:0},{p.z,7:0}) terrainH={h,5:0} {kind} (unitY={p.y:0})");
+                    float h = SurfaceHeight(p.x, p.z, sea);
+                    string kind = h <= sea + 1f ? "WATER" : "land";
+                    Plugin.Log?.LogInfo($"[TERRAIN] unit {u.unitName,-18} pos=({p.x,7:0},{p.z,7:0}) surfaceH={h,6:0} {kind} (unitY={p.y:0})");
                 }
-            Plugin.Log?.LogInfo("[TERRAIN] === end terrain map ===");
+            Plugin.Log?.LogInfo("[TERRAIN] === end map ===");
             return true;
+        }
+
+        // Surface height at (x,z): cast straight down from high up; the first hit is the island/terrain or the
+        // water plane. No hit = open sea. (All layers — a rare hit on a unit is acceptable for a coarse map.)
+        private static float SurfaceHeight(float x, float z, float sea)
+        {
+            return Physics.Raycast(new Vector3(x, 12000f, z), Vector3.down, out var hit, 24000f)
+                ? hit.point.y : sea;
         }
 
         // P6.2 UI-HARVEST: which native UI components are present & cloneable? Logs counts + scene-vs-asset

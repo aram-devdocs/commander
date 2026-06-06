@@ -31,7 +31,7 @@ namespace CommanderLayer.Ui
             header.pivot = new Vector2(0.5f, 1f);
             header.sizeDelta = new Vector2(0f, 22f);
             header.anchoredPosition = Vector2.zero;
-            var grab = UiFactory.Label("DragHint", header, "⠿  COMMANDER  —  drag", 12f, theme.Muted, TMPro.TextAlignmentOptions.Center);
+            var grab = UiFactory.Label("DragHint", header, "COMMANDER  (drag to move)", 12f, theme.Muted, TMPro.TextAlignmentOptions.Center);
             UiFactory.Stretch(grab.rectTransform);
             header.gameObject.AddComponent<DragHandle>().Target = _container;
 

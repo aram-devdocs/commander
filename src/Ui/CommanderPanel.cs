@@ -115,7 +115,7 @@ namespace CommanderLayer.Ui
             // Range stepper
             var rangeRow = UiFactory.HorizontalLayout("Range", layout.transform, 6f);
             UiFactory.PreferredHeight(rangeRow.gameObject, 26f);
-            UiFactory.Button("RangeDown", rangeRow.transform, "Range −", theme, () => StepRange(-1));
+            UiFactory.Button("RangeDown", rangeRow.transform, "Range -", theme, () => StepRange(-1));
             _rangeLabel = UiFactory.Label("RangeLabel", rangeRow.transform, "", 13f, theme.Text, TextAlignmentOptions.Center);
             UiFactory.Button("RangeUp", rangeRow.transform, "Range +", theme, () => StepRange(+1));
 
@@ -309,7 +309,7 @@ namespace CommanderLayer.Ui
                 {
                     string names = string.Join(", ", preview.Assignable.Take(4).Select(u => u.Name));
                     if (n > 4) names += $" +{n - 4}";
-                    _status.text = $"{armed.Value} → {n} will respond: {names}";
+                    _status.text = $"{armed.Value} -> {n} will respond: {names}";
                 }
                 else
                 {
@@ -435,7 +435,7 @@ namespace CommanderLayer.Ui
                 var row = UiFactory.HorizontalLayout("OrderRow" + _rows.Count, _ordersContainer, 4f);
                 UiFactory.PreferredHeight(row.gameObject, 18f);
                 var label = UiFactory.Label("L", row.transform, "", 12f, _theme.Text);
-                var clearBtn = UiFactory.Button("X", row.transform, "✕", _theme, null);
+                var clearBtn = UiFactory.Button("X", row.transform, "X", _theme, null);
                 var le = clearBtn.gameObject.GetComponent<LayoutElement>() ?? clearBtn.gameObject.AddComponent<LayoutElement>();
                 le.preferredWidth = 22f; le.flexibleWidth = 0f;
                 int idx = _rows.Count;
