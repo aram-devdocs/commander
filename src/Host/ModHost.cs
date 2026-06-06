@@ -27,6 +27,7 @@ namespace CommanderLayer.Host
         }
 
         public ModRegistry Registry => _registry;
+        private bool _selfTested;
 
         /// <summary>Per-frame pump (from the DynamicMap.Update postfix): tick every enabled mod.</summary>
         public void Tick()
@@ -35,6 +36,28 @@ namespace CommanderLayer.Host
                 mapOpen: DynamicMap.mapMaximized,
                 dt: Time.unscaledDeltaTime,
                 pointerOverUi: EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()));
+
+            if (!_selfTested) TrySelfTest();
+        }
+
+        // One-shot structured self-test, emitted once the mission is live (roster readable). The lines are
+        // machine-readable ([NUCLEUS:METRIC]/[NUCLEUS:SELFTEST]) so tools/Nucleus.LogAudit verifies a playtest
+        // automatically instead of by hand. Their PRESENCE proves the host tick reached this point; their
+        // ABSENCE in a future log is itself the regression signal.
+        private void TrySelfTest()
+        {
+            System.Collections.Generic.IReadOnlyList<Core.Model.UnitView> roster;
+            try { roster = _game.Roster(); } catch { return; }   // game not ready yet
+            if (roster == null || roster.Count == 0) return;       // wait for a loaded mission with units
+            _selfTested = true;
+
+            _log.Info($"[NUCLEUS:METRIC] mods={_registry.Count}");
+            _log.Info($"[NUCLEUS:METRIC] roster={roster.Count}");
+            _log.Info("[NUCLEUS:SELFTEST] PASS host-tick-alive");
+            _log.Info(_registry.Count > 0
+                ? "[NUCLEUS:SELFTEST] PASS mods-registered"
+                : "[NUCLEUS:SELFTEST] FAIL mods-registered");
+            _log.Info("[NUCLEUS:SELFTEST] PASS game-services-readable");
         }
 
         private sealed class TickContext : IModTickContext

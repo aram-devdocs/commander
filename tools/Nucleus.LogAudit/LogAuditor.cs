@@ -53,6 +53,27 @@ namespace Nucleus.LogAudit
             Add(r, "runtime-tick", firstTick, firstTick ? "" : "'first Tick' not found (host tick may not reach the runtime)");
             Add(r, "no-exceptions", exceptions.Count == 0, exceptions.Count == 0 ? "" : $"{exceptions.Count} exception/error line(s)");
 
+            // Structured self-test the host emits once the mission is live: each [NUCLEUS:SELFTEST] line becomes
+            // a check; each [NUCLEUS:METRIC] k=v feeds the metrics. Optional (older logs lack them) — when
+            // present they enrich and tighten the verdict.
+            foreach (var l in all)
+            {
+                int si = l.IndexOf("[NUCLEUS:SELFTEST]", System.StringComparison.Ordinal);
+                if (si >= 0)
+                {
+                    var parts = l.Substring(si + 18).Trim().Split(new[] { ' ' }, 2); // "PASS <name>"
+                    if (parts.Length == 2)
+                        Add(r, "selftest:" + parts[1].Trim(), parts[0] == "PASS", parts[0]);
+                }
+                int mi = l.IndexOf("[NUCLEUS:METRIC]", System.StringComparison.Ordinal);
+                if (mi >= 0)
+                {
+                    var kv = l.Substring(mi + 16).Trim().Split('=');
+                    if (kv.Length == 2 && int.TryParse(kv[1].Trim(), out var v))
+                        r.Metrics[kv[0].Trim()] = v;
+                }
+            }
+
             r.Pass = r.Checks.All(c => c.Pass);
             return r;
         }

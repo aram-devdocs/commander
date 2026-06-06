@@ -57,6 +57,31 @@ namespace Nucleus.LogAudit.Tests
         }
 
         [Fact]
+        public void Structured_selftest_lines_become_checks_and_metrics()
+        {
+            var log = HealthyLog();
+            log.Add("[Info   :Commander Layer] [NUCLEUS:METRIC] mods=1");
+            log.Add("[Info   :Commander Layer] [NUCLEUS:METRIC] roster=12");
+            log.Add("[Info   :Commander Layer] [NUCLEUS:SELFTEST] PASS host-tick-alive");
+            log.Add("[Info   :Commander Layer] [NUCLEUS:SELFTEST] PASS mods-registered");
+            var r = LogAuditor.Analyze(log);
+            Assert.True(r.Pass);
+            Assert.Equal(12, r.Metrics["roster"]);
+            Assert.Equal(1, r.Metrics["mods"]);
+            Assert.Contains(r.Checks, c => c.Name == "selftest:host-tick-alive" && c.Pass);
+        }
+
+        [Fact]
+        public void A_failed_selftest_fails_the_audit()
+        {
+            var log = HealthyLog();
+            log.Add("[Info   :Commander Layer] [NUCLEUS:SELFTEST] FAIL mods-registered");
+            var r = LogAuditor.Analyze(log);
+            Assert.False(r.Pass);
+            Assert.Contains(r.Checks, c => c.Name == "selftest:mods-registered" && !c.Pass);
+        }
+
+        [Fact]
         public void Report_serializes_to_json()
         {
             var json = LogAuditor.Analyze(HealthyLog()).ToJson();
