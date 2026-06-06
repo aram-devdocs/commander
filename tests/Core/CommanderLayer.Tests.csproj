@@ -18,10 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The pure leaf moved to Nucleus.Domain (referenced as an assembly); the rest of Core is still
-         compiled directly here until its own libs are extracted in later Phase 1 sub-steps. -->
+    <!-- All of Core is now extracted into the four pure libs; tests reference them as assemblies and
+         compile only the test files in this project (EnableDefaultCompileItems). -->
     <ProjectReference Include="..\..\libs\Nucleus.Domain\Nucleus.Domain.csproj" />
     <ProjectReference Include="..\..\libs\Nucleus.Squads\Nucleus.Squads.csproj" />
-    <Compile Include="..\..\src\Core\**\*.cs" />
+    <ProjectReference Include="..\..\libs\Nucleus.Production\Nucleus.Production.csproj" />
+    <ProjectReference Include="..\..\libs\Nucleus.Campaign\Nucleus.Campaign.csproj" />
   </ItemGroup>
 </Project>

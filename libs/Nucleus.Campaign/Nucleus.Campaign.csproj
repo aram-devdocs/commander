@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Nucleus.Campaign</AssemblyName>
+    <!-- The autonomous brain + operations + manual-order planning. Depends on Domain + Squads + Production
+         (the only lib allowed to reference Squads AND Production). No Unity. -->
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nucleus.Domain\Nucleus.Domain.csproj" />
+    <ProjectReference Include="..\Nucleus.Squads\Nucleus.Squads.csproj" />
+    <ProjectReference Include="..\Nucleus.Production\Nucleus.Production.csproj" />
+  </ItemGroup>
+</Project>

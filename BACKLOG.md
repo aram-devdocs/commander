@@ -19,8 +19,8 @@
 - [x] P1-domain — `libs/Nucleus.Domain` (20 closure-verified pure files); tests/Core repointed (ProjectRef + glob); codegen coreGenDir → libs/Nucleus.Domain/Generated; contract test reads mirror from Domain.dll; deploy bundles Nucleus.*.dll. Gate PASS (0w/118/9/11), deploy verified. **HV**
 - [x] P1-primitives — moved RoleFamily + Composition into Domain; split CombatPhase/ForceState out of PhaseGates.cs into Domain (Command/CombatPhase.cs). Unblocks independent Squads/Production. Gate PASS. **HV**
 - [x] P1-squads — `libs/Nucleus.Squads` (Squad/SquadFormer[+SquadConfig]/SquadRoster), refs Domain only (arch-verified non-vacuous). src+tests wired. Gate PASS (0w/118/9/11). (Per-lib Nucleus.Squads.Tests deferred — tests/Core aggregate covers it; see DECISIONS.) **HV**
-- [ ] P1-production — `libs/Nucleus.Production` (ProductionQueue/Planner/Catalog) + tests **HV**
-- [ ] P1-campaign — `libs/Nucleus.Campaign` (brain/operations/objectives/planning/HqView) + tests **HV**
+- [x] P1-production — `libs/Nucleus.Production` (ConvoyCatalog/ProductionPlanner/ProductionQueue), Domain-only (arch-verified). Gate PASS. **HV**
+- [x] P1-campaign — `libs/Nucleus.Campaign` (CommanderBrain/State/HqView/Operation/PhaseGates/Proposal/TargetPrioritizer/ThreatBoard + Planning/{AssignmentManager,BattlePlan,OrderPlanner}); refs Domain+Squads+Production. **src/Core now empty/removed.** tests/Core fully on ProjectReferences. Gate PASS (0w/118/9/11). **PHASE 1 COMPLETE.** **HV**
 
 ## Phase 2–7 — see plan (specs to be drafted as each phase is pulled)
 - [ ] P2 — extract GameSdk + Ui + retarget codegen output paths **HV (+PT smoke)**
