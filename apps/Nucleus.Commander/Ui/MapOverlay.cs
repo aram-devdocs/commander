@@ -21,6 +21,7 @@ namespace Nucleus.Ui
         private Image _hoverRing;     // outer = unit pull radius
         private Image _hoverRingInner; // inner = area-of-operations (threat-assessment) radius
         private Image _hoverDot;
+        private Image _selRing;        // ring drawn around the selected objective marker
 
         // Ring on-screen size is local-RectTransform units (mapDisplayFactor is a fractional scalar), clamped
         // independently per ring so neither collapses (the playtest "tiny ring") nor explodes across zoom.
@@ -41,6 +42,62 @@ namespace Nucleus.Ui
             rt.localScale = Vector3.one;
             rt.SetAsFirstSibling();
             _layer = rt;
+        }
+
+        /// <summary>Draw a selectable marker per live objective (colored by kind), with a ring on the selected
+        /// one. The objective list comes from the same operations read-model the panel renders, so the map and
+        /// the panel always agree. Replaces the old range-order overlay (everything is objectives now).</summary>
+        public void RenderObjectives(IReadOnlyList<Nucleus.Core.Command.OperationView> ops, string selectedId)
+        {
+            int mi = 0;
+            Vec3 selLocal = default; bool haveSel = false;
+            if (ops != null)
+            {
+                foreach (var op in ops)
+                {
+                    if (op.Status == Nucleus.Core.Command.OperationStatus.Complete
+                        || op.Status == Nucleus.Core.Command.OperationStatus.Failed) continue;
+                    var local = _projection.WorldToMapLocal(op.Position);
+                    var marker = Marker(mi++);
+                    ((RectTransform)marker.transform).localPosition = new Vector3(local.X, local.Y, 0f);
+                    marker.color = ObjectiveColor(op.Kind);
+                    if (op.ObjectiveId == selectedId) { selLocal = local; haveSel = true; }
+                }
+            }
+            for (int i = mi; i < _markers.Count; i++) _markers[i].gameObject.SetActive(false);
+            for (int i = 0; i < _lines.Count; i++) _lines[i].gameObject.SetActive(false);
+
+            EnsureSelRing();
+            if (haveSel)
+            {
+                var rt = (RectTransform)_selRing.transform;
+                rt.localPosition = new Vector3(selLocal.X, selLocal.Y, 0f);
+                rt.sizeDelta = new Vector2(34f, 34f);
+                _selRing.gameObject.SetActive(true);
+            }
+            else _selRing.gameObject.SetActive(false);
+        }
+
+        // A distinct color per objective kind so the map reads at a glance.
+        private static Color ObjectiveColor(Nucleus.Core.Command.ObjectiveKind kind)
+        {
+            switch (kind)
+            {
+                case Nucleus.Core.Command.ObjectiveKind.CapturePoint: return new Color(0.4f, 0.8f, 1f);
+                case Nucleus.Core.Command.ObjectiveKind.DestroyTarget: return new Color(1f, 0.45f, 0.4f);
+                case Nucleus.Core.Command.ObjectiveKind.DefendArea: return new Color(0.45f, 0.9f, 0.55f);
+                case Nucleus.Core.Command.ObjectiveKind.ControlAirspace: return new Color(0.7f, 0.6f, 1f);
+                case Nucleus.Core.Command.ObjectiveKind.Resupply: return new Color(1f, 0.85f, 0.4f);
+                default: return Color.white; // Recon
+            }
+        }
+
+        private void EnsureSelRing()
+        {
+            if (_selRing != null) return;
+            _selRing = UiFactory.Ring("ObjSelRing", _layer, NativeColors.Friendly);
+            var rt = (RectTransform)_selRing.transform;
+            rt.pivot = new Vector2(0.5f, 0.5f);
         }
 
         public void Render(IReadOnlyList<OrderState> orders, IReadOnlyDictionary<string, Vec3> unitPositions)

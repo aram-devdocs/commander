@@ -25,8 +25,8 @@ namespace Nucleus.Composition
         private MapOverlay _overlay;
         private Theme _theme;
         private DynamicMap _lastMap;
-        private OrderKind? _armed;
-        private AssignmentPreview _hoverPreview;
+        private string _dragObjId;                 // objective being dragged (mouse held on its marker)
+        private Nucleus.Core.Command.HqSnapshot _lastHq;
         private bool _firstTick = true;
         private bool _loggedPanel;
         private float _nextManage;
@@ -55,18 +55,22 @@ namespace Nucleus.Composition
             CaptureNativeAssets();
             _player.TryGetLocalFaction(out var faction);
             _theme = Theme.FromFaction(faction);
-            // CMD screen = manual orders + commander mode only — built the SAME way as every other mod
-            // (a CommanderPanel filling the host's standard ModPanel chrome). Build/Squad/Warfare own the rest.
+            // CMD screen = objective management + the two command toggles — built the SAME way as every other
+            // mod (a CommanderPanel filling the host's standard ModPanel chrome). Build/Squad/Warfare own the
+            // rest. Everything is objectives now: pick a kind, click the map to drop, select a marker to edit.
             _panel = new CommanderPanel(parent, _theme,
-                onArm: k => _armed = k,
-                onClearAll: () => _service.ClearAll(),
-                onClearOrder: id => _service.Clear(id),
+                onArm: null, onClearAll: null, onClearOrder: null,
                 onSetAiCommander: on => _service.SetAiCreatesObjectives(on),
                 onSetAutoFill: on => _service.SetAiAutoFill(on),
                 onToggleOpManual: id => _service.ToggleOperationManual(id),
                 onToggleSquadManual: id => _service.ToggleSquadManual(id),
                 onBuyConvoy: name => _service.BuyConvoy(name),
-                sections: CommanderPanel.PanelSections.Orders | CommanderPanel.PanelSections.Mode);
+                onArmObjective: _ => { },                       // arming is panel-side state; runtime reads ArmedObjective
+                onSelectObjective: id => _dragObjId = null,     // panel selected via row click; no drag from the list
+                onRemoveObjective: id => _service.RemoveObjective(id),
+                onNudgePriority: NudgePriority,
+                onCycleKind: CycleKind,
+                sections: CommanderPanel.PanelSections.Objectives | CommanderPanel.PanelSections.Mode);
             UiFactory.Stretch(_panel.Root);
             CommanderPlugin.Log?.LogInfo("Commander panel built into native MFD screen.");
         }
@@ -92,46 +96,100 @@ namespace Nucleus.Composition
                 _service.Tick();
             }
 
-            _hoverPreview = null;
+            _lastHq = _service.AutoHq();
             if (!open)
             {
                 _overlay?.Clear();
-                _armed = null;
+                _dragObjId = null;
             }
             else if (_panel != null)
             {
-                // Live placement preview while armed.
-                if (_armed.HasValue && !IsPointerOverUi() && _projection.TryCursorToWorld(out var hover))
-                {
-                    bool isBuild = _armed.Value == OrderKind.Build;
-                    _hoverPreview = isBuild ? null : _service.PreviewAt(_armed.Value, hover, _panel.Domains, _panel.RangeMeters);
-                    bool canPlace = isBuild || (_hoverPreview != null && _hoverPreview.CanPlace);
-                    _overlay?.SetHover(hover, _panel.RangeMeters, _service.Config.ThreatRadius, _armed.Value, canPlace,
-                        PreviewPositions(_hoverPreview));
-
-                    if (Input.GetMouseButtonDown(0))
-                    {
-                        var state = _service.PlaceOrder(_armed.Value, hover, _panel.Domains, _panel.RangeMeters);
-                        CommanderPlugin.Log?.LogInfo($"Placed {state.Order.Kind}: {state.Summary}");
-                        _armed = null;
-                        _overlay?.ClearHover();
-                    }
-                }
-                else
-                {
-                    _overlay?.ClearHover();
-                }
-                _overlay?.Render(_service.Orders, PositionsById());
+                HandleMapInteraction();
+                _overlay?.RenderObjectives(_lastHq?.Operations, _panel.SelectedObjectiveId);
             }
 
             // Keep the panel content fresh (it renders only when the native screen shows it).
             if (_panel != null)
             {
-                _player.TryGetLocalFaction(out var faction);
-                _panel.Render(_service.Orders, faction, _armed, _hoverPreview, NamesById());
-                _panel.RenderHq(_service.AutoHq(), _service.BuildCatalog(), _service.Funds());
+                _panel.RenderObjectives(_lastHq);
+                _panel.RenderHq(_lastHq, _service.BuildCatalog(), _service.Funds());
                 if (!_loggedPanel) { _loggedPanel = true; CommanderPlugin.Log?.LogInfo("[panel] Commander panel rendering."); }
             }
+        }
+
+        // The drop-then-edit-in-place flow: with a kind armed, click drops a new objective; otherwise a click
+        // selects the nearest marker and a held drag moves it. All routed through the objective CRUD.
+        private void HandleMapInteraction()
+        {
+            if (IsPointerOverUi()) { if (Input.GetMouseButtonUp(0)) _dragObjId = null; return; }
+            if (!_projection.TryCursorToWorld(out var cursor)) return;
+
+            var armed = _panel.ArmedObjective;
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (armed.HasValue)
+                {
+                    var id = _service.CreateObjective(armed.Value, cursor);
+                    _panel.ClearArmedObjective();
+                    _panel.SetSelectedObjective(id);
+                    CommanderPlugin.Log?.LogInfo($"[obj] dropped {armed.Value} -> {id}");
+                }
+                else
+                {
+                    // Select the nearest objective marker (within a screen-constant radius) and begin a drag.
+                    var hit = NearestObjective(cursor, 18f);
+                    if (hit != null) { _panel.SetSelectedObjective(hit); _dragObjId = hit; }
+                }
+            }
+            else if (Input.GetMouseButton(0) && _dragObjId != null)
+            {
+                _service.MoveObjective(_dragObjId, cursor);   // drag-to-move (operation shares the objective ref)
+            }
+            else if (Input.GetMouseButtonUp(0))
+            {
+                _dragObjId = null;
+            }
+        }
+
+        // Nearest live objective to a world point, in screen-constant map-local units (null if none within max).
+        private string NearestObjective(Vec3 cursorWorld, float maxLocal)
+        {
+            var ops = _lastHq?.Operations;
+            if (ops == null) return null;
+            var cl = _projection.WorldToMapLocal(cursorWorld);
+            string best = null; float bestD = maxLocal;
+            foreach (var op in ops)
+            {
+                var l = _projection.WorldToMapLocal(op.Position);
+                float dx = l.X - cl.X, dy = l.Y - cl.Y;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                if (d < bestD) { bestD = d; best = op.ObjectiveId; }
+            }
+            return best;
+        }
+
+        private void NudgePriority(string id, int delta)
+        {
+            if (!TryFindOp(id, out var op)) return;
+            float p = Mathf.Clamp(op.Priority + delta * 0.5f, 0.5f, 9.5f);
+            _service.EditObjective(id, priority: p);
+        }
+
+        private void CycleKind(string id)
+        {
+            if (!TryFindOp(id, out var op)) return;
+            var values = (Nucleus.Core.Command.ObjectiveKind[])System.Enum.GetValues(typeof(Nucleus.Core.Command.ObjectiveKind));
+            int next = (System.Array.IndexOf(values, op.Kind) + 1) % values.Length;
+            _service.EditObjective(id, kind: values[next]);
+        }
+
+        private bool TryFindOp(string objectiveId, out Nucleus.Core.Command.OperationView op)
+        {
+            op = default;
+            var ops = _lastHq?.Operations;
+            if (ops == null) return false;
+            foreach (var o in ops) if (o.ObjectiveId == objectiveId) { op = o; return true; }
+            return false;
         }
 
         private Dictionary<string, Vec3> PositionsById()

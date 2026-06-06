@@ -33,6 +33,19 @@ namespace Nucleus.Ui
         private readonly Action<string> _onToggleOpManual;
         private readonly Action<string> _onToggleSquadManual;
         private readonly Action<string> _onBuyConvoy;
+        // Objectives section (drop-then-edit-in-place).
+        private readonly Action<Cmd.ObjectiveKind> _onArmObjective;
+        private readonly Action<string> _onSelectObjective;
+        private readonly Action<string> _onRemoveObjective;
+        private readonly Action<string, int> _onNudgePriority;
+        private readonly Action<string> _onCycleKind;
+        private Transform _objContainer;
+        private TextMeshProUGUI _objHint, _objEditor;
+        private readonly List<EntityRow> _objRows = new List<EntityRow>();
+        private readonly List<KindButton> _kindButtons = new List<KindButton>();
+        private struct KindButton { public Image Img; public Cmd.ObjectiveKind Kind; }
+        private Cmd.ObjectiveKind? _armedObjective;   // the kind the player is about to drop
+        private string _selectedObjectiveId;          // the objective currently being edited
         private readonly List<OpRow> _opRows = new List<OpRow>();
         private readonly Transform _squadsContainer;
         private readonly List<EntityRow> _squadRows = new List<EntityRow>();
@@ -81,7 +94,8 @@ namespace Nucleus.Ui
             Build = 1 << 4,
             Feed = 1 << 5,
             Scoreboard = 1 << 6,  // dynamic-war attrition board: both factions' score/funds/losses + win state
-            All = Orders | Mode | Operations | Squads | Build | Feed,
+            Objectives = 1 << 7,  // drop-then-edit-in-place objective palette + list + editor
+            All = Objectives | Mode | Operations | Squads | Build | Feed,
         }
 
         private readonly PanelSections _sections;
@@ -90,6 +104,9 @@ namespace Nucleus.Ui
             Action<string> onClearOrder, Action<bool> onSetAiCommander = null,
             Action<bool> onSetAutoFill = null, Action<string> onToggleOpManual = null,
             Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null,
+            Action<Cmd.ObjectiveKind> onArmObjective = null, Action<string> onSelectObjective = null,
+            Action<string> onRemoveObjective = null, Action<string, int> onNudgePriority = null,
+            Action<string> onCycleKind = null,
             PanelSections sections = PanelSections.All)
         {
             _sections = sections;
@@ -98,6 +115,11 @@ namespace Nucleus.Ui
             _onToggleOpManual = onToggleOpManual;
             _onToggleSquadManual = onToggleSquadManual;
             _onBuyConvoy = onBuyConvoy;
+            _onArmObjective = onArmObjective;
+            _onSelectObjective = onSelectObjective;
+            _onRemoveObjective = onRemoveObjective;
+            _onNudgePriority = onNudgePriority;
+            _onCycleKind = onCycleKind;
             _root = UiFactory.Panel("CommanderPanel", parent, theme.PanelBackground);
             // Scrollable content: a clipped viewport + a content column whose height fits its children, so the
             // many sections never compress (the jerk) — they extend and the panel scrolls instead.
@@ -161,6 +183,41 @@ namespace Nucleus.Ui
                 _ordersHeader = UiFactory.Label("OrdersHeader", layout.transform, "Orders", 14f, theme.Text);
                 UiFactory.PreferredHeight(_ordersHeader.gameObject, 22f);
                 _ordersContainer = UiFactory.VerticalLayout("Orders", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+            }
+
+            if (Has(PanelSections.Objectives))
+            {
+                // OBJECTIVES — the single command primitive. Pick a kind, click the map to DROP it, then select
+                // a marker to EDIT in place (priority, retype, remove). The AI fills it with squads (or you do).
+                UiFactory.PreferredHeight(UiFactory.Label("ObjHdr", layout.transform, "OBJECTIVES — drop on the map", 12f, theme.Accent).gameObject, 18f);
+
+                // Palette: one button per objective kind; clicking arms that kind for the next map click.
+                var pRow1 = UiFactory.HorizontalLayout("ObjPalette1", layout.transform, 4f);
+                UiFactory.PreferredHeight(pRow1.gameObject, 28f);
+                AddKindButton(pRow1.transform, "CAPTURE", Cmd.ObjectiveKind.CapturePoint);
+                AddKindButton(pRow1.transform, "DESTROY", Cmd.ObjectiveKind.DestroyTarget);
+                AddKindButton(pRow1.transform, "DEFEND", Cmd.ObjectiveKind.DefendArea);
+                var pRow2 = UiFactory.HorizontalLayout("ObjPalette2", layout.transform, 4f);
+                UiFactory.PreferredHeight(pRow2.gameObject, 28f);
+                AddKindButton(pRow2.transform, "AIRSPACE", Cmd.ObjectiveKind.ControlAirspace);
+                AddKindButton(pRow2.transform, "RECON", Cmd.ObjectiveKind.Recon);
+                AddKindButton(pRow2.transform, "RESUPPLY", Cmd.ObjectiveKind.Resupply);
+
+                _objHint = UiFactory.Label("ObjHint", layout.transform, "Pick a kind, then click the map to drop an objective.", 11f, theme.Muted);
+                UiFactory.PreferredHeight(_objHint.gameObject, 30f);
+
+                // List of live objectives — each row selects (to edit in place); plus a per-row REMOVE.
+                _objContainer = UiFactory.VerticalLayout("ObjList", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+
+                // Editor for the selected objective: priority -/+, retype (cycle kind), remove.
+                _objEditor = UiFactory.Label("ObjEditor", layout.transform, "", 11f, theme.Text);
+                UiFactory.PreferredHeight(_objEditor.gameObject, 18f);
+                var eRow = UiFactory.HorizontalLayout("ObjEdit", layout.transform, 4f);
+                UiFactory.PreferredHeight(eRow.gameObject, 28f);
+                UiFactory.Button("PrioDown", eRow.transform, "PRIO -", theme, () => { if (_selectedObjectiveId != null) _onNudgePriority?.Invoke(_selectedObjectiveId, -1); });
+                UiFactory.Button("PrioUp", eRow.transform, "PRIO +", theme, () => { if (_selectedObjectiveId != null) _onNudgePriority?.Invoke(_selectedObjectiveId, +1); });
+                UiFactory.Button("Retype", eRow.transform, "RETYPE", theme, () => { if (_selectedObjectiveId != null) _onCycleKind?.Invoke(_selectedObjectiveId); });
+                UiFactory.Button("ObjRemove", eRow.transform, "REMOVE", theme, () => { if (_selectedObjectiveId != null) { _onRemoveObjective?.Invoke(_selectedObjectiveId); _selectedObjectiveId = null; } });
             }
 
             if (Has(PanelSections.Mode))
@@ -290,6 +347,82 @@ namespace Nucleus.Ui
             var rt = bar.rectTransform;
             rt.anchorMax = new Vector2(f, 1f);
             rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+        }
+
+        // ---- Objectives section ------------------------------------------------------------------------
+
+        /// <summary>The kind the player has armed to drop on the next map click (null = none).</summary>
+        public Cmd.ObjectiveKind? ArmedObjective => _armedObjective;
+        /// <summary>The objective currently selected for editing (null = none).</summary>
+        public string SelectedObjectiveId => _selectedObjectiveId;
+        /// <summary>Set the selected objective (e.g. when the player clicks its map marker).</summary>
+        public void SetSelectedObjective(string id) => _selectedObjectiveId = id;
+        /// <summary>Clear the armed drop-kind (e.g. after a successful drop).</summary>
+        public void ClearArmedObjective() => _armedObjective = null;
+
+        private void AddKindButton(Transform parent, string label, Cmd.ObjectiveKind kind)
+        {
+            var btn = UiFactory.Button("Kind_" + kind, parent, label, _theme, () =>
+            {
+                _armedObjective = _armedObjective == kind ? (Cmd.ObjectiveKind?)null : kind;
+                _onArmObjective?.Invoke(kind);
+            });
+            _kindButtons.Add(new KindButton { Img = btn.GetComponent<Image>(), Kind = kind });
+        }
+
+        /// <summary>Render the objective palette state + the live objective list + the selected-objective editor.
+        /// The list rows come from the same operations read-model the map markers use, so panel and map agree.</summary>
+        public void RenderObjectives(Cmd.HqSnapshot hq)
+        {
+            if (_objContainer == null) return;
+
+            // Palette: highlight the armed kind.
+            foreach (var kb in _kindButtons)
+                kb.Img.color = _armedObjective == kb.Kind ? OnColor : _theme.ButtonIdle;
+
+            if (_objHint != null)
+            {
+                _objHint.text = _armedObjective.HasValue
+                    ? $"Drop {_armedObjective.Value}: click a spot on the map."
+                    : "Pick a kind, then click the map. Click a marker to select & edit it.";
+            }
+
+            var ops = hq?.Operations;
+            int count = ops?.Count ?? 0;
+            EnsureEntityRows(_objRows, _objContainer, System.Math.Min(count, 8), "Obj",
+                id => { _selectedObjectiveId = id; _onSelectObjective?.Invoke(id); });
+            for (int i = 0; i < _objRows.Count; i++)
+            {
+                var r = _objRows[i];
+                if (ops != null && i < count && i < 8)
+                {
+                    var op = ops[i];
+                    r.Id = op.ObjectiveId;
+                    bool sel = op.ObjectiveId == _selectedObjectiveId;
+                    string owner = op.PlayerOwned ? "you" : "AI";
+                    r.Label.text = $"{(sel ? "▸ " : "")}{op.Kind} · {op.Phase} · P{op.Priority:0.#} · {op.SquadCount} sq [{owner}]";
+                    r.Label.color = sel ? OnColor : _theme.Text;
+                    r.BtnLabel.text = "SELECT";
+                    r.BtnImg.color = sel ? _theme.Accent : _theme.ButtonIdle;
+                    r.Go.SetActive(true);
+                    _objRows[i] = r;
+                }
+                else r.Go.SetActive(false);
+            }
+
+            if (_objEditor != null)
+            {
+                if (_selectedObjectiveId == null) { _objEditor.text = "No objective selected."; }
+                else
+                {
+                    string text = "Editing selected objective.";
+                    if (ops != null)
+                        foreach (var o in ops)
+                            if (o.ObjectiveId == _selectedObjectiveId)
+                                { text = $"Editing: {o.Kind} · P{o.Priority:0.#}"; break; }
+                    _objEditor.text = text;
+                }
+            }
         }
 
         /// <summary>Render the two command toggles + the HQ readout.</summary>
