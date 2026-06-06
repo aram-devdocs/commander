@@ -4,19 +4,21 @@
 > action. State: TODO / WIP / DONE / PLAYTEST (Unity-gated, awaiting human) / BLOCKED.
 > Update on every state transition. Source of truth for "what's next" — survives context compaction.
 
-**Branch:** `nucleus-platform` · **Baseline (known-good):** `pwsh scripts/audit.ps1` → AUDIT: PASS
-**Gate (7 layers):** build 0w · unit-core 125 · arch 9 · sim 19 · logaudit 7 · contract 11 · integration 9 (2026-06-06)
+**Branch:** `master` (everything consolidated here; feature branches merged + deleted) · **Baseline:** `pwsh scripts/audit.ps1` → AUDIT: PASS
+**Gate (7 layers):** build 0w · unit-core 129 · arch 9 · sim 22 · logaudit 7 · contract 11 · integration 9 (2026-06-06)
 
 ## Where we are
 The full platform is **built, renamed, and headless-green.** The monorepo is the planned shape:
-`apps/` (Nucleus.Platform host + Nucleus.Commander/Build/Squad mods) over `libs/` (8 libs:
-Domain/Squads/Production/Campaign pure; GameSdk/Ui engine; Abstractions host contract), plus
+`apps/` (Nucleus.Platform host + Nucleus.Commander/Build/Squad/**Warfare** mods — all 5) over `libs/`
+(8 libs: Domain/Squads/Production/Campaign pure; GameSdk/Ui engine; Abstractions host contract), plus
 `sdk/` `tools/` `tests/` `build/` `docs/`. Phase 7 rename is **complete** — no `CommanderLayer`
 anywhere in source/build/scripts/CI/hooks; folder == assembly == namespace throughout.
 
 What is proven headlessly: every shared library, the host mod-registry lifecycle (register → init →
 tick → enable/disable, persisted), the dependency DAG (Cecil arch rules), the game-reflection contract,
-the dual-faction campaign sim over the real brain, and the log-audit/self-test instrumentation.
+the **persistent two-faction dynamic war** (`WarfareCampaign`: both sides run the brain, whole-war
+save/resume, continuation determinism), campaign persistence (snapshot/state/save/store), and the
+log-audit/self-test instrumentation.
 
 ## Phase status
 | Phase | Title | State | Notes |
@@ -27,26 +29,32 @@ the dual-faction campaign sim over the real brain, and the log-audit/self-test i
 | 3 | Stand up host; Commander first | DONE (in-game ✅) | P3-host-tick PASSED: plugin loaded, 4/4 patches, host tick reached, 0 exceptions |
 | 4 | Split Build | DONE | own plugin/bezel; no-skew deploy verified; PLAYTEST pending in-game |
 | 5 | Split Squad | DONE | own plugin/bezel; external SquadRoster ctor; PLAYTEST pending in-game |
-| 6 | Warfare + SDK packaging + dual-faction + persistence | DONE (headless) | dual-faction sim green; SDK packable + template; **campaign save/resume seam done** (CampaignSnapshot/State/Save + continuation-determinism proof) |
+| 6 | Warfare + SDK packaging + dual-faction + persistence | DONE (headless) | **Nucleus.Warfare app** built (5th mod, WAR button, owns WarfareCampaign + save/resume); dual-faction sim green; SDK packable + template; campaign save/resume seam + continuation-determinism proof |
 | 7 | Rename CommanderLayer.* → Nucleus.* | DONE | source/projects/sln/scripts/CI/hooks; repo+folder rename = human touchpoint (below) |
 
 ## Remaining work
-### Headless (the loop can do now)
-- ✅ **Campaign persistence** — DONE. `libs/Nucleus.Campaign/Persistence/` = `CampaignSnapshot` (resumable
-  state), `CampaignState.Capture/Restore` (live ↔ snapshot), `CampaignSave.Serialize/Deserialize`
-  (dependency-free versioned text, Mono/BepInEx-safe). Proven by 7 unit tests + a `DualSimWorld`-style
-  **continuation-determinism** test (save → continue original vs restore → continue: identical traces).
-  Spec: `specs/phase-6/P6-persistence.md`. Next deepening: wire save/load into the live host (Unity-gated).
-- **Host real UI layer** (host-owned Canvas → Build buy-menu + Squad manager panels) — *gated on the
-  one verification run below* so it isn't built on unverified UI. Now the top remaining build item once the
-  verification run lands.
+### Headless — DONE this run
+- ✅ **Campaign persistence** — `libs/Nucleus.Campaign/Persistence/` = `CampaignSnapshot` +
+  `CampaignState.Capture/Restore` + `CampaignSave.Serialize/Deserialize` + `CampaignStore` (crash-safe disk
+  IO). Wired into `CommanderService.SaveCampaign/LoadCampaign`. Proven by 11 unit tests + a
+  continuation-determinism Sim test. Spec: `specs/phase-6/P6-persistence.md`.
+- ✅ **Nucleus.Warfare app (north-star)** — 5th mod: `WarfareCampaign` (both factions run the brain) +
+  `WarfareSave` (whole-war save/resume) in the pure lib, driven by the `Nucleus.Warfare` plugin/IMod (WAR
+  button, resumes on load, persists on shutdown). 3 dual-faction Sim tests incl. whole-war continuation
+  determinism.
+
+### Headless — still open
+- **Host real UI layer** (host-owned Canvas → Build buy-menu + Squad manager + Warfare status panels) —
+  *gated on the one verification run below* so it isn't built on unverified UI. Top remaining build item.
+- **"Nucleus Dynamic Warfare" mission** + the in-game per-faction view feed that lets `WarfareCampaign.Step`
+  drive both sides live (the headless substrate is done; the mission/game-API side is Unity-gated).
 
 ### Playtest-gated (awaiting one human verification run)
-One run mechanically verifies all four mods + loader + bezel buttons at once:
+One run mechanically verifies all five mods + loader + bezel buttons at once:
 1. `scripts/run.ps1` → open the map (and the MODS menu from the main menu).
 2. `scripts/audit.ps1 -LogPath .sandbox/game/BepInEx/LogOutput.log`
-   → confirms `loader-ui-built` / `build-mod-loaded` / `squad-mod-loaded` / `bezel-buttons-attached`
-   from the `[NUCLEUS:SELFTEST]`/`[NUCLEUS:METRIC]` lines.
+   → confirms `loader-ui-built` / `build-mod-loaded` / `squad-mod-loaded` / `warfare-mod-loaded` /
+   `bezel-buttons-attached` from the `[NUCLEUS:SELFTEST]`/`[NUCLEUS:METRIC]` lines.
 Packet: `playtests/P-apps-split.md`. Result lands in `playtests/results/`.
 
 ### Outward actions (human only — prepared, parked for explicit go)

@@ -65,6 +65,9 @@ to populate `lib/` with your own game DLLs (never shipped). See [docs/DEPLOYMENT
 
 ## Status
 
-Active refactor (branch `nucleus-platform`): the monolith is split into the libraries above; the host runs
-Commander as the first `IMod`; the SDK packages, template, and CI are in place. In progress: the in-game mod
-loader UI and splitting Build/Squad into their own plugins. `STATUS.md` is the live ledger.
+The platform is built and headless-green on `master`. The host (`Nucleus.Platform`) runs five mods — each
+its own plugin with its own bezel button and a MODS-menu ON/OFF toggle: **Commander**, **Build**, **Squad**,
+and **Warfare** (the north-star: a persistent two-faction dynamic war with whole-campaign save/resume, proven
+deterministic headlessly). The 8 shared libraries, the SDK packages + `dotnet new` template, CI, and a 7-layer
+gate (`scripts/audit.ps1`) are all in place. Remaining work is the in-game UI layer + the Dynamic Warfare
+mission (gated on a playtest verification run) and publishing. `docs/dev/STATUS.md` is the live ledger.
