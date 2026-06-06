@@ -37,6 +37,8 @@ namespace Nucleus.Host
             if (!_hookSeen)
             {
                 _hookSeen = true;
+                PlatformPlugin.Log?.LogInfo("[NUCLEUS:PROBE] HostButtons build=P8.5-probe");
+                PlatformPlugin.Log?.LogInfo($"[NUCLEUS:PROBE] nativeCounts L.btn={leftButtons?.Count ?? -1} L.scr={leftScreens?.Count ?? -1} R.btn={rightButtons?.Count ?? -1} R.scr={rightScreens?.Count ?? -1}");
                 PlatformPlugin.Log?.LogInfo($"[NUCLEUS:METRIC] mfdMaximizeHook=1 leftButtons={leftButtons?.Count ?? -1} rightButtons={rightButtons?.Count ?? -1}");
             }
 
@@ -84,16 +86,26 @@ namespace Nucleus.Host
                     while (screens.Count < idx) screens.Add(null);
                     screens.Add(screen);
 
+                    // PROBE: verify, right now, that PressButton(ourBtn) will resolve to OUR screen.
+                    bool aligned = idx < screens.Count && ReferenceEquals(screens[idx], screen)
+                                   && (left ? leftButtons : rightButtons).IndexOf(btn) == idx;
+                    PlatformPlugin.Log?.LogInfo($"[NUCLEUS:PROBE] add id={spec.ModId} side={(left ? "L" : "R")} idx={idx} aligned={aligned} hasHighlight={screen.highlight != null} btnInteractable={btn.interactable} btnCount={buttons.Count} scrCount={screens.Count}");
+
                     bool onLeft = left;
                     var extra = spec.OnClick;
+                    var capScreen = screen;
+                    var capId = spec.ModId;
                     // Drop the clone's inherited persistent onClick (it would toggle the template's screen) and
                     // drive ours: the game's PressButton toggles OUR paired screen (native highlight + hide).
                     NativeButtons.Rewire(btn, () =>
                     {
+                        PlatformPlugin.Log?.LogInfo($"[NUCLEUS:PROBE] click id={capId} beforeActive={capScreen.isActive}");
                         if (onLeft) mfd.PressLeftButton(btn); else mfd.PressRightButton(btn);
+                        PlatformPlugin.Log?.LogInfo($"[NUCLEUS:PROBE] click id={capId} afterActive={capScreen.isActive} highlightOn={(capScreen.highlight != null && capScreen.highlight.enabled)} content={(capScreen.displayPanel != null && capScreen.displayPanel.activeSelf)}");
                         extra?.Invoke();
                     });
                     btn.enabled = true;
+                    btn.interactable = true;
                     btnGo.SetActive(true);
 
                     // 4. Let the mod fill its screen once.
