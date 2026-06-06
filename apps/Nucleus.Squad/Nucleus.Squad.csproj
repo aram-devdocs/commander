@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Nucleus.Squad</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <PluginName>Nucleus.Squad</PluginName>
+  </PropertyGroup>
+
+  <Import Project="..\..\build\GameReferences.props" />
+  <Import Project="..\..\build\Deploy.targets" />
+
+  <!-- Shared libs Private=false ("no skew"): only Nucleus.Squad.dll deploys; the rest ship once with the host. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\Nucleus.Abstractions\Nucleus.Abstractions.csproj"><Private>false</Private></ProjectReference>
+    <ProjectReference Include="..\..\libs\Nucleus.Domain\Nucleus.Domain.csproj"><Private>false</Private></ProjectReference>
+    <ProjectReference Include="..\..\libs\Nucleus.Squads\Nucleus.Squads.csproj"><Private>false</Private></ProjectReference>
+    <ProjectReference Include="..\..\libs\Nucleus.GameSdk\Nucleus.GameSdk.csproj"><Private>false</Private></ProjectReference>
+    <ProjectReference Include="..\..\libs\Nucleus.Ui\Nucleus.Ui.csproj"><Private>false</Private></ProjectReference>
+  </ItemGroup>
+</Project>
