@@ -40,6 +40,12 @@ namespace Nucleus.Ui
         private readonly List<EntityRow> _buildRows = new List<EntityRow>();
         // Empty-state hints (shown when a section has no data, so a screen never looks blank/broken).
         private TextMeshProUGUI _buildEmpty, _squadsEmpty, _opsEmpty;
+        // Scoreboard widgets (dynamic-war attrition board).
+        private TextMeshProUGUI _scoreTitle, _scoreBlu, _scoreOp, _scoreStatus;
+        private Image _scoreBluBar, _scoreOpBar;
+        private float _scoreMax;  // highest score seen — the 100%% bar reference (so bars shrink as sides attrit)
+        private static readonly Color BluColor = new Color(0.35f, 0.6f, 1f, 1f);
+        private static readonly Color OpColor = new Color(1f, 0.45f, 0.4f, 1f);
 
         private struct OpRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string OpId; }
         // Generic interactive row: a label + an action button carrying an id (squad id / convoy name).
@@ -74,6 +80,7 @@ namespace Nucleus.Ui
             Squads = 1 << 3,
             Build = 1 << 4,
             Feed = 1 << 5,
+            Scoreboard = 1 << 6,  // dynamic-war attrition board: both factions' score/funds/losses + win state
             All = Orders | Mode | Operations | Squads | Build | Feed,
         }
 
@@ -207,6 +214,25 @@ namespace Nucleus.Ui
                 UiFactory.PreferredHeight(_buildEmpty.gameObject, 36f);
             }
 
+            if (Has(PanelSections.Scoreboard))
+            {
+                // SCOREBOARD — the attrition win condition: both factions' score (with a bar), funds, losses.
+                UiFactory.PreferredHeight(UiFactory.Label("ScoreHdr", layout.transform, "ATTRITION", 12f, theme.Accent).gameObject, 18f);
+                _scoreTitle = UiFactory.Label("ScoreTitle", layout.transform, "Dynamic War", 13f, theme.Muted);
+                UiFactory.PreferredHeight(_scoreTitle.gameObject, 18f);
+
+                _scoreBlu = UiFactory.Label("ScoreBlu", layout.transform, "BLUFOR", 13f, BluColor);
+                UiFactory.PreferredHeight(_scoreBlu.gameObject, 20f);
+                _scoreBluBar = MakeBar("BluBar", layout.transform, BluColor);
+
+                _scoreOp = UiFactory.Label("ScoreOp", layout.transform, "OPFOR", 13f, OpColor);
+                UiFactory.PreferredHeight(_scoreOp.gameObject, 20f);
+                _scoreOpBar = MakeBar("OpBar", layout.transform, OpColor);
+
+                _scoreStatus = UiFactory.Label("ScoreStatus", layout.transform, "", 12f, theme.Text);
+                UiFactory.PreferredHeight(_scoreStatus.gameObject, 22f);
+            }
+
             if (Has(PanelSections.Feed))
             {
                 // FEED — production status + recent battle events (what the commander is doing).
@@ -219,6 +245,52 @@ namespace Nucleus.Ui
         }
 
         private static readonly Color OnColor = new Color(0.30f, 0.85f, 0.45f, 1f);
+
+        // A thin progress bar: a dark track with a colored fill child whose right anchor encodes the fraction.
+        private static Image MakeBar(string name, Transform parent, Color fill)
+        {
+            var track = UiFactory.Panel(name + "Track", parent, new Color(0.15f, 0.15f, 0.18f, 1f));
+            UiFactory.PreferredHeight(track.gameObject, 12f);
+            var bar = UiFactory.Panel(name + "Fill", track, fill);
+            bar.anchorMin = new Vector2(0f, 0f);
+            bar.anchorMax = new Vector2(1f, 1f);
+            bar.offsetMin = Vector2.zero; bar.offsetMax = Vector2.zero;
+            return bar.GetComponent<Image>();
+        }
+
+        /// <summary>Render the attrition scoreboard — both factions' score (as a bar), funds, losses, and the
+        /// win state. The bar reference is the highest score yet seen, so both bars shrink as the war attrits.</summary>
+        public void RenderScoreboard(Cmd.WarfareCampaign.Scoreboard b)
+        {
+            if (_scoreBlu == null) return;
+            _scoreMax = Math.Max(_scoreMax, Math.Max(b.BluforScore, b.OpforScore));
+            float denom = Math.Max(1f, _scoreMax);
+
+            _scoreBlu.text = $"{b.BluforName} [{(b.BluforAi ? "AI" : "YOU")}]  {b.BluforScore:0}  ·  ${b.BluforFunds:0}  ·  -{b.BluforUnitsLost}u/-{b.BluforBasesLost}b";
+            _scoreOp.text = $"{b.OpforName} [{(b.OpforAi ? "AI" : "YOU")}]  {b.OpforScore:0}  ·  ${b.OpforFunds:0}  ·  -{b.OpforUnitsLost}u/-{b.OpforBasesLost}b";
+            SetBar(_scoreBluBar, b.BluforScore / denom);
+            SetBar(_scoreOpBar, b.OpforScore / denom);
+
+            if (b.Over)
+            {
+                _scoreStatus.text = b.WinnerName != null ? $"WAR OVER — {b.WinnerName} WINS" : "WAR OVER — DRAW";
+                _scoreStatus.color = OnColor;
+            }
+            else
+            {
+                _scoreStatus.text = "War in progress — drive a faction to zero to win.";
+                _scoreStatus.color = _theme.Muted;
+            }
+        }
+
+        private static void SetBar(Image bar, float fraction)
+        {
+            if (bar == null) return;
+            float f = Mathf.Clamp01(fraction);
+            var rt = bar.rectTransform;
+            rt.anchorMax = new Vector2(f, 1f);
+            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+        }
 
         /// <summary>Render the two command toggles + the HQ readout.</summary>
         public void RenderHq(Cmd.HqSnapshot hq, Cmd.ConvoyCatalog catalog, float funds)

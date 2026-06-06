@@ -49,7 +49,8 @@ namespace Nucleus.Warfare
                     // two-faction war is automatic (resume on load, persist on shutdown).
                     _panel = new CommanderPanel(parent, ctx.Ui.Theme, onArm: null, onClearAll: null,
                         onClearOrder: null, onToggleOpManual: id => ctx.Campaign?.ToggleOperationManual(id),
-                        sections: CommanderPanel.PanelSections.Operations | CommanderPanel.PanelSections.Feed);
+                        sections: CommanderPanel.PanelSections.Scoreboard | CommanderPanel.PanelSections.Operations
+                                | CommanderPanel.PanelSections.Feed);
                     UiFactory.Stretch(_panel.Root);
                 },
                 OnClick = ReportStatus,
@@ -73,6 +74,8 @@ namespace Nucleus.Warfare
         {
             var c = _ctx?.Campaign;
             if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Catalog(), c.Funds());
+            // The attrition board reads from the Warfare campaign (both factions' score/funds/losses + win state).
+            if (_panel != null && _campaign != null) _panel.RenderScoreboard(_campaign.SnapshotBoard());
         }
 
         public void OnEnabled() { }
