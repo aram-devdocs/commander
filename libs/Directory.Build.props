@@ -1,0 +1,15 @@
+<Project>
+  <!--
+    Applies to every shared library under libs/. Chains the repo-root Directory.Build.props (common build
+    settings) then opts these projects into NuGet packaging: import the shared package metadata and mark them
+    packable. The plugin/apps and tests are NOT under libs/, so they are unaffected and do not pack.
+    Game/Unity DLLs are referenced Private=false (build-time HintPath) and are never included in the nupkg.
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Packaging.props" />
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <!-- Single source of truth for the SDK package version (bump all shared libs in lockstep — no skew). -->
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+</Project>

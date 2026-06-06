@@ -5,3 +5,6 @@ lib/
 *.user
 decompiled/
 .claude/
+
+# Build artifacts (nupkg, coverage, audit summary)
+artifacts/

@@ -30,6 +30,14 @@
   - [x] deepen — operations-opened, **combat phases advance past Recon**, multi-seed fuzz (6 seeds: deterministic+finite+active). Sim layer now 14 tests. **HV**
   - [ ] deepen further (Phase 6 proper): dual-faction (both sides run brains), persistence save/resume, production-within-funds in-sim.
 
+## Phase 6 — SDK NuGet (headless, unblocked)
+- [~] P6-sdk — all 7 shared libs packable via `libs/Directory.Build.props` (chains root + imports
+  Packaging.props + IsPackable + single Version 0.1.0). **Verified: GameSdk nupkg ships ONLY its own DLL — no
+  game/Unity IP** (Private=false HintPath refs excluded). Plugin marked IsPackable=false. `sdk/Nucleus.Sdk`
+  metapackage builds. artifacts/ gitignored. **HV**
+  - [ ] metapackage `dotnet pack` quirk (silently no-ops with game-coupled project refs) — investigate/replace with nuspec.
+  - [ ] `dotnet new nucleus-mod` template (sdk/templates) + setup-sdk script + release.yml pack/push job + api-snapshot gate.
+
 ## Phase 2–7 — see plan (specs to be drafted as each phase is pulled)
 - [x] P2-gamesdk — `libs/Nucleus.GameSdk` (all src/Game except CommanderService) + Generated/; codegen gameGenDir retargeted (regen verified identical); NucleusLog seam added to Domain (libs log without referencing Plugin); InternalsVisibleTo("CommanderLayer") preserves same-assembly accessibility. Gate PASS (0w/118/9/11). **HV**
 - [x] P2-ui — `libs/Nucleus.Ui` (UiFactory/Theme/NativeColors/NativeIcons/Native.NativeUi/DragHandle/MainMenuBadge), Domain-only among Nucleus libs (Theme's ColorRgba→Color inlined to drop the GameSdk dep). Commander panels stay in app. Gate PASS (0w/118/9/11). **PHASE 2 COMPLETE** — 7 libs extracted; src is the thin app shell. **HV**

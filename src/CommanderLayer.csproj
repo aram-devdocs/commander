@@ -4,6 +4,8 @@
     <AssemblyName>CommanderLayer</AssemblyName>
     <LangVersion>latest</LangVersion>
     <Version>0.1.0</Version>
+    <!-- BepInEx plugin, distributed via Thunderstore - not a NuGet package. -->
+    <IsPackable>false</IsPackable>
     <!-- Referencing the game's own DLLs surfaces unavoidable framework version-conflict warnings;
          demote the noisy ones so a clean build stays meaningful. -->
     <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>

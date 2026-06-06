@@ -8,6 +8,7 @@
   -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <Description>Nucleus SDK — libraries for building Nuclear Option (BepInEx) mods. Bring your own game DLLs (setup-sdk); none are shipped in this package.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/aram-devdocs/no_nucleus</PackageProjectUrl>
     <RepositoryUrl>https://github.com/aram-devdocs/no_nucleus</RepositoryUrl>
