@@ -54,6 +54,9 @@ namespace Nucleus
             ApplyPatch(harmony, typeof(Patches.VirtualMFDPatch));
 
             Log.LogInfo("Nucleus Platform loaded.");
+
+            // Dev: optionally dump the game's built-in mission TextAssets so we can fork one (env-gated, no-op off).
+            Nucleus.Host.MissionExporter.MaybeExport(Log);
         }
 
         private static void ApplyPatch(Harmony harmony, Type patchType)
