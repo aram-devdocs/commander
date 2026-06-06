@@ -18,6 +18,13 @@ namespace Nucleus.Core.Command
 
         public SquadRoster(SquadConfig cfg) { _cfg = cfg ?? new SquadConfig(); }
 
+        /// <summary>The auto-form batch counter (drives auto squad ids "auto{n}-..."). Exposed so persistence
+        /// can save/restore it, keeping restored auto-squad ids from colliding with new ones.</summary>
+        public int BatchSeed { get => _batch; set => _batch = value; }
+
+        /// <summary>The squad-forming config (so persistence can round-trip the same tunables).</summary>
+        public SquadConfig Config => _cfg;
+
         public IReadOnlyList<Squad> Squads => _squads;
         public Squad ById(string id) => _squads.FirstOrDefault(s => s.Id == id);
         public void Add(Squad squad) => _squads.Add(squad); // player-created

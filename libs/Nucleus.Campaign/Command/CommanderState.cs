@@ -35,6 +35,10 @@ namespace Nucleus.Core.Command
 
         private int _opId;
 
+        /// <summary>The operation-id counter (last issued). Exposed so persistence can save/restore it,
+        /// keeping <see cref="NextOperationId"/> from colliding with restored ids. Same-assembly only.</summary>
+        internal int OperationIdSeed { get => _opId; set => _opId = value; }
+
         public CommanderState(SquadConfig squadCfg = null, Doctrine doctrine = null, BrainConfig brainCfg = null)
         {
             Squads = new SquadRoster(squadCfg ?? new SquadConfig());

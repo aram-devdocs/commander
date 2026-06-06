@@ -5,7 +5,7 @@
 > Update on every state transition. Source of truth for "what's next" — survives context compaction.
 
 **Branch:** `nucleus-platform` · **Baseline (known-good):** `pwsh scripts/audit.ps1` → AUDIT: PASS
-**Gate (7 layers):** build 0w · unit-core 118 · arch 9 · sim 17 · logaudit 7 · contract 11 · integration 9 (2026-06-06)
+**Gate (7 layers):** build 0w · unit-core 125 · arch 9 · sim 19 · logaudit 7 · contract 11 · integration 9 (2026-06-06)
 
 ## Where we are
 The full platform is **built, renamed, and headless-green.** The monorepo is the planned shape:
@@ -27,15 +27,19 @@ the dual-faction campaign sim over the real brain, and the log-audit/self-test i
 | 3 | Stand up host; Commander first | DONE (in-game ✅) | P3-host-tick PASSED: plugin loaded, 4/4 patches, host tick reached, 0 exceptions |
 | 4 | Split Build | DONE | own plugin/bezel; no-skew deploy verified; PLAYTEST pending in-game |
 | 5 | Split Squad | DONE | own plugin/bezel; external SquadRoster ctor; PLAYTEST pending in-game |
-| 6 | Warfare + SDK packaging + dual-faction + persistence | DONE (headless) | dual-faction sim green; SDK packable + template; persistence model next-deepen |
+| 6 | Warfare + SDK packaging + dual-faction + persistence | DONE (headless) | dual-faction sim green; SDK packable + template; **campaign save/resume seam done** (CampaignSnapshot/State/Save + continuation-determinism proof) |
 | 7 | Rename CommanderLayer.* → Nucleus.* | DONE | source/projects/sln/scripts/CI/hooks; repo+folder rename = human touchpoint (below) |
 
 ## Remaining work
 ### Headless (the loop can do now)
-- **Campaign persistence deepening** — the save/resume model + round-trip tests toward the multi-hour
-  north-star campaign. Highest-value headless item remaining.
+- ✅ **Campaign persistence** — DONE. `libs/Nucleus.Campaign/Persistence/` = `CampaignSnapshot` (resumable
+  state), `CampaignState.Capture/Restore` (live ↔ snapshot), `CampaignSave.Serialize/Deserialize`
+  (dependency-free versioned text, Mono/BepInEx-safe). Proven by 7 unit tests + a `DualSimWorld`-style
+  **continuation-determinism** test (save → continue original vs restore → continue: identical traces).
+  Spec: `specs/phase-6/P6-persistence.md`. Next deepening: wire save/load into the live host (Unity-gated).
 - **Host real UI layer** (host-owned Canvas → Build buy-menu + Squad manager panels) — *gated on the
-  one verification run below* so it isn't built on unverified UI. Until then, do persistence + hardening.
+  one verification run below* so it isn't built on unverified UI. Now the top remaining build item once the
+  verification run lands.
 
 ### Playtest-gated (awaiting one human verification run)
 One run mechanically verifies all four mods + loader + bezel buttons at once:
