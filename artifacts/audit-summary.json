@@ -22,6 +22,11 @@
                       "detail":  ""
                   },
                   {
+                      "name":  "logaudit",
+                      "status":  "PASS",
+                      "detail":  ""
+                  },
+                  {
                       "name":  "contract",
                       "status":  "PASS",
                       "detail":  ""

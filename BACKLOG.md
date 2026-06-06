@@ -13,7 +13,7 @@
 - [x] P0-arch — `tests/Nucleus.Architecture.Tests` (Cecil DAG/Unity-free/ownership rules + 4 synthetic proofs the rules bite) **HV**
 - [x] P0-ci — `ci.yml` modernized: always-on headless gate (Core + arch) on ubuntu + full `check.sh` when lib present. (`release.yml`/`nightly.yml` deferred — need pack targets [P6] and the Sim suite first.)
 - [~] P0-testkit/sim/coverage/apisnap — **sequenced into Phase 1**: TestKit(FakeGame)/Integration/Sim/coverage/api-snapshot are built against the real extracted libs (they reference Nucleus.Domain/Campaign), so they land right after P1-domain rather than against the monolith. Tracked under Phase 1.
-- [ ] P0-logaudit — `tools/Nucleus.LogAudit` CLI (parse BepInEx log → JSON verdict). **Deferred to pre-Phase-3** (first playtest); audit.ps1 already has the `-LogPath` hook stubbed. **HV**
+- [x] P0-logaudit — `tools/Nucleus.LogAudit` CLI (parse BepInEx log → PASS/FAIL checks + JSON, exit-coded) + `tests/Nucleus.LogAudit.Tests` (5 tests). Wired always-on (audit.ps1/check.sh/ci.yml) — **gate now 7 layers**. CLI smoke-tested on the sandbox log. audit.ps1 `-LogPath` now functional. **HV**
 
 ## Phase 1 — Extract pure libs (each extraction guarded by arch + per-lib unit + coverage)
 - [x] P1-domain — `libs/Nucleus.Domain` (20 closure-verified pure files); tests/Core repointed (ProjectRef + glob); codegen coreGenDir → libs/Nucleus.Domain/Generated; contract test reads mirror from Domain.dll; deploy bundles Nucleus.*.dll. Gate PASS (0w/118/9/11), deploy verified. **HV**

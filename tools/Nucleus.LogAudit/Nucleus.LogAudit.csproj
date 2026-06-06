@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Nucleus.LogAudit</AssemblyName>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- Parses a BepInEx/Player.log into a PASS/FAIL verdict so a playtest result is mechanically checkable. -->
+  </PropertyGroup>
+</Project>
