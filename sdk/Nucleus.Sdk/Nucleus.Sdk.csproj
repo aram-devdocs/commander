@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- Import FIRST (it sets IsPackable=false + shared metadata), then override IsPackable=true below — order
+       matters: a later property assignment wins. -->
+  <Import Project="..\..\build\Packaging.props" />
+
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <PackageId>Nucleus.Sdk</PackageId>
@@ -6,8 +10,6 @@
     <IsPackable>true</IsPackable>
     <Description>Nucleus SDK metapackage for building Nuclear Option (BepInEx) mods — pulls Abstractions, Domain, Squads, Production, Campaign, GameSdk, and Ui as dependencies. Bring your own game DLLs (setup-sdk); none are shipped.</Description>
   </PropertyGroup>
-
-  <Import Project="..\..\build\Packaging.props" />
 
   <!-- The 7 shared libs are packable, so these references become package dependencies (not inlined DLLs). -->
   <ItemGroup>

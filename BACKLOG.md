@@ -40,9 +40,10 @@
   Packaging.props + IsPackable + single Version 0.1.0). **Verified: GameSdk nupkg ships ONLY its own DLL — no
   game/Unity IP** (Private=false HintPath refs excluded). Plugin marked IsPackable=false. `sdk/Nucleus.Sdk`
   metapackage builds. artifacts/ gitignored. **HV**
-  - [ ] metapackage `dotnet pack` quirk (silently no-ops with game-coupled project refs) — investigate/replace with nuspec.
+  - [x] metapackage pack **FIXED** — root cause: import order (Packaging.props IsPackable=false imported AFTER the IsPackable=true override). `dotnet pack Nucleus.sln` now produces all 8 packages (7 libs + Nucleus.Sdk with its 7 deps), verified.
   - [x] `dotnet new nucleus-mod` template (sdk/templates/Nucleus.ModTemplate): Plugin.cs (BepInPlugin + ModPlatform.Register), Mod.cs (IMod skeleton), csproj (Nucleus.Sdk PackageReference + BYO game-DLL refs), thunderstore/manifest.json, README. **Smoke-tested**: install→instantiate -n FooBar renames namespace/plugin/GUID + SDK_VERSION correctly. **HV**
-  - [ ] setup-sdk script (populate consumer lib/) + release.yml pack/push job + api-snapshot gate + metapackage pack fix.
+  - [x] `release.yml` (tag v* → build + `dotnet pack Nucleus.sln` + `dotnet nuget push`, gated on lib/ + NUGET_API_KEY secret; self-hosted runner for game-coupled libs; no IP shipped) + `scripts/setup-sdk.ps1` (populate consumer lib/ from -GamePath). Pack mechanism validated locally. **HV**
+  - [ ] api-snapshot gate (PublicAPI analyzer) — defer.
 
 ## Phase 2–7 — see plan (specs to be drafted as each phase is pulled)
 - [x] P2-gamesdk — `libs/Nucleus.GameSdk` (all src/Game except CommanderService) + Generated/; codegen gameGenDir retargeted (regen verified identical); NucleusLog seam added to Domain (libs log without referencing Plugin); InternalsVisibleTo("CommanderLayer") preserves same-assembly accessibility. Gate PASS (0w/118/9/11). **HV**

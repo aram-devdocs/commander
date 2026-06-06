@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  # Pack + push the Nucleus SDK packages on a version tag. The game-coupled libs (GameSdk/Ui/Abstractions)
+  # need lib/Assembly-CSharp.dll to BUILD, so this must run on a self-hosted runner that has the licensed
+  # game (scripts/setup-sandbox.ps1 populates lib/). On GitHub-hosted runners it no-ops. The packages
+  # themselves ship NO game IP — only the Nucleus.*.dll (verified: game refs are Private=false HintPaths).
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack + push SDK (only when game DLLs are present)
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ ! -f lib/Assembly-CSharp.dll ]; then
+            echo "lib/Assembly-CSharp.dll absent — the game-coupled SDK libs cannot build here."
+            echo "Run this job on a self-hosted runner with lib/ provisioned (setup-sandbox.ps1)."
+            exit 0
+          fi
+          dotnet build Nucleus.sln -c Release
+          # Packs every IsPackable project (the 7 shared libs + the Nucleus.Sdk metapackage).
+          dotnet pack Nucleus.sln -c Release --no-build -o artifacts/nupkg
+          if [ -n "$NUGET_API_KEY" ]; then
+            dotnet nuget push "artifacts/nupkg/*.nupkg" --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json --skip-duplicate
+          else
+            echo "NUGET_API_KEY secret not set — packed but did not push."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/nupkg/*.nupkg
+          if-no-files-found: ignore
