@@ -41,6 +41,8 @@ namespace Nucleus.Warfare
             {
                 ModId = Info.Id,
                 Label = "WAR",
+                BuildContent = parent => Nucleus.Ui.UiFactory.Placeholder(parent,
+                    $"WARFARE\n\nDynamic war — turn {_campaign.Turn}.\nCampaign view wiring up next."),
                 OnClick = ReportStatus,
             });
         }

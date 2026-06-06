@@ -4,9 +4,9 @@ using Nucleus.Composition;
 namespace Nucleus.Commander
 {
     /// <summary>
-    /// Commander as a hosted mod: a thin wrapper over CommanderRuntime. Registers the CMD bezel button (the
-    /// host attaches it to a blank MFD slot) which toggles the Commander panel; the runtime owns its own
-    /// overlay canvas/screen.
+    /// Commander as a hosted mod: a thin wrapper over CommanderRuntime. Registers the CMD bezel button; the
+    /// host makes it a native MFD bezel button + screen and hands the runtime the screen's content surface to
+    /// render the Commander panel into.
     /// </summary>
     public sealed class CommanderMod : IMod
     {
@@ -25,12 +25,13 @@ namespace Nucleus.Commander
 
         public void Initialize(IModContext ctx)
         {
-            // Claim the CMD bezel button; the host attaches it to a blank MFD slot when the map opens.
+            // Claim the CMD bezel button; the host makes it a native bezel button + MFD screen and gives the
+            // runtime that screen's content surface to render into.
             ctx.Buttons.RegisterMapButton(new MapButtonSpec
             {
                 ModId = Info.Id,
                 Label = "CMD",
-                OnClick = () => _runtime.ToggleScreen(),
+                BuildContent = parent => _runtime.BuildPanel(parent),
             });
         }
 

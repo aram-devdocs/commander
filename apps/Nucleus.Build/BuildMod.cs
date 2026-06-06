@@ -27,13 +27,13 @@ namespace Nucleus.Build
             ctx.Log.Info("[NUCLEUS:SELFTEST] PASS build-mod-loaded");
             ctx.Log.Info($"[NUCLEUS:METRIC] buildFunds={(int)ctx.Game.Funds()}");
 
-            // Claim a BLD bezel button on the map (the host attaches it to a blank slot). The buy-menu panel
-            // lands once the host exposes a real UI layer; for now clicking confirms the button is wired.
+            // Claim a BLD bezel button; the host makes it a native bezel button + MFD screen. The buy-menu
+            // content lands next phase; for now a native placeholder proves the screen opens with the highlight.
             ctx.Buttons.RegisterMapButton(new MapButtonSpec
             {
                 ModId = Info.Id,
                 Label = "BLD",
-                OnClick = () => ctx.Log.Info("[Build] buy menu — coming soon"),
+                BuildContent = parent => Nucleus.Ui.UiFactory.Placeholder(parent, "BUILD\n\nBuy menu — wiring up next."),
             });
         }
 

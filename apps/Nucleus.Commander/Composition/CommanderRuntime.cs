@@ -2,10 +2,7 @@ using System.Collections.Generic;
 using Nucleus.Core.Model;
 using Nucleus.Core.Ports;
 using Nucleus.Game;
-using Nucleus.Game.Generated;
-using Nucleus.Patches;
 using Nucleus.Ui;
-using HarmonyLib;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -13,10 +10,10 @@ using UnityEngine.UI;
 namespace Nucleus.Composition
 {
     /// <summary>
-    /// Composition root: builds the commander service, hosts the modal (own overlay canvas, opened by the
-    /// native CMD bezel button), draws the order overlay + live placement ring on the map's icon layer,
-    /// routes clicks to order placement, runs the throttled management loop. Driven by the DynamicMap.Update
-    /// Harmony postfix.
+    /// Composition root: builds the commander service, renders the Commander panel INTO a native MFD screen
+    /// the host provides (so the game owns the window's placement, green highlight, and close-on-map-minimize),
+    /// draws the order overlay + live placement ring on the map's icon layer, routes clicks to order placement,
+    /// runs the throttled management loop. Driven by the DynamicMap.Update Harmony postfix.
     /// </summary>
     public sealed class CommanderRuntime
     {
@@ -24,14 +21,10 @@ namespace Nucleus.Composition
         private readonly IMapProjection _projection;
         private readonly CommanderService _service;
 
-        private Canvas _canvas;
         private CommanderMapScreen _screen;
         private MapOverlay _overlay;
         private Theme _theme;
         private DynamicMap _lastMap;
-        private Button _cmdButton;
-        private Text _cmdLabel;
-        private Color _cmdLabelColor = Color.white;
         private OrderKind? _armed;
         private AssignmentPreview _hoverPreview;
         private bool _firstTick = true;
@@ -46,23 +39,35 @@ namespace Nucleus.Composition
             CommanderPlugin.Log?.LogInfo("CommanderRuntime constructed.");
         }
 
-        /// <summary>True while the modal is open (used by the map-pan guard).</summary>
-        public bool ModalOpen => _screen != null && _screen.IsOpen;
-
-        /// <summary>Open/close the Commander panel — wired to the host-attached CMD bezel button.</summary>
-        public void ToggleScreen()
+        /// <summary>
+        /// Build the Commander panel into the host-provided native MFD-screen content RectTransform. Called
+        /// once by the host when the map's bezel screens are created. The native MFDScreen shows/hides this;
+        /// our content stays active inside it.
+        /// </summary>
+        public void BuildPanel(RectTransform parent)
         {
-            EnsureCanvas();
-            EnsureScreen();
-            _screen?.Toggle();
+            if (_screen != null || parent == null) return;
+            CaptureNativeButtonSprite();
+            CaptureNativeAssets();
+            _player.TryGetLocalFaction(out var faction);
+            _theme = Theme.FromFaction(faction);
+            _screen = new CommanderMapScreen(parent, _theme,
+                onArm: k => _armed = k,
+                onClearAll: () => _service.ClearAll(),
+                onClearOrder: id => _service.Clear(id),
+                onSetMode: m => _service.SetMode(m),
+                onConfirmProposal: () => _service.ConfirmTopProposal(),
+                onToggleOpManual: id => _service.ToggleOperationManual(id),
+                onToggleSquadManual: id => _service.ToggleSquadManual(id),
+                onBuyConvoy: name => _service.BuyConvoy(name));
+            TryAddNativeBorder(_screen.PanelRoot, _theme.Accent);
+            _screen.SetOpen(true); // always visible within the native MFD screen; the game gates the screen itself
+            CommanderPlugin.Log?.LogInfo("Commander panel built into native MFD screen.");
         }
 
         public void Tick()
         {
             if (_firstTick) { _firstTick = false; CommanderPlugin.Log?.LogInfo("CommanderRuntime first Tick — driver alive."); }
-
-            EnsureCanvas();
-            EnsureScreen();
 
             var map = SceneSingleton<DynamicMap>.i;
             bool open = map != null && DynamicMap.mapMaximized;
@@ -74,56 +79,52 @@ namespace Nucleus.Composition
             }
             if (map == null) { _lastMap = null; _overlay = null; }
 
-            if (!open)
-            {
-                if (_canvas != null) _canvas.enabled = false;
-                _overlay?.Clear();         // hide markers/lines/ring when the map closes
-                _armed = null;
-                _hoverPreview = null;
-                return;
-            }
-            if (_canvas != null) _canvas.enabled = true;
-
-            // Live placement preview while armed.
-            _hoverPreview = null;
-            if (_armed.HasValue && !IsPointerOverUi() && _projection.TryCursorToWorld(out var hover))
-            {
-                bool isBuild = _armed.Value == OrderKind.Build;
-                _hoverPreview = isBuild ? null : _service.PreviewAt(_armed.Value, hover, _screen.Domains, _screen.RangeMeters);
-                bool canPlace = isBuild || (_hoverPreview != null && _hoverPreview.CanPlace);
-                _overlay?.SetHover(hover, _screen.RangeMeters, _service.Config.ThreatRadius, _armed.Value, canPlace,
-                    PreviewPositions(_hoverPreview));
-
-                if (Input.GetMouseButtonDown(0))
-                {
-                    var state = _service.PlaceOrder(_armed.Value, hover, _screen.Domains, _screen.RangeMeters);
-                    CommanderPlugin.Log?.LogInfo($"Placed {state.Order.Kind}: {state.Summary}");
-                    _armed = null;
-                    _overlay?.ClearHover();
-                }
-            }
-            else
-            {
-                _overlay?.ClearHover();
-            }
-
+            // The autonomous commander runs whether or not the panel is visible (throttled).
             if (Time.unscaledTime >= _nextManage)
             {
                 _nextManage = Time.unscaledTime + _service.Config.ManagementIntervalSeconds;
                 _service.Tick();
             }
 
-            _player.TryGetLocalFaction(out var faction);
-            _screen?.Render(_service.Orders, faction, _armed, _hoverPreview, NamesById());
-            _screen?.RenderHq(_service.AutoHq(), _service.CurrentMode(), _service.BuildCatalog(), _service.Funds());
-            _overlay?.Render(_service.Orders, PositionsById());
-
-            if (_cmdLabel != null) _cmdLabel.color = ModalOpen ? new Color(0.4f, 1f, 0.5f) : _cmdLabelColor;
-
-            if (ModalOpen && !_loggedPanel)
+            _hoverPreview = null;
+            if (!open)
             {
-                _loggedPanel = true;
-                CommanderPlugin.Log?.LogInfo("[panel] " + _screen.DebugInfo());
+                _overlay?.Clear();
+                _armed = null;
+            }
+            else if (_screen != null)
+            {
+                // Live placement preview while armed.
+                if (_armed.HasValue && !IsPointerOverUi() && _projection.TryCursorToWorld(out var hover))
+                {
+                    bool isBuild = _armed.Value == OrderKind.Build;
+                    _hoverPreview = isBuild ? null : _service.PreviewAt(_armed.Value, hover, _screen.Domains, _screen.RangeMeters);
+                    bool canPlace = isBuild || (_hoverPreview != null && _hoverPreview.CanPlace);
+                    _overlay?.SetHover(hover, _screen.RangeMeters, _service.Config.ThreatRadius, _armed.Value, canPlace,
+                        PreviewPositions(_hoverPreview));
+
+                    if (Input.GetMouseButtonDown(0))
+                    {
+                        var state = _service.PlaceOrder(_armed.Value, hover, _screen.Domains, _screen.RangeMeters);
+                        CommanderPlugin.Log?.LogInfo($"Placed {state.Order.Kind}: {state.Summary}");
+                        _armed = null;
+                        _overlay?.ClearHover();
+                    }
+                }
+                else
+                {
+                    _overlay?.ClearHover();
+                }
+                _overlay?.Render(_service.Orders, PositionsById());
+            }
+
+            // Keep the panel content fresh (it renders only when the native screen shows it).
+            if (_screen != null)
+            {
+                _player.TryGetLocalFaction(out var faction);
+                _screen.Render(_service.Orders, faction, _armed, _hoverPreview, NamesById());
+                _screen.RenderHq(_service.AutoHq(), _service.CurrentMode(), _service.BuildCatalog(), _service.Funds());
+                if (!_loggedPanel) { _loggedPanel = true; CommanderPlugin.Log?.LogInfo("[panel] " + _screen.DebugInfo()); }
             }
         }
 
@@ -148,83 +149,6 @@ namespace Nucleus.Composition
             var list = new List<Vec3>(preview.Assignable.Count);
             foreach (var u in preview.Assignable) list.Add(u.Position);
             return list;
-        }
-
-        public void AttachCmdButton(VirtualMFD mfd)
-        {
-            if (mfd == null || _cmdButton != null) return;
-            EnsureCanvas();
-            EnsureScreen();
-
-            var rightButtons = GameSdk.VirtualMFD_rightButtons(mfd);
-            var rightScreens = GameSdk.VirtualMFD_rightScreens(mfd);
-            var leftButtons = GameSdk.VirtualMFD_leftButtons(mfd);
-            var leftScreens = GameSdk.VirtualMFD_leftScreens(mfd);
-
-            var btn = FindBlankButton(rightButtons, rightScreens) ?? FindBlankButton(leftButtons, leftScreens);
-            if (btn == null) { CommanderPlugin.Log?.LogWarning("No blank MFD bezel button available for CMD."); return; }
-
-            btn.enabled = true;
-            btn.gameObject.SetActive(true);
-            _cmdLabel = btn.GetComponentInChildren<Text>(includeInactive: true);
-            if (_cmdLabel != null)
-            {
-                _cmdLabel.text = "CMD";
-                _cmdLabel.enabled = true;
-                _cmdLabel.gameObject.SetActive(true);
-                _cmdLabelColor = _cmdLabel.color; // keep the game's native color; only override to green when open
-            }
-            btn.onClick.RemoveAllListeners();
-            btn.onClick.AddListener(() => _screen?.Toggle());
-            _cmdButton = btn;
-            CommanderPlugin.Log?.LogInfo($"CMD button attached (label set={_cmdLabel != null}).");
-        }
-
-        private static Button FindBlankButton(List<Button> buttons, List<MFDScreen> screens)
-        {
-            if (buttons == null) return null;
-            for (int i = 0; i < buttons.Count; i++)
-            {
-                var b = buttons[i];
-                if (b == null) continue;
-                bool hasScreen = screens != null && i < screens.Count && screens[i] != null;
-                if (!hasScreen) return b;
-            }
-            return null;
-        }
-
-        private void EnsureCanvas()
-        {
-            if (_canvas != null) return;
-            var go = new GameObject("CommanderCanvas");
-            Object.DontDestroyOnLoad(go);
-            _canvas = go.AddComponent<Canvas>();
-            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 5000;
-            go.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            go.AddComponent<GraphicRaycaster>();
-            _canvas.enabled = false;
-            CommanderPlugin.Log?.LogInfo("Commander canvas created.");
-        }
-
-        private void EnsureScreen()
-        {
-            if (_screen != null || _canvas == null) return;
-            CaptureNativeButtonSprite();
-            CaptureNativeAssets();
-            _player.TryGetLocalFaction(out var faction);
-            _theme = Theme.FromFaction(faction);
-            _screen = new CommanderMapScreen(_canvas.transform, _theme,
-                onArm: k => _armed = k,
-                onClearAll: () => _service.ClearAll(),
-                onClearOrder: id => _service.Clear(id),
-                onSetMode: m => _service.SetMode(m),
-                onConfirmProposal: () => _service.ConfirmTopProposal(),
-                onToggleOpManual: id => _service.ToggleOperationManual(id),
-                onToggleSquadManual: id => _service.ToggleSquadManual(id),
-                onBuyConvoy: name => _service.BuyConvoy(name));
-            TryAddNativeBorder(_screen.PanelRoot, _theme.Accent);
-            CommanderPlugin.Log?.LogInfo("Commander panel built.");
         }
 
         private static bool IsPointerOverUi()
@@ -281,6 +205,5 @@ namespace Nucleus.Composition
                 return;
             }
         }
-
     }
 }

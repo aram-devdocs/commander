@@ -27,12 +27,13 @@ namespace Nucleus.Squad
             ctx.Log.Info("[NUCLEUS:SELFTEST] PASS squad-mod-loaded");
             ctx.Log.Info($"[NUCLEUS:METRIC] squadRoster={ctx.Game.Roster().Count}");
 
-            // Claim a SQD bezel button (host attaches it to a blank slot). Squad panel lands with host UI.
+            // Claim a SQD bezel button; the host makes it a native bezel button + MFD screen. The squad
+            // manager content lands next phase; a native placeholder proves the screen opens with the highlight.
             ctx.Buttons.RegisterMapButton(new MapButtonSpec
             {
                 ModId = Info.Id,
                 Label = "SQD",
-                OnClick = () => ctx.Log.Info("[Squad] squad manager — coming soon"),
+                BuildContent = parent => Nucleus.Ui.UiFactory.Placeholder(parent, "SQUAD\n\nSquad manager — wiring up next."),
             });
         }
 

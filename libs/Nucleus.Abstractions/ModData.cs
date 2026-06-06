@@ -14,12 +14,19 @@ namespace Nucleus.Abstractions
         public Sprite Icon;
     }
 
-    /// <summary>A map-bezel button a mod registers; the host attaches it to a blank VirtualMFD slot and wires
-    /// the click. <see cref="LabelColor"/> is polled so the label can reflect live state (e.g. green when open).</summary>
+    /// <summary>
+    /// A map-bezel button a mod registers. The host adds it as a NATIVE MFD bezel button paired with a native
+    /// <c>MFDScreen</c> (so the game handles placement, the green "open" highlight, and auto-close when the map
+    /// closes). The mod populates its screen once via <see cref="BuildContent"/> — given the screen's content
+    /// RectTransform. <see cref="OnClick"/> is an optional extra hook fired when the screen is opened.
+    /// </summary>
     public sealed class MapButtonSpec
     {
         public string ModId;
         public string Label;
+        /// <summary>Populate the mod's native MFD screen. Called once with the screen's content RectTransform.</summary>
+        public Action<RectTransform> BuildContent;
+        /// <summary>Optional: fired when the native bezel button is pressed (screen opened).</summary>
         public Action OnClick;
         public Func<Color> LabelColor;
     }
