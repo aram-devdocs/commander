@@ -11,12 +11,9 @@
 - [x] P0-sln — `Nucleus.sln` (4 existing projects) + `build/GameReferences.props`, `Deploy.targets`, `Packaging.props` (inert until imported) **HV**
 - [x] P0-hooks — `.githooks/` modernized (Core+arch / full check.sh) + `core.hooksPath` activated; `scripts/check.ps1` + `scripts/audit.ps1` (PASS/FAIL dashboard + JSON) **HV**
 - [x] P0-arch — `tests/Nucleus.Architecture.Tests` (Cecil DAG/Unity-free/ownership rules + 4 synthetic proofs the rules bite) **HV**
-- [ ] P0-testkit — `tests/Nucleus.TestKit` (FakeGame) + `tests/Nucleus.Integration.Tests` scaffold (≥1 real assertion) **HV**
-- [ ] P0-sim — `tests/Nucleus.Sim` harness + `tests/Nucleus.Sim.Tests` (seeded PRNG, 1 invariant over the existing brain) **HV**
-- [ ] P0-coverage — coverlet wiring + ReportGenerator + per-lib threshold gate in audit.ps1 **HV**
-- [ ] P0-apisnap — public-API snapshot scaffolding (no shipped libs yet; wires the gate) **HV**
-- [ ] P0-logaudit — `tools/Nucleus.LogAudit` CLI (parse BepInEx log → JSON verdict, non-zero on FAIL) **HV**
-- [ ] P0-ci — CI split: `ci.yml` (pure always-on), `release.yml` (tag), `nightly.yml` (sim) **HV**
+- [x] P0-ci — `ci.yml` modernized: always-on headless gate (Core + arch) on ubuntu + full `check.sh` when lib present. (`release.yml`/`nightly.yml` deferred — need pack targets [P6] and the Sim suite first.)
+- [~] P0-testkit/sim/coverage/apisnap — **sequenced into Phase 1**: TestKit(FakeGame)/Integration/Sim/coverage/api-snapshot are built against the real extracted libs (they reference Nucleus.Domain/Campaign), so they land right after P1-domain rather than against the monolith. Tracked under Phase 1.
+- [ ] P0-logaudit — `tools/Nucleus.LogAudit` CLI (parse BepInEx log → JSON verdict). **Deferred to pre-Phase-3** (first playtest); audit.ps1 already has the `-LogPath` hook stubbed. **HV**
 
 ## Phase 1 — Extract pure libs (each extraction guarded by arch + per-lib unit + coverage)
 - [ ] P1-domain — create `libs/Nucleus.Domain`, move Core/Model + shared Command primitives; repoint tests/Core **HV**
