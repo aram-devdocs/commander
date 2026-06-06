@@ -6,7 +6,7 @@
 
 **Branch:** `nucleus-platform` · **Baseline (known-good):** build 0 warnings · 118 Core · 11 GameContract (2026-06-06)
 **Current phase:** Phase 3 — host flip PLAYTEST PASSED (P3-host-tick: plugin loaded, 4/4 patches, host-driven tick reached runtime, 0 exceptions). Unblocks P3d/P4/P5.
-**Next action:** P4 — split Build into its own plugin (apps/Nucleus.Build): a thin `[BepInPlugin]` + `[BepInDependency(ModPlatform.Guid)]` that registers a BuildMod : IMod over Nucleus.Production + the host-owned production services. This is the first SEPARATE plugin (tests the multi-plugin "no skew" deploy: shared libs shipped once, mod refs Private=false). Build-gated; queue a playtest. (P3d loader built — awaiting playtests/results/P3d-loader.md, auto-verified by [NUCLEUS:SELFTEST] loader-ui-built.) (tag → dotnet pack+push NuGet, gated on api-snapshot) + `setup-sdk` script (populate consumer lib/ from their Steam install) + fix the metapackage `dotnet pack` no-op. Then dual-faction Sim (both sides run brains) toward the north-star. Resume P3d (loader UI) once playtests/results/P3-host-tick.md lands → then `audit.ps1 -LogPath <log>` audits it mechanically.
+**Next action:** P5 — Squad as its own plugin (apps/Nucleus.Squad), same proven pattern as P4: thin plugin + ModPlatform.Register(new SquadMod()) over Nucleus.Squads + injected services; self-test line. Then deepen Build/Squad UIs once the host exposes real UI/button services (currently HostModUi/HostButtonRegistry are placeholders). Two playtests queued (P3d loader, P4 build) — both auto-verify via [NUCLEUS:SELFTEST] on the next run. (tag → dotnet pack+push NuGet, gated on api-snapshot) + `setup-sdk` script (populate consumer lib/ from their Steam install) + fix the metapackage `dotnet pack` no-op. Then dual-faction Sim (both sides run brains) toward the north-star. Resume P3d (loader UI) once playtests/results/P3-host-tick.md lands → then `audit.ps1 -LogPath <log>` audits it mechanically.
 **Gate now 7 layers:** build 0w · unit-core 118 · arch 9 · sim **17** · logaudit 5 · contract 11 · integration 8.
 **Headless runway note:** most remaining work (P3d loader UI, P4 Build mod, P5 Squad mod) is **playtest-gated** on P3-host-tick. Remaining headless north-star item: **campaign persistence** (save/resume model + round-trip tests) — do that next; then park on the playtest if nothing else is headless-verifiable.
 **Docs landed:** docs/TESTING.md, docs/TESTING-WORKSHEET.md, docs/DEPLOYMENT.md.
@@ -35,7 +35,8 @@
 |----|-------|------|------|-------|------------------|-------------|
 | P3c | 3 | live host flip (tick) | ④ playtest | loop | built, playtest queued | await playtests/results/P3-host-tick.md |
 | P3d | 3 | mod loader UI (MODS menu) | ④ | loop | built, playtest queued | await playtests/results/P3d-loader.md |
-| P4 | 4 | split Build into its own plugin | — | loop | next | apps/Nucleus.Build (first separate plugin) |
+| P4 | 4 | Build as its own plugin | ④ | loop | built (no-skew verified) | playtest auto-verifies build-mod-loaded |
+| P5 | 5 | Squad as its own plugin | — | loop | next | apps/Nucleus.Squad (same pattern as P4) |
 | P6-sdk | 6 | SDK NuGet packaging | — | loop | libs packable + template done | setup-sdk + release.yml + metapackage-pack fix |
 
 ## Pending playtests (Unity-gated, awaiting human)
