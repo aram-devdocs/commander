@@ -95,12 +95,17 @@ namespace Nucleus.Host
                     var extra = spec.OnClick;
                     var capScreen = screen;
                     var capId = spec.ModId;
+                    var capImg = btn.image != null ? btn.image : btn.GetComponent<Image>();
+                    var capOrig = capImg != null ? capImg.color : Color.white;
+                    var capGreen = new Color(0.30f, 0.95f, 0.45f, 1f);
                     // Drop the clone's inherited persistent onClick (it would toggle the template's screen) and
                     // drive ours: the game's PressButton toggles OUR paired screen (native highlight + hide).
+                    // Also tint the button green while its screen is open — a guaranteed "open" indicator.
                     NativeButtons.Rewire(btn, () =>
                     {
                         PlatformPlugin.Log?.LogInfo($"[NUCLEUS:PROBE] click id={capId} beforeActive={capScreen.isActive}");
                         if (onLeft) mfd.PressLeftButton(btn); else mfd.PressRightButton(btn);
+                        if (capImg != null) capImg.color = capScreen.isActive ? capGreen : capOrig;
                         PlatformPlugin.Log?.LogInfo($"[NUCLEUS:PROBE] click id={capId} afterActive={capScreen.isActive} highlightOn={(capScreen.highlight != null && capScreen.highlight.enabled)} content={(capScreen.displayPanel != null && capScreen.displayPanel.activeSelf)}");
                         extra?.Invoke();
                     });
@@ -128,9 +133,11 @@ namespace Nucleus.Host
             }
         }
 
-        // Build a fresh MFDScreen GameObject modelled on `src`: same transform footprint, a stretched content
-        // panel for the mod's UI, and the green highlight cloned from `src`. Returns the screen; outs the
-        // content RectTransform the mod renders into.
+        // Build a fresh MFDScreen modelled on `src`. The probe proved screens toggle correctly (displayPanel
+        // goes active), but a content area STRETCHED to the screen rect resolves to ZERO size and renders
+        // nothing — only a FIXED-SIZE, top-left-anchored panel renders (this is exactly why the CMD screen,
+        // which uses a fixed-size container, was the only visible one). So the displayPanel here is a fixed-size
+        // panel the mod fills, and the green highlight frames it. Returns the screen; outs the content rect.
         private static MFDScreen BuildScreen(VirtualMFD mfd, MFDScreen src, string label, Text bezelLabel, out RectTransform content)
         {
             var srcRt = (RectTransform)src.transform;
@@ -139,25 +146,27 @@ namespace Nucleus.Host
             var rt = (RectTransform)go.transform;
             rt.anchorMin = srcRt.anchorMin; rt.anchorMax = srcRt.anchorMax; rt.pivot = srcRt.pivot;
             rt.sizeDelta = srcRt.sizeDelta; rt.anchoredPosition = srcRt.anchoredPosition;
-            rt.localScale = srcRt.localScale; rt.localRotation = srcRt.localRotation;
+            rt.localScale = srcRt.localScale; rt.localRotation = srcRt.localRotation; rt.localPosition = srcRt.localPosition;
 
-            // Content panel (the mod's UI parent), stretched to fill the screen footprint.
-            var contentGo = new GameObject("Content", typeof(RectTransform));
-            content = (RectTransform)contentGo.transform;
-            content.SetParent(rt, worldPositionStays: false);
-            content.anchorMin = Vector2.zero; content.anchorMax = Vector2.one;
-            content.offsetMin = Vector2.zero; content.offsetMax = Vector2.zero;
+            // Fixed-size visible panel (top-left anchored) = the displayPanel. This is the proven-visible recipe.
+            var panelGo = new GameObject("Panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var prt = (RectTransform)panelGo.transform;
+            prt.SetParent(rt, worldPositionStays: false);
+            prt.anchorMin = new Vector2(0f, 1f); prt.anchorMax = new Vector2(0f, 1f); prt.pivot = new Vector2(0f, 1f);
+            prt.sizeDelta = new Vector2(470f, 900f);
+            prt.anchoredPosition = new Vector2(24f, -60f);
+            panelGo.GetComponent<Image>().color = new Color(0.05f, 0.07f, 0.10f, 0.94f);
+            content = prt;
 
             var screen = go.AddComponent<MFDScreen>();
-            screen.displayPanel = contentGo;
+            screen.displayPanel = panelGo;   // ShowScreen toggles the whole fixed-size panel
             screen.aircraftOnly = false;
-            screen.label = bezelLabel;   // Setup() writes shortName into the bezel button's label
+            screen.label = bezelLabel;        // Setup() writes shortName into the bezel button's label
 
-            // Green "open" highlight: clone the native one (matches the game's colour) and stretch it to frame
-            // OUR content area — the native one is positioned for its own screen, so re-anchor it here.
+            // Green "open" highlight: clone the native one (matches the game's colour) and frame the fixed panel.
             if (src.highlight != null)
             {
-                var hl = Object.Instantiate(src.highlight.gameObject, rt);
+                var hl = Object.Instantiate(src.highlight.gameObject, prt);
                 hl.name = "Highlight";
                 var hlrt = (RectTransform)hl.transform;
                 hlrt.anchorMin = Vector2.zero; hlrt.anchorMax = Vector2.one;
@@ -171,7 +180,7 @@ namespace Nucleus.Host
             screen.Setup(mfd, label);
 
             // Start hidden until the bezel button is pressed.
-            contentGo.SetActive(false);
+            panelGo.SetActive(false);
             if (screen.highlight != null) screen.highlight.enabled = false;
             screen.isActive = false;
             return screen;

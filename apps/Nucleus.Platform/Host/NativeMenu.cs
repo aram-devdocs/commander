@@ -120,10 +120,12 @@ namespace Nucleus.Host
 
         private static void SetLabel(GameObject go, string text)
         {
-            var tmp = go.GetComponentInChildren<TMP_Text>(true);
-            if (tmp != null) { tmp.text = text; return; }
-            var t = go.GetComponentInChildren<Text>(true);
-            if (t != null) t.text = text;
+            // Set EVERY text component (the menu button can have more than one; the visible one isn't always
+            // the first found, which is why the cloned button kept its old label).
+            bool any = false;
+            foreach (var tmp in go.GetComponentsInChildren<TMP_Text>(true)) { tmp.text = text; any = true; }
+            foreach (var t in go.GetComponentsInChildren<Text>(true)) { t.text = text; any = true; }
+            if (!any) PlatformPlugin.Log?.LogWarning($"[Nucleus] no text component on menu/bezel clone to label '{text}'.");
         }
     }
 }
