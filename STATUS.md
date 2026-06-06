@@ -6,7 +6,8 @@
 
 **Branch:** `nucleus-platform` · **Baseline (known-good):** build 0 warnings · 118 Core · 11 GameContract (2026-06-06)
 **Current phase:** Phase 3 — Host/Platform (spec written; P3a Abstractions DONE)
-**Next action (headless, while P3c playtest pending):** finish SDK DX — `dotnet new nucleus-mod` template (sdk/templates: plugin shim + IMod skeleton + csproj referencing Nucleus.Sdk + GameReferences import + thunderstore stub), the `setup-sdk` script (populate consumer lib/ from their Steam install), and a `release.yml` pack/push job (gated on green). Also revisit the metapackage `dotnet pack` no-op. Then draft docs/ deliverables (TESTING/TESTING-WORKSHEET/DEPLOYMENT) and dual-faction Sim. Resume P3d (loader UI) once playtests/results/P3-host-tick.md lands.
+**Next action (headless, while P3c playtest pending):** draft the user-requested **docs deliverables** — `docs/TESTING.md` (manual test steps), `docs/TESTING-WORKSHEET.md` (fill-in feedback sheet), `docs/DEPLOYMENT.md` (CI/CD + accounts + GH secrets: NUGET_API_KEY/TCLI_AUTH_TOKEN/Steam, self-hosted runner). Then `setup-sdk` script + `release.yml` pack/push job + metapackage pack fix + dual-faction Sim. Resume P3d (loader UI) once playtests/results/P3-host-tick.md lands.
+**SDK DX so far:** 7 libs packable + IP-clean; `dotnet new nucleus-mod` template smoke-tested (renames namespace/plugin/GUID/version).
 **PENDING PLAYTEST:** playtests/P3-host-tick.md (host-driven tick — confirm panel/commander still work). Check playtests/results/ each wake.
 **Sim landed:** 14 headless tests over the real brain (determinism, no-NaN, 2000-tick stability, objectives, tasks, war-progresses, operations-opened, phases-advance, 6-seed fuzz). Gate = 6 layers.
 **Gate now:** 5 layers — build 0w · unit-core 118 · arch 9 · contract 11 · integration 8 (host lifecycle headless-proven).
@@ -30,7 +31,8 @@
 | ID | Phase | Item | Gate | Owner | Last gate result | Next action |
 |----|-------|------|------|-------|------------------|-------------|
 | P3c | 3 | live host flip (tick) | ④ playtest | loop | built, playtest queued | await playtests/results/P3-host-tick.md |
-| P6-sdk | 6 | SDK NuGet packaging | — | loop | libs packable+IP-clean (verified) | template + setup-sdk + release.yml |
+| P6-docs | 6 | deliverable docs | — | loop | next (headless) | TESTING + TESTING-WORKSHEET + DEPLOYMENT |
+| P6-sdk | 6 | SDK NuGet packaging | — | loop | libs packable + template done | setup-sdk + release.yml + metapackage-pack fix |
 
 ## Pending playtests (Unity-gated, awaiting human)
 - **P3-host-tick** (playtests/P3-host-tick.md) — confirm the host-driven tick still drives the Commander panel
