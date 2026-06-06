@@ -39,6 +39,10 @@ namespace Nucleus.Composition
             CommanderPlugin.Log?.LogInfo("CommanderRuntime constructed.");
         }
 
+        /// <summary>The shared live campaign — the Commander mod publishes this to the host so Build/Squad/
+        /// Warfare render their slices of the same state.</summary>
+        public Nucleus.Core.Command.ICampaign Campaign => _service;
+
         /// <summary>
         /// Build the Commander panel into the host-provided native MFD-screen content RectTransform. Called
         /// once by the host when the map's bezel screens are created. The native MFDScreen shows/hides this;
@@ -51,6 +55,7 @@ namespace Nucleus.Composition
             CaptureNativeAssets();
             _player.TryGetLocalFaction(out var faction);
             _theme = Theme.FromFaction(faction);
+            // CMD screen = manual orders + commander mode only. Build/Squad/Warfare own the other sections.
             _screen = new CommanderMapScreen(parent, _theme,
                 onArm: k => _armed = k,
                 onClearAll: () => _service.ClearAll(),
@@ -59,7 +64,8 @@ namespace Nucleus.Composition
                 onConfirmProposal: () => _service.ConfirmTopProposal(),
                 onToggleOpManual: id => _service.ToggleOperationManual(id),
                 onToggleSquadManual: id => _service.ToggleSquadManual(id),
-                onBuyConvoy: name => _service.BuyConvoy(name));
+                onBuyConvoy: name => _service.BuyConvoy(name),
+                sections: CommanderPanel.PanelSections.Orders | CommanderPanel.PanelSections.Mode);
             TryAddNativeBorder(_screen.PanelRoot, _theme.Accent);
             _screen.SetOpen(true); // always visible within the native MFD screen; the game gates the screen itself
             CommanderPlugin.Log?.LogInfo("Commander panel built into native MFD screen.");

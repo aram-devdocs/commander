@@ -19,7 +19,8 @@ namespace Nucleus.Ui
         public CommanderMapScreen(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
             Action<string> onClearOrder, Action<Nucleus.Core.Command.CommanderMode> onSetMode = null,
             Action onConfirmProposal = null, Action<string> onToggleOpManual = null,
-            Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null)
+            Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null,
+            CommanderPanel.PanelSections sections = CommanderPanel.PanelSections.All)
         {
             // Left-docked, fixed size, tall enough that all sections fit without compressing (the jerk).
             _container = UiFactory.Panel("CommanderScreen", parent, new Color(0f, 0f, 0f, 0f));
@@ -36,7 +37,7 @@ namespace Nucleus.Ui
             header.gameObject.AddComponent<DragHandle>().Target = _container;
 
             _panel = new CommanderPanel(_container, theme, onArm, onClearAll, onClearOrder, onSetMode,
-                onConfirmProposal, onToggleOpManual, onToggleSquadManual, onBuyConvoy);
+                onConfirmProposal, onToggleOpManual, onToggleSquadManual, onBuyConvoy, sections);
             var p = _panel.Root;
             p.anchorMin = Vector2.zero;
             p.anchorMax = Vector2.one;

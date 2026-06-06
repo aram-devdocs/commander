@@ -11,5 +11,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Nucleus.Domain\Nucleus.Domain.csproj" />
     <ProjectReference Include="..\Nucleus.Ui\Nucleus.Ui.csproj" />
+    <!-- The host contract exposes the shared live campaign (ICampaign) on IModContext so each mod renders its
+         slice. ICampaign + its read models are pure (Campaign/Production/Domain) — no Unity. -->
+    <ProjectReference Include="..\Nucleus.Production\Nucleus.Production.csproj" />
+    <ProjectReference Include="..\Nucleus.Campaign\Nucleus.Campaign.csproj" />
   </ItemGroup>
 </Project>

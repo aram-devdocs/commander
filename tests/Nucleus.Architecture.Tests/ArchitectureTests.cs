@@ -86,12 +86,14 @@ namespace Nucleus.Architecture.Tests
             ["Nucleus.Squads"] = new() { "Nucleus.Domain" },
             ["Nucleus.Production"] = new() { "Nucleus.Domain" },
             ["Nucleus.Campaign"] = new() { "Nucleus.Domain", "Nucleus.Squads", "Nucleus.Production" },
-            // The host contract exposes the Theme type (Ui) on IModUi, so it references Domain + Ui.
-            ["Nucleus.Abstractions"] = new() { "Nucleus.Domain", "Nucleus.Ui" },
+            // The host contract exposes Theme (Ui) on IModUi and the shared ICampaign (Campaign) on IModContext,
+            // so it references Domain + Ui + Campaign + Production (all pure — no Unity).
+            ["Nucleus.Abstractions"] = new() { "Nucleus.Domain", "Nucleus.Ui", "Nucleus.Production", "Nucleus.Campaign" },
             // GameSdk is the engine-access integration layer: it converts game state into the domain types
             // and executes their outputs, so it may reference all four pure domain libs (but no app).
             ["Nucleus.GameSdk"] = new() { "Nucleus.Domain", "Nucleus.Squads", "Nucleus.Production", "Nucleus.Campaign" },
-            ["Nucleus.Ui"] = new() { "Nucleus.Domain" },
+            // Ui hosts the shared campaign panel (CommanderPanel), so it reads the campaign read models.
+            ["Nucleus.Ui"] = new() { "Nucleus.Domain", "Nucleus.Production", "Nucleus.Campaign" },
         };
 
         public static bool IsGameOrUnity(string asmName) =>

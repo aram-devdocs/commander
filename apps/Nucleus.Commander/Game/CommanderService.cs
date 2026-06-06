@@ -9,7 +9,7 @@ namespace Nucleus.Game
     /// Orchestrates the commander: gathers the roster + fog-of-war threat, runs the pure planner/manager,
     /// and executes the resulting per-unit commands. This is the seam between Core logic and the game.
     /// </summary>
-    public sealed class CommanderService
+    public sealed class CommanderService : Nucleus.Core.Command.ICampaign
     {
         private readonly CommanderConfig _cfg;
         private readonly AssignmentManager _mgr;
@@ -160,6 +160,11 @@ namespace Nucleus.Game
 
         /// <summary>Render-ready snapshot of the autonomous commander (ops/squads/production/feed) for the HQ UI.</summary>
         public Core.Command.HqSnapshot AutoHq() => Core.Command.HqView.Build(_auto, _auto.Log, _prodQueue);
+
+        // ---- ICampaign aliases (the shared-campaign contract the host exposes to every mod) ----
+        public Core.Command.HqSnapshot Hq() => AutoHq();
+        public Core.Command.CommanderMode Mode() => CurrentMode();
+        public Core.Command.ConvoyCatalog Catalog() => BuildCatalog();
 
         /// <summary>The current commander mode (OFF when the autonomous commander is disabled, else the
         /// commander's autonomy level). Drives the in-panel mode selector — the single source of control.</summary>

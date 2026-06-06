@@ -1,6 +1,7 @@
 using Nucleus.Abstractions;
 using Nucleus.Core.Command;
 using Nucleus.Core.Persistence;
+using Nucleus.Ui;
 
 namespace Nucleus.Warfare
 {
@@ -17,6 +18,7 @@ namespace Nucleus.Warfare
         private readonly string _savePath;
         private WarfareCampaign _campaign;
         private IModContext _ctx;
+        private CommanderPanel _panel;
 
         public WarfareMod(string savePath) { _savePath = savePath; }
 
@@ -41,8 +43,15 @@ namespace Nucleus.Warfare
             {
                 ModId = Info.Id,
                 Label = "WAR",
-                BuildContent = parent => Nucleus.Ui.UiFactory.Placeholder(parent,
-                    $"WARFARE\n\nDynamic war — turn {_campaign.Turn}.\nCampaign view wiring up next."),
+                BuildContent = parent =>
+                {
+                    // Campaign view: operations + battle feed of the shared commander. Save/resume of the
+                    // two-faction war is automatic (resume on load, persist on shutdown).
+                    _panel = new CommanderPanel(parent, ctx.Ui.Theme, onArm: null, onClearAll: null,
+                        onClearOrder: null, onToggleOpManual: id => ctx.Campaign?.ToggleOperationManual(id),
+                        sections: CommanderPanel.PanelSections.Operations | CommanderPanel.PanelSections.Feed);
+                    UiFactory.Stretch(_panel.Root);
+                },
                 OnClick = ReportStatus,
             });
         }
@@ -60,7 +69,12 @@ namespace Nucleus.Warfare
                 + $"{_campaign.Opfor.Operations.Count} ops");
         }
 
-        public void Tick(IModTickContext t) { }
+        public void Tick(IModTickContext t)
+        {
+            var c = _ctx?.Campaign;
+            if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Mode(), c.Catalog(), c.Funds());
+        }
+
         public void OnEnabled() { }
         public void OnDisabled() { }
         public void Shutdown()

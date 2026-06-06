@@ -17,6 +17,8 @@ namespace Nucleus.Host
         private readonly GameServices _game = new GameServices();
         private readonly HostButtons _buttons = new HostButtons();
         private readonly LogSink _log;
+        // The shared live campaign, published once by the Commander mod and read by Build/Squad/Warfare.
+        private Nucleus.Core.Command.ICampaign _campaign;
 
         public ModHost(ManualLogSource log,
             System.Func<string, bool> readEnabled = null,
@@ -25,7 +27,8 @@ namespace Nucleus.Host
             _log = new LogSink(log);
             var read = readEnabled ?? (_ => true);
             // persist (writeEnabled) saves a runtime toggle; read seeds each mod's initial enabled state.
-            _registry = new ModRegistry(mod => new ModContext(mod, _log, _game, _buttons), writeEnabled);
+            _registry = new ModRegistry(mod => new ModContext(mod, _log, _game, _buttons,
+                () => _campaign, c => _campaign = c), writeEnabled);
             // Install the registration handler so mods (this assembly + separate plugins) resolve through the
             // host. Mods that registered before the host was ready are flushed by SetHandler.
             ModPlatform.SetHandler(m => _registry.Add(m, read(m.Info.Id)));

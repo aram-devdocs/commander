@@ -13,13 +13,19 @@ namespace Nucleus.Host
     internal sealed class ModContext : IModContext
     {
         private readonly IMod _mod;
+        private readonly System.Func<Nucleus.Core.Command.ICampaign> _getCampaign;
+        private readonly System.Action<Nucleus.Core.Command.ICampaign> _setCampaign;
 
-        public ModContext(IMod mod, ILogSink log, IGameServices game, IButtonRegistry buttons)
+        public ModContext(IMod mod, ILogSink log, IGameServices game, IButtonRegistry buttons,
+            System.Func<Nucleus.Core.Command.ICampaign> getCampaign,
+            System.Action<Nucleus.Core.Command.ICampaign> setCampaign)
         {
             _mod = mod;
             Log = log;
             Game = game;
             Buttons = buttons;
+            _getCampaign = getCampaign;
+            _setCampaign = setCampaign;
         }
 
         public ModInfo Info => _mod.Info;
@@ -29,6 +35,10 @@ namespace Nucleus.Host
         public IGameServices Game { get; }
         public IButtonRegistry Buttons { get; }   // host-owned, shared across mods (HostButtons)
         public T BindConfig<T>(string section, string key, T def, string description) => def;
+
+        // Shared live campaign: the Commander publishes it once; every mod reads it (host-owned holder).
+        public Nucleus.Core.Command.ICampaign Campaign => _getCampaign?.Invoke();
+        public void ShareCampaign(Nucleus.Core.Command.ICampaign campaign) => _setCampaign?.Invoke(campaign);
     }
 
     /// <summary>Placeholder UI surface (a host-owned canvas layer is a later step). Commander uses its own

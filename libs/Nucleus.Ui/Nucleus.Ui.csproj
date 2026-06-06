@@ -2,9 +2,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>Nucleus.Ui</AssemblyName>
-    <!-- Generic UI toolkit (atoms, theme, native-asset caches, drag, menu badge). Touches Unity UI/TMP and
-         one native game UI type (BetterBorder), so it imports the game references. Among Nucleus libs it
-         depends only on Domain (arch-enforced). Mod-specific panels live in the apps, not here. -->
+    <!-- UI toolkit (atoms, theme, native-asset caches, drag, menu badge) + the shared CommanderPanel that all
+         mods render their slice of. Touches Unity UI/TMP and one native game UI type (BetterBorder). Among
+         Nucleus libs it depends on Domain + the pure campaign read-models (Campaign/Production). -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,5 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nucleus.Domain\Nucleus.Domain.csproj" />
+    <ProjectReference Include="..\Nucleus.Production\Nucleus.Production.csproj" />
+    <ProjectReference Include="..\Nucleus.Campaign\Nucleus.Campaign.csproj" />
   </ItemGroup>
 </Project>

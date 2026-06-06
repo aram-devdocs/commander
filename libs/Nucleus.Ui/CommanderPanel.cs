@@ -72,11 +72,30 @@ namespace Nucleus.Ui
 
         private struct RowWidgets { public GameObject Go; public TextMeshProUGUI Label; public Button Clear; public string OrderId; }
 
+        /// <summary>Which sections the panel builds — so each mod renders only its slice (CMD = Orders|Mode,
+        /// Build = Build, Squad = Squads, Warfare = Operations|Feed).</summary>
+        [Flags]
+        public enum PanelSections
+        {
+            None = 0,
+            Orders = 1 << 0,      // manual order placement: domains, range, arm buttons, orders list
+            Mode = 1 << 1,        // commander mode selector + confirm
+            Operations = 1 << 2,
+            Squads = 1 << 3,
+            Build = 1 << 4,
+            Feed = 1 << 5,
+            All = Orders | Mode | Operations | Squads | Build | Feed,
+        }
+
+        private readonly PanelSections _sections;
+
         public CommanderPanel(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
             Action<string> onClearOrder, Action<Nucleus.Core.Command.CommanderMode> onSetMode = null,
             Action onConfirmProposal = null, Action<string> onToggleOpManual = null,
-            Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null)
+            Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null,
+            PanelSections sections = PanelSections.All)
         {
+            _sections = sections;
             _theme = theme;
             _onClearOrder = onClearOrder;
             _onToggleOpManual = onToggleOpManual;
@@ -99,81 +118,101 @@ namespace Nucleus.Ui
             scroll.horizontal = false; scroll.vertical = true;
             scroll.movementType = ScrollRect.MovementType.Clamped; scroll.scrollSensitivity = 24f;
 
-            _title = UiFactory.Label("Title", layout.transform, "COMMANDER", 18f, theme.Accent);
-            UiFactory.PreferredHeight(_title.gameObject, 24f);
-            _status = UiFactory.Label("Status", layout.transform, "", 13f, theme.Muted);
-            UiFactory.PreferredHeight(_status.gameObject, 32f);
+            bool Has(PanelSections s) => (_sections & s) != 0;
 
-            // Domain toggles (checkbox-style: "[x] AIR" on, "[ ] AIR" off; single accent so state is obvious)
-            UiFactory.Label("DomHint", layout.transform, "DOMAINS (who may be tasked)", 11f, theme.Muted);
-            var domRow = UiFactory.HorizontalLayout("Domains", layout.transform, 6f);
-            UiFactory.PreferredHeight(domRow.gameObject, 26f);
-            AddToggle(domRow.transform, "AIR", DomainSet.Air);
-            AddToggle(domRow.transform, "LAND", DomainSet.Land);
-            AddToggle(domRow.transform, "SEA", DomainSet.Sea);
+            if (Has(PanelSections.Orders))
+            {
+                _title = UiFactory.Label("Title", layout.transform, "COMMANDER", 18f, theme.Accent);
+                UiFactory.PreferredHeight(_title.gameObject, 24f);
+                _status = UiFactory.Label("Status", layout.transform, "", 13f, theme.Muted);
+                UiFactory.PreferredHeight(_status.gameObject, 32f);
 
-            // Range stepper
-            var rangeRow = UiFactory.HorizontalLayout("Range", layout.transform, 6f);
-            UiFactory.PreferredHeight(rangeRow.gameObject, 26f);
-            UiFactory.Button("RangeDown", rangeRow.transform, "Range -", theme, () => StepRange(-1));
-            _rangeLabel = UiFactory.Label("RangeLabel", rangeRow.transform, "", 13f, theme.Text, TextAlignmentOptions.Center);
-            UiFactory.Button("RangeUp", rangeRow.transform, "Range +", theme, () => StepRange(+1));
+                // Domain toggles (checkbox-style: "[x] AIR" on, "[ ] AIR" off; single accent so state is obvious)
+                UiFactory.Label("DomHint", layout.transform, "DOMAINS (who may be tasked)", 11f, theme.Muted);
+                var domRow = UiFactory.HorizontalLayout("Domains", layout.transform, 6f);
+                UiFactory.PreferredHeight(domRow.gameObject, 26f);
+                AddToggle(domRow.transform, "AIR", DomainSet.Air);
+                AddToggle(domRow.transform, "LAND", DomainSet.Land);
+                AddToggle(domRow.transform, "SEA", DomainSet.Sea);
 
-            // Arm + clear
-            var armRow = UiFactory.HorizontalLayout("Arm", layout.transform, 6f);
-            UiFactory.PreferredHeight(armRow.gameObject, 30f);
-            _attackImg = UiFactory.Button("Attack", armRow.transform, "Attack", theme, () => onArm?.Invoke(OrderKind.Attack)).GetComponent<Image>();
-            _defendImg = UiFactory.Button("Defend", armRow.transform, "Defend", theme, () => onArm?.Invoke(OrderKind.Defend)).GetComponent<Image>();
+                // Range stepper
+                var rangeRow = UiFactory.HorizontalLayout("Range", layout.transform, 6f);
+                UiFactory.PreferredHeight(rangeRow.gameObject, 26f);
+                UiFactory.Button("RangeDown", rangeRow.transform, "Range -", theme, () => StepRange(-1));
+                _rangeLabel = UiFactory.Label("RangeLabel", rangeRow.transform, "", 13f, theme.Text, TextAlignmentOptions.Center);
+                UiFactory.Button("RangeUp", rangeRow.transform, "Range +", theme, () => StepRange(+1));
 
-            var armRow2 = UiFactory.HorizontalLayout("Arm2", layout.transform, 6f);
-            UiFactory.PreferredHeight(armRow2.gameObject, 30f);
-            _captureImg = UiFactory.Button("Capture", armRow2.transform, "Capture", theme, () => onArm?.Invoke(OrderKind.Capture)).GetComponent<Image>();
-            _resupplyImg = UiFactory.Button("Resupply", armRow2.transform, "Resupply", theme, () => onArm?.Invoke(OrderKind.Resupply)).GetComponent<Image>();
-            _buildImg = UiFactory.Button("Build", armRow2.transform, "Build", theme, () => onArm?.Invoke(OrderKind.Build)).GetComponent<Image>();
+                // Arm + clear
+                var armRow = UiFactory.HorizontalLayout("Arm", layout.transform, 6f);
+                UiFactory.PreferredHeight(armRow.gameObject, 30f);
+                _attackImg = UiFactory.Button("Attack", armRow.transform, "Attack", theme, () => onArm?.Invoke(OrderKind.Attack)).GetComponent<Image>();
+                _defendImg = UiFactory.Button("Defend", armRow.transform, "Defend", theme, () => onArm?.Invoke(OrderKind.Defend)).GetComponent<Image>();
 
-            var armRow3 = UiFactory.HorizontalLayout("Arm3", layout.transform, 6f);
-            UiFactory.PreferredHeight(armRow3.gameObject, 30f);
-            _moveImg = UiFactory.Button("Move", armRow3.transform, "Move", theme, () => onArm?.Invoke(OrderKind.Move)).GetComponent<Image>();
+                var armRow2 = UiFactory.HorizontalLayout("Arm2", layout.transform, 6f);
+                UiFactory.PreferredHeight(armRow2.gameObject, 30f);
+                _captureImg = UiFactory.Button("Capture", armRow2.transform, "Capture", theme, () => onArm?.Invoke(OrderKind.Capture)).GetComponent<Image>();
+                _resupplyImg = UiFactory.Button("Resupply", armRow2.transform, "Resupply", theme, () => onArm?.Invoke(OrderKind.Resupply)).GetComponent<Image>();
+                _buildImg = UiFactory.Button("Build", armRow2.transform, "Build", theme, () => onArm?.Invoke(OrderKind.Build)).GetComponent<Image>();
 
-            var clearAll = UiFactory.Button("ClearAll", layout.transform, "Clear all orders", theme, () => onClearAll?.Invoke());
-            UiFactory.PreferredHeight(clearAll.gameObject, 24f);
+                var armRow3 = UiFactory.HorizontalLayout("Arm3", layout.transform, 6f);
+                UiFactory.PreferredHeight(armRow3.gameObject, 30f);
+                _moveImg = UiFactory.Button("Move", armRow3.transform, "Move", theme, () => onArm?.Invoke(OrderKind.Move)).GetComponent<Image>();
 
-            _ordersHeader = UiFactory.Label("OrdersHeader", layout.transform, "Orders", 14f, theme.Text);
-            UiFactory.PreferredHeight(_ordersHeader.gameObject, 22f);
-            _ordersContainer = UiFactory.VerticalLayout("Orders", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+                var clearAll = UiFactory.Button("ClearAll", layout.transform, "Clear all orders", theme, () => onClearAll?.Invoke());
+                UiFactory.PreferredHeight(clearAll.gameObject, 24f);
 
-            // COMMANDER MODE — the single control (no F1 needed): OFF / MANUAL / ASSISTED / AUTO.
-            _hqHeader = UiFactory.Label("HqHeader", layout.transform, "COMMANDER", 14f, theme.Accent);
-            UiFactory.PreferredHeight(_hqHeader.gameObject, 22f);
-            var modeRow = UiFactory.HorizontalLayout("ModeRow", layout.transform, 4f);
-            UiFactory.PreferredHeight(modeRow.gameObject, 28f);
-            AddModeButton(modeRow.transform, "OFF", Cmd.CommanderMode.Off, onSetMode);
-            AddModeButton(modeRow.transform, "MANUAL", Cmd.CommanderMode.Manual, onSetMode);
-            AddModeButton(modeRow.transform, "ASSIST", Cmd.CommanderMode.Assisted, onSetMode);
-            AddModeButton(modeRow.transform, "AUTO", Cmd.CommanderMode.Auto, onSetMode);
-            _modeDesc = UiFactory.Label("ModeDesc", layout.transform, "", 11f, theme.Muted);
-            UiFactory.PreferredHeight(_modeDesc.gameObject, 30f);
-            var confirmBtn = UiFactory.Button("Confirm", layout.transform, "Confirm proposal", theme, () => onConfirmProposal?.Invoke());
-            UiFactory.PreferredHeight(confirmBtn.gameObject, 24f);
-            _confirmButton = confirmBtn.gameObject;
-            _confirmLabel = confirmBtn.GetComponentInChildren<TextMeshProUGUI>();
+                _ordersHeader = UiFactory.Label("OrdersHeader", layout.transform, "Orders", 14f, theme.Text);
+                UiFactory.PreferredHeight(_ordersHeader.gameObject, 22f);
+                _ordersContainer = UiFactory.VerticalLayout("Orders", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+            }
 
-            // OPERATIONS — one interactive row per op with an AUTO/MANUAL toggle (take a slice).
-            UiFactory.PreferredHeight(UiFactory.Label("OpsHdr", layout.transform, "OPERATIONS", 12f, theme.Accent).gameObject, 18f);
-            _opsContainer = UiFactory.VerticalLayout("HqOps", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+            if (Has(PanelSections.Mode))
+            {
+                // COMMANDER MODE — the single control (no F1 needed): OFF / MANUAL / ASSISTED / AUTO.
+                _hqHeader = UiFactory.Label("HqHeader", layout.transform, "COMMANDER", 14f, theme.Accent);
+                UiFactory.PreferredHeight(_hqHeader.gameObject, 22f);
+                var modeRow = UiFactory.HorizontalLayout("ModeRow", layout.transform, 4f);
+                UiFactory.PreferredHeight(modeRow.gameObject, 28f);
+                AddModeButton(modeRow.transform, "OFF", Cmd.CommanderMode.Off, onSetMode);
+                AddModeButton(modeRow.transform, "MANUAL", Cmd.CommanderMode.Manual, onSetMode);
+                AddModeButton(modeRow.transform, "ASSIST", Cmd.CommanderMode.Assisted, onSetMode);
+                AddModeButton(modeRow.transform, "AUTO", Cmd.CommanderMode.Auto, onSetMode);
+                _modeDesc = UiFactory.Label("ModeDesc", layout.transform, "", 11f, theme.Muted);
+                UiFactory.PreferredHeight(_modeDesc.gameObject, 30f);
+                var confirmBtn = UiFactory.Button("Confirm", layout.transform, "Confirm proposal", theme, () => onConfirmProposal?.Invoke());
+                UiFactory.PreferredHeight(confirmBtn.gameObject, 24f);
+                _confirmButton = confirmBtn.gameObject;
+                _confirmLabel = confirmBtn.GetComponentInChildren<TextMeshProUGUI>();
+            }
 
-            // SQUADS — name + what it's doing + an AUTO/MANUAL toggle (manage each squad).
-            UiFactory.PreferredHeight(UiFactory.Label("SquadsHdr", layout.transform, "SQUADS", 12f, theme.Accent).gameObject, 18f);
-            _squadsContainer = UiFactory.VerticalLayout("HqSquads", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+            if (Has(PanelSections.Operations))
+            {
+                // OPERATIONS — one interactive row per op with an AUTO/MANUAL toggle (take a slice).
+                UiFactory.PreferredHeight(UiFactory.Label("OpsHdr", layout.transform, "OPERATIONS", 12f, theme.Accent).gameObject, 18f);
+                _opsContainer = UiFactory.VerticalLayout("HqOps", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+            }
 
-            // BUILD — buy troops: a row per convoy (name + contents + cost) with a BUY button.
-            UiFactory.PreferredHeight(UiFactory.Label("BuildHdr", layout.transform, "BUILD — buy troops", 12f, theme.Accent).gameObject, 18f);
-            _buildContainer = UiFactory.VerticalLayout("HqBuild", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+            if (Has(PanelSections.Squads))
+            {
+                // SQUADS — name + what it's doing + an AUTO/MANUAL toggle (manage each squad).
+                UiFactory.PreferredHeight(UiFactory.Label("SquadsHdr", layout.transform, "SQUADS", 12f, theme.Accent).gameObject, 18f);
+                _squadsContainer = UiFactory.VerticalLayout("HqSquads", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+            }
 
-            // FEED — production status + recent battle events (what the commander is doing).
-            UiFactory.PreferredHeight(UiFactory.Label("FeedHdr", layout.transform, "FEED", 12f, theme.Accent).gameObject, 18f);
-            _hqBody = UiFactory.Label("HqBody", layout.transform, "", 12f, theme.Muted);
-            UiFactory.PreferredHeight(_hqBody.gameObject, 110f);
+            if (Has(PanelSections.Build))
+            {
+                // BUILD — buy troops: a row per convoy (name + contents + cost) with a BUY button.
+                UiFactory.PreferredHeight(UiFactory.Label("BuildHdr", layout.transform, "BUILD — buy troops", 12f, theme.Accent).gameObject, 18f);
+                _buildContainer = UiFactory.VerticalLayout("HqBuild", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
+            }
+
+            if (Has(PanelSections.Feed))
+            {
+                // FEED — production status + recent battle events (what the commander is doing).
+                UiFactory.PreferredHeight(UiFactory.Label("FeedHdr", layout.transform, "FEED", 12f, theme.Accent).gameObject, 18f);
+                _hqBody = UiFactory.Label("HqBody", layout.transform, "", 12f, theme.Muted);
+                UiFactory.PreferredHeight(_hqBody.gameObject, 110f);
+            }
 
             RefreshControls();
         }
@@ -188,34 +227,41 @@ namespace Nucleus.Ui
         /// <summary>Render the commander mode selector (always) + the HQ readout (when the commander is on).</summary>
         public void RenderHq(Cmd.HqSnapshot hq, Cmd.CommanderMode mode, Cmd.ConvoyCatalog catalog, float funds)
         {
-            if (_modeDesc == null) return;
-            // Mode selector — always shown so OFF can be switched on; active mode highlighted + described.
-            foreach (var mb in _modeBtns) mb.Img.color = mb.Mode == mode ? _theme.Accent : _theme.ButtonIdle;
-            _modeDesc.text = ModeDescription(mode);
+            bool running = hq != null && mode != Cmd.CommanderMode.Off;
 
-            int proposalCount = hq?.Proposals.Count ?? 0;
-            bool showConfirm = mode == Cmd.CommanderMode.Assisted && proposalCount > 0;
-            if (_confirmButton != null) _confirmButton.SetActive(showConfirm);
-            if (_confirmLabel != null) _confirmLabel.text = $"Confirm next proposal ({proposalCount})";
-
-            // BUILD menu is available whenever a faction/catalog exists (buy in any mode, even OFF).
-            RenderBuildRows(catalog, funds);
-
-            // Operations/squads/feed only when the commander is actually running.
-            if (hq == null || mode == Cmd.CommanderMode.Off)
+            // Mode selector (Mode section) — active mode highlighted + described; Confirm shown under Assisted.
+            if (_modeDesc != null)
             {
-                _hqBody.text = "";
-                RenderOpRows(null);
-                RenderSquadRows(null);
-                return;
+                foreach (var mb in _modeBtns) mb.Img.color = mb.Mode == mode ? _theme.Accent : _theme.ButtonIdle;
+                _modeDesc.text = ModeDescription(mode);
+                int proposalCount = hq?.Proposals.Count ?? 0;
+                bool showConfirm = mode == Cmd.CommanderMode.Assisted && proposalCount > 0;
+                if (_confirmButton != null) _confirmButton.SetActive(showConfirm);
+                if (_confirmLabel != null) _confirmLabel.text = $"Confirm next proposal ({proposalCount})";
             }
-            RenderOpRows(hq.Operations);     // interactive op rows (AUTO/MANUAL per op)
-            RenderSquadRows(hq.Squads);      // interactive squad rows (AUTO/MANUAL + activity)
-            var sb = new System.Text.StringBuilder();
-            foreach (var p in hq.Proposals.Take(3)) sb.AppendLine($"? {p.Summary} — press Confirm");
-            foreach (var line in hq.Production.Take(3)) sb.AppendLine(line);
-            foreach (var e in hq.Recent.Take(5)) sb.AppendLine($"· {e.Text}");
-            _hqBody.text = sb.ToString().TrimEnd();
+
+            // BUILD menu (Build section) — available whenever a catalog exists (buy in any mode, even OFF).
+            if (_buildContainer != null) RenderBuildRows(catalog, funds);
+
+            // OPERATIONS (Operations section) — only when the commander is running.
+            if (_opsContainer != null) RenderOpRows(running ? hq.Operations : null);
+
+            // SQUADS (Squads section).
+            if (_squadsContainer != null) RenderSquadRows(running ? hq.Squads : null);
+
+            // FEED (Feed section) — proposals + production + recent events.
+            if (_hqBody != null)
+            {
+                if (!running) { _hqBody.text = ""; }
+                else
+                {
+                    var sb = new System.Text.StringBuilder();
+                    foreach (var p in hq.Proposals.Take(3)) sb.AppendLine($"? {p.Summary} — press Confirm");
+                    foreach (var line in hq.Production.Take(3)) sb.AppendLine(line);
+                    foreach (var e in hq.Recent.Take(5)) sb.AppendLine($"· {e.Text}");
+                    _hqBody.text = sb.ToString().TrimEnd();
+                }
+            }
         }
 
         // Squad rows: "Name · Family ×N — activity" + an AUTO/MANUAL toggle. Pooled + index-captured.
@@ -295,7 +341,7 @@ namespace Nucleus.Ui
         public void Render(IReadOnlyList<OrderState> orders, FactionInfo faction, OrderKind? armed, AssignmentPreview preview,
             IReadOnlyDictionary<string, string> unitNames = null)
         {
-            if (_root == null) return;
+            if (_root == null || _title == null) return; // Orders section not built — nothing to render here
 
             _title.text = faction != null ? $"COMMANDER — {faction.Name}" : "COMMANDER";
             if (armed == OrderKind.Build)

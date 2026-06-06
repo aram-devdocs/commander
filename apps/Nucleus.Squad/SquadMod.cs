@@ -1,16 +1,18 @@
 using Nucleus.Abstractions;
+using Nucleus.Ui;
+using UnityEngine;
 
 namespace Nucleus.Squad
 {
     /// <summary>
-    /// Squad assembly + command: put together squads from your forces and command them — the bridge between
-    /// Build (what you buy) and Commander (how it fights). First milestone proves the separate plugin loads,
-    /// registers, and reads the shared roster across the plugin boundary. The squad UI lands once the host
-    /// exposes real UI/button services.
+    /// Squad assembly + command: the SQUADS slice of the shared campaign. Renders the squad list (name /
+    /// family / strength / activity) with a per-squad AUTO/MANUAL toggle into its own native MFD screen;
+    /// toggling routes through the shared campaign so the brain yields that squad to the player.
     /// </summary>
     public sealed class SquadMod : IMod
     {
         private IModContext _ctx;
+        private CommanderPanel _panel;
 
         public ModInfo Info { get; } = new ModInfo
         {
@@ -27,17 +29,26 @@ namespace Nucleus.Squad
             ctx.Log.Info("[NUCLEUS:SELFTEST] PASS squad-mod-loaded");
             ctx.Log.Info($"[NUCLEUS:METRIC] squadRoster={ctx.Game.Roster().Count}");
 
-            // Claim a SQD bezel button; the host makes it a native bezel button + MFD screen. The squad
-            // manager content lands next phase; a native placeholder proves the screen opens with the highlight.
             ctx.Buttons.RegisterMapButton(new MapButtonSpec
             {
                 ModId = Info.Id,
                 Label = "SQD",
-                BuildContent = parent => Nucleus.Ui.UiFactory.Placeholder(parent, "SQUAD\n\nSquad manager — wiring up next."),
+                BuildContent = parent =>
+                {
+                    _panel = new CommanderPanel(parent, ctx.Ui.Theme, onArm: null, onClearAll: null,
+                        onClearOrder: null, onToggleSquadManual: id => ctx.Campaign?.ToggleSquadManual(id),
+                        sections: CommanderPanel.PanelSections.Squads);
+                    UiFactory.Stretch(_panel.Root);
+                },
             });
         }
 
-        public void Tick(IModTickContext t) { }
+        public void Tick(IModTickContext t)
+        {
+            var c = _ctx?.Campaign;
+            if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Mode(), c.Catalog(), c.Funds());
+        }
+
         public void OnEnabled() { }
         public void OnDisabled() { }
         public void Shutdown() { }

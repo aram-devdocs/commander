@@ -33,6 +33,14 @@ namespace Nucleus.Abstractions
         IGameServices Game { get; }
         IButtonRegistry Buttons { get; }
         T BindConfig<T>(string section, string key, T def, string description);
+
+        /// <summary>The shared live campaign every mod renders a slice of (null until a provider mod — the
+        /// Commander — publishes it via <see cref="ShareCampaign"/>). Build/Squad/Warfare read this.</summary>
+        Nucleus.Core.Command.ICampaign Campaign { get; }
+
+        /// <summary>Publish the shared campaign to the host so other mods can read it via <see cref="Campaign"/>.
+        /// Called once by the Commander mod, which owns the live campaign service.</summary>
+        void ShareCampaign(Nucleus.Core.Command.ICampaign campaign);
     }
 
     /// <summary>The UI surface the host lends a mod: an isolated layer under the single shared overlay canvas,

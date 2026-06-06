@@ -25,6 +25,9 @@ namespace Nucleus.Commander
 
         public void Initialize(IModContext ctx)
         {
+            // Publish the shared live campaign so Build/Squad/Warfare render their slices of the same state.
+            ctx.ShareCampaign(_runtime.Campaign);
+
             // Claim the CMD bezel button; the host makes it a native bezel button + MFD screen and gives the
             // runtime that screen's content surface to render into.
             ctx.Buttons.RegisterMapButton(new MapButtonSpec
