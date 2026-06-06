@@ -20,6 +20,11 @@
                       "name":  "contract",
                       "status":  "PASS",
                       "detail":  ""
+                  },
+                  {
+                      "name":  "integration",
+                      "status":  "PASS",
+                      "detail":  ""
                   }
               ]
 }

@@ -25,6 +25,13 @@
   native loader + source + Nexus + Steam Workshop mission "Nucleus Dynamic Warfare".** (User decisions.)
 
 ## Scope decisions
+- **2026-06-06 · Host lifecycle IS headless-testable (probe result).** A net8.0 test CAN load the
+  Unity-referencing `Nucleus.Abstractions` (+Ui) and construct/drive its types, as long as it makes no actual
+  Unity runtime calls and the game/Unity DLLs are copied next to it (`<None Include="$(Lib)\*.dll">`).
+  Therefore `ModRegistry` moved into Nucleus.Abstractions and `tests/Nucleus.Integration.Tests` drives the
+  real registry with a `FakeMod` (8 tests). These are **game-coupled** (need lib/) so they run in the
+  contract gate, not cloud-CI. The Unity-touching host parts (Canvas, IModUi, button attach) remain
+  playtest-gated; their orchestration (registry lifecycle) is now headless-proven.
 - **2026-06-06 · Logging seam (NucleusLog) + InternalsVisibleTo for the lib split.** Shared libs must not
   reference the BepInEx `Plugin` static. Added `CommanderLayer.Core.NucleusLog` (pure Action<string> sinks in
   Domain; host wires them in Plugin.Awake). `CommanderDebugProbe` (reads `Plugin.CommanderDebug`) stays in the

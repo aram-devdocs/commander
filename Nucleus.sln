@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nucleus.Ui", "libs\Nucleus.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nucleus.Abstractions", "libs\Nucleus.Abstractions\Nucleus.Abstractions.csproj", "{6EA7454A-3BA2-4B2E-899B-FAD0F7350CC9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nucleus.Integration.Tests", "tests\Nucleus.Integration.Tests\Nucleus.Integration.Tests.csproj", "{92C947D2-FE03-4D2C-8727-C802BCEAF287}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +92,10 @@ Global
 		{6EA7454A-3BA2-4B2E-899B-FAD0F7350CC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6EA7454A-3BA2-4B2E-899B-FAD0F7350CC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6EA7454A-3BA2-4B2E-899B-FAD0F7350CC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92C947D2-FE03-4D2C-8727-C802BCEAF287}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92C947D2-FE03-4D2C-8727-C802BCEAF287}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92C947D2-FE03-4D2C-8727-C802BCEAF287}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92C947D2-FE03-4D2C-8727-C802BCEAF287}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{CA2E259C-F52C-4FE4-A11E-1D7E009D4A86} = {CCF3846C-04DC-4953-A934-0927C6377710}
@@ -103,5 +109,6 @@ Global
 		{629A7610-86BE-4C31-B952-4A3AAF40A6AD} = {9B22096E-89E2-4BB7-9EE1-8433F1D8E2C2}
 		{23DE8364-E0BD-4EAD-8608-3982B55BE57C} = {9B22096E-89E2-4BB7-9EE1-8433F1D8E2C2}
 		{6EA7454A-3BA2-4B2E-899B-FAD0F7350CC9} = {9B22096E-89E2-4BB7-9EE1-8433F1D8E2C2}
+		{92C947D2-FE03-4D2C-8727-C802BCEAF287} = {CCF3846C-04DC-4953-A934-0927C6377710}
 	EndGlobalSection
 EndGlobal

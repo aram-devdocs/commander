@@ -19,8 +19,10 @@ dotnet test "$root/tests/Nucleus.Architecture.Tests/Nucleus.Architecture.Tests.c
 if [ -f "$root/lib/Assembly-CSharp.dll" ]; then
   echo "[check] game-contract tests..."
   dotnet test "$root/tests/GameContract/CommanderLayer.GameContract.Tests.csproj" -c Release --no-build
+  echo "[check] integration tests (host lifecycle)..."
+  dotnet test "$root/tests/Nucleus.Integration.Tests/Nucleus.Integration.Tests.csproj" -c Release --no-build
 else
-  echo "[check] lib/Assembly-CSharp.dll absent — skipping game-contract tests (mirrors CI)."
+  echo "[check] lib/Assembly-CSharp.dll absent — skipping game-coupled tests (contract + integration; mirrors CI)."
 fi
 
 echo "[check] OK"

@@ -36,9 +36,16 @@ else { Add-Result 'build' 'FAIL' "exit $LASTEXITCODE" }
 Test-Project 'unit-core' 'tests\Core\CommanderLayer.Tests.csproj'
 Test-Project 'arch'      'tests\Nucleus.Architecture.Tests\Nucleus.Architecture.Tests.csproj'
 
-# 3. Game-coupled layer (only when the licensed game DLL is present).
-if ($libPresent) { Test-Project 'contract' 'tests\GameContract\CommanderLayer.GameContract.Tests.csproj' }
-else { Add-Result 'contract' 'SKIP' 'lib/Assembly-CSharp.dll absent' }
+# 3. Game-coupled layer (only when the licensed game DLL is present). Integration tests load the
+#    Unity-referencing Abstractions/Ui assemblies at runtime, so they need lib/ too.
+if ($libPresent) {
+  Test-Project 'contract' 'tests\GameContract\CommanderLayer.GameContract.Tests.csproj'
+  Test-Project 'integration' 'tests\Nucleus.Integration.Tests\Nucleus.Integration.Tests.csproj'
+}
+else {
+  Add-Result 'contract' 'SKIP' 'lib/Assembly-CSharp.dll absent'
+  Add-Result 'integration' 'SKIP' 'needs lib/ Unity DLLs'
+}
 
 # 4. Log-audit (only when a playtest log is supplied; tool lands in a later Phase 0 item).
 if ($LogPath) {

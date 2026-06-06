@@ -6,8 +6,9 @@
 
 **Branch:** `nucleus-platform` · **Baseline (known-good):** build 0 warnings · 118 Core · 11 GameContract (2026-06-06)
 **Current phase:** Phase 3 — Host/Platform (spec written; P3a Abstractions DONE)
-**Next action:** P3b-probe — create tests/Nucleus.Integration.Tests (net8.0) referencing Nucleus.Abstractions + a FakeMod/FakeGame, run a ModRegistry-style lifecycle test, to learn whether the Unity-referencing contract loads headlessly. If YES → move ModRegistry to a referenceable spot + write real host-lifecycle integration tests (FakeGame: register→init→tick→enable/disable, shared queue, no double-buy). If NO → host stays build+playtest-gated; proceed to the live flip (ModContext/IModUi/ModHost + reroute Plugin/patches) and queue a playtest packet.
-**P3b core done (not live):** src/Host/{LogSink, GameServices, ModRegistry}. CommanderRuntime still drives live (behavior unchanged).
+**Next action:** P3c — the live flip. Build ModHost (owns single Canvas + native capture + tick pump + button registry + IModUi impl + ModContext) and CommanderMod : IMod wrapping the existing CommanderRuntime (delegate Initialize/Tick/AttachButton — wrap, don't rewrite, to preserve behavior). Reroute Plugin.Awake (SetHandler + register CommanderMod) and the 3 contended patches to call ModHost. Single plugin. Build-gated + extend integration tests with a FakeGame(IGameServices) where possible; QUEUE a playtest packet (playtests/) since Canvas/tick/button are Unity-only. Loader UI (P3d) after.
+**Gate now:** 5 layers — build 0w · unit-core 118 · arch 9 · contract 11 · integration 8 (host lifecycle headless-proven).
+**P3b core done (not live):** src/Host/{LogSink, GameServices}; ModRegistry now in Nucleus.Abstractions (tested). CommanderRuntime still drives live.
 **Gate now:** `pwsh scripts/audit.ps1` → AUDIT: PASS (build 0w · unit-core 118 · arch 9 · contract 11). 7 libs: Domain/Squads/Production/Campaign/GameSdk/Ui (+Abstractions next).
 **src shell now:** Plugin.cs, Composition/CommanderRuntime, Patches/{MainMenuBadge,DynamicMapTick,VirtualMFD,AircraftTasking}, Game/CommanderService, Ui/{CommanderPanel,CommanderMapScreen,MapOverlay,OrderColors}.
 
@@ -26,7 +27,7 @@
 ## Work-items in flight
 | ID | Phase | Item | Gate | Owner | Last gate result | Next action |
 |----|-------|------|------|-------|------------------|-------------|
-| P3b-probe | 3 | headless host-testability probe | — | loop | next | net8.0 test loads Abstractions? decides verify strategy |
+| P3c | 3 | live host flip (ModHost + CommanderMod) | — | loop | next | wrap CommanderRuntime, reroute Plugin+patches, queue playtest |
 
 ## Pending playtests (Unity-gated, awaiting human)
 _(none yet)_

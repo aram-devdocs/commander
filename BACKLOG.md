@@ -28,7 +28,7 @@
 - [~] P3 — host/Platform + IMod + Commander as first mod (single plugin initially; see specs/phase-3/P3-host.md) **PT**
   - [x] P3a — `libs/Nucleus.Abstractions` contract (IMod/IModContext/IModUi/IModTickContext/ILogSink/IGameServices/IButtonRegistry/ModInfo/MapButtonSpec/MenuItemSpec/ModPlatform). Refs Domain+Ui (arch-verified). Gate PASS. **HV**
   - [~] P3b — in-process host. **Core done** (build-gated, not yet live, behavior unchanged): `src/Host/{LogSink(ILogSink), GameServices(IGameServices over GameSdk adapters), ModRegistry(lifecycle: Add/TickAll/SetEnabled/Shutdown)}`. **Pending**: ModContext/IModUi impl + ModHost + button registry + the live flip (Canvas/tick ownership) — playtest-gated. **HV(core)/PT(flip)**
-  - [ ] P3b-probe — empirically test whether a net8.0 test can load Unity-referencing Nucleus.Abstractions (decides if host lifecycle is headless-testable vs playtest-only). **HV**
+  - [x] P3b-probe — **YES, headless-testable.** ModRegistry moved into Nucleus.Abstractions; tests/Nucleus.Integration.Tests drives it with FakeMod (8 tests: init-on-enable, tick-only-enabled, toggle callbacks, init-once, dup-id, shutdown). Wired into audit.ps1/check.sh (game-coupled). Gate now 5 layers. **HV**
   - [ ] P3c — `CommanderMod : IMod` (CommanderService + 4 panels + AircraftTaskingPatch); CommanderRuntime split host/mod **PT**
   - [ ] P3d — loader UI (MainMenu "MODS" → list/toggle mods, persisted) **PT**
   - [ ] P3-integration — `Nucleus.TestKit` FakeGame + `Nucleus.Integration.Tests` (lifecycle, slots, shared queue, no double-buy) **HV**
