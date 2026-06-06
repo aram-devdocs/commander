@@ -19,7 +19,8 @@ namespace Nucleus.Core.Persistence
         public int Version = CurrentVersion;
 
         // Top-level commander state.
-        public AutonomyLevel Autonomy;
+        public bool AiCreatesObjectives = true;
+        public bool AiAutoFill = true;
         public Vec3 HomeBase;
         public int OperationIdSeed;   // last issued operation-id counter
         public int SquadBatchSeed;    // auto-form batch counter

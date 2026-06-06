@@ -17,7 +17,8 @@ namespace Nucleus.Core.Persistence
         {
             var snap = new CampaignSnapshot
             {
-                Autonomy = state.Autonomy,
+                AiCreatesObjectives = state.AiCreatesObjectives,
+                AiAutoFill = state.AiAutoFill,
                 HomeBase = state.HomeBase,
                 OperationIdSeed = state.OperationIdSeed,
                 SquadBatchSeed = state.Squads.BatchSeed,
@@ -64,7 +65,8 @@ namespace Nucleus.Core.Persistence
 
             var state = new CommanderState(squadCfg, doctrine, brainCfg)
             {
-                Autonomy = snap.Autonomy,
+                AiCreatesObjectives = snap.AiCreatesObjectives,
+                AiAutoFill = snap.AiAutoFill,
                 HomeBase = snap.HomeBase,
                 OperationIdSeed = snap.OperationIdSeed,
             };

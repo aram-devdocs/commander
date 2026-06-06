@@ -49,7 +49,7 @@ namespace Nucleus.Build
             var c = _ctx?.Campaign;
             if (_panel != null && c != null)
             {
-                _panel.RenderHq(c.Hq(), c.Mode(), c.Catalog(), c.Funds());
+                _panel.RenderHq(c.Hq(), c.Catalog(), c.Funds());
                 // Confirms the shared campaign reached a non-CMD mod and its screen rendered (so if BLD works,
                 // SQD/WAR share the same wiring). Its ABSENCE means ctx.Campaign was null (Commander didn't publish).
                 if (!_loggedRender) { _loggedRender = true; _ctx.Log.Info("[NUCLEUS:SELFTEST] PASS build-panel-rendered"); }

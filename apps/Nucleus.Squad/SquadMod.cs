@@ -46,7 +46,7 @@ namespace Nucleus.Squad
         public void Tick(IModTickContext t)
         {
             var c = _ctx?.Campaign;
-            if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Mode(), c.Catalog(), c.Funds());
+            if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Catalog(), c.Funds());
         }
 
         public void OnEnabled() { }

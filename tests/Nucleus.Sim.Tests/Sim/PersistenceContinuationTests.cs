@@ -56,7 +56,7 @@ namespace Nucleus.Sim
             const int warmup = 40, tail = 60;
             var snaps = Script(warmup + tail, seed: 0xC0FFEE);
 
-            var state = new CommanderState { Autonomy = AutonomyLevel.Auto };
+            var state = new CommanderState();
             for (int t = 0; t < warmup; t++) CommanderBrain.Tick(snaps[t], state);
 
             // Save NOW (string is an independent copy) before mutating the original further.
@@ -79,7 +79,7 @@ namespace Nucleus.Sim
         {
             const int warmup = 40;
             var snaps = Script(warmup, seed: 0xC0FFEE);
-            var state = new CommanderState { Autonomy = AutonomyLevel.Auto };
+            var state = new CommanderState();
             for (int t = 0; t < warmup; t++) CommanderBrain.Tick(snaps[t], state);
 
             // The warmed campaign must actually hold state worth persisting (otherwise the continuation test

@@ -61,8 +61,8 @@ namespace Nucleus.Composition
                 onArm: k => _armed = k,
                 onClearAll: () => _service.ClearAll(),
                 onClearOrder: id => _service.Clear(id),
-                onSetMode: m => _service.SetMode(m),
-                onConfirmProposal: () => _service.ConfirmTopProposal(),
+                onSetAiCommander: on => _service.SetAiCreatesObjectives(on),
+                onSetAutoFill: on => _service.SetAiAutoFill(on),
                 onToggleOpManual: id => _service.ToggleOperationManual(id),
                 onToggleSquadManual: id => _service.ToggleSquadManual(id),
                 onBuyConvoy: name => _service.BuyConvoy(name),
@@ -129,7 +129,7 @@ namespace Nucleus.Composition
             {
                 _player.TryGetLocalFaction(out var faction);
                 _panel.Render(_service.Orders, faction, _armed, _hoverPreview, NamesById());
-                _panel.RenderHq(_service.AutoHq(), _service.CurrentMode(), _service.BuildCatalog(), _service.Funds());
+                _panel.RenderHq(_service.AutoHq(), _service.BuildCatalog(), _service.Funds());
                 if (!_loggedPanel) { _loggedPanel = true; CommanderPlugin.Log?.LogInfo("[panel] Commander panel rendering."); }
             }
         }

@@ -110,13 +110,14 @@ namespace Nucleus.Tests
         }
 
         [Fact]
-        public void Build_commander_autonomy_reflects_state()
+        public void Build_command_toggles_reflect_state()
         {
-            var state = new CommanderState { Autonomy = AutonomyLevel.Manual };
+            var state = new CommanderState { AiCreatesObjectives = false, AiAutoFill = true };
 
             var snap = HqView.Build(state, new BattleLog(), new ProductionQueue());
 
-            Assert.Equal(AutonomyLevel.Manual, snap.CommanderAutonomy);
+            Assert.False(snap.AiCreatesObjectives);
+            Assert.True(snap.AiAutoFill);
         }
 
         [Fact]

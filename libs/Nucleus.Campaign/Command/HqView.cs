@@ -66,20 +66,20 @@ namespace Nucleus.Core.Command
         public IReadOnlyList<SquadView> Squads { get; }
         public IReadOnlyList<string> Production { get; }
         public IReadOnlyList<ReportEvent> Recent { get; }
-        public AutonomyLevel CommanderAutonomy { get; }
-        /// <summary>Pending Assisted suggestions the player can confirm (empty unless the commander is Assisted).</summary>
-        public IReadOnlyList<Proposal> Proposals { get; }
+        /// <summary>The two command toggles (mod is always on).</summary>
+        public bool AiCreatesObjectives { get; }
+        public bool AiAutoFill { get; }
 
         public HqSnapshot(IReadOnlyList<OperationView> operations, IReadOnlyList<SquadView> squads,
-            IReadOnlyList<string> production, IReadOnlyList<ReportEvent> recent, AutonomyLevel commanderAutonomy,
-            IReadOnlyList<Proposal> proposals = null)
+            IReadOnlyList<string> production, IReadOnlyList<ReportEvent> recent,
+            bool aiCreatesObjectives, bool aiAutoFill)
         {
             Operations = operations;
             Squads = squads;
             Production = production;
             Recent = recent;
-            CommanderAutonomy = commanderAutonomy;
-            Proposals = proposals ?? new List<Proposal>();
+            AiCreatesObjectives = aiCreatesObjectives;
+            AiAutoFill = aiAutoFill;
         }
     }
 
@@ -112,8 +112,8 @@ namespace Nucleus.Core.Command
                 ? log.Recent(recentCount)
                 : (IReadOnlyList<ReportEvent>)new List<ReportEvent>();
 
-            return new HqSnapshot(operations, squads, productionLines, recent, state.Autonomy,
-                state.Proposals.ToList());
+            return new HqSnapshot(operations, squads, productionLines, recent,
+                state.AiCreatesObjectives, state.AiAutoFill);
         }
 
         /// <summary>What a squad is doing: its operation's objective + combat phase if engaged, else its

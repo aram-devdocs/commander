@@ -22,7 +22,8 @@ namespace Nucleus.Core.Tests
                 new Doctrine { RiskTolerance = 0.7f, ForceRatio = 2.2f },
                 new BrainConfig { ClusterRadius = 2500f, CoverageRadius = 3500f, MaxSquadsPerOperation = 3 })
             {
-                Autonomy = AutonomyLevel.Assisted,
+                AiCreatesObjectives = false,
+                AiAutoFill = true,
                 HomeBase = new Vec3(10f, 20f, 30f),
             };
             state.Squads.BatchSeed = 4;
@@ -77,7 +78,8 @@ namespace Nucleus.Core.Tests
 
         private static void AssertEquivalent(CommanderState a, CommanderState b)
         {
-            Assert.Equal(a.Autonomy, b.Autonomy);
+            Assert.Equal(a.AiCreatesObjectives, b.AiCreatesObjectives);
+            Assert.Equal(a.AiAutoFill, b.AiAutoFill);
             Assert.Equal(a.HomeBase.X, b.HomeBase.X);
             Assert.Equal(a.HomeBase.Y, b.HomeBase.Y);
             Assert.Equal(a.HomeBase.Z, b.HomeBase.Z);
@@ -196,9 +198,10 @@ namespace Nucleus.Core.Tests
         [Fact]
         public void Empty_campaign_round_trips()
         {
-            var snap = new CampaignSnapshot { Autonomy = AutonomyLevel.Manual, HomeBase = new Vec3(1f, 2f, 3f) };
+            var snap = new CampaignSnapshot { AiCreatesObjectives = false, AiAutoFill = false, HomeBase = new Vec3(1f, 2f, 3f) };
             var back = CampaignSave.Deserialize(CampaignSave.Serialize(snap));
-            Assert.Equal(AutonomyLevel.Manual, back.Autonomy);
+            Assert.False(back.AiCreatesObjectives);
+            Assert.False(back.AiAutoFill);
             Assert.Equal(1f, back.HomeBase.X);
             Assert.Empty(back.Objectives);
             Assert.Empty(back.Squads);

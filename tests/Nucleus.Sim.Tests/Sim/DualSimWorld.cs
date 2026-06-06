@@ -40,8 +40,8 @@ namespace Nucleus.Sim
         private readonly List<SimUnit> _a;
         private readonly List<SimUnit> _b;
         private readonly Pcg _rng;
-        private readonly CommanderState _sa = new CommanderState { Autonomy = AutonomyLevel.Auto };
-        private readonly CommanderState _sb = new CommanderState { Autonomy = AutonomyLevel.Auto };
+        private readonly CommanderState _sa = new CommanderState();
+        private readonly CommanderState _sb = new CommanderState();
         private float _time;
 
         public DualSimWorld(IEnumerable<SimUnit> a, IEnumerable<SimUnit> b, ulong seed)

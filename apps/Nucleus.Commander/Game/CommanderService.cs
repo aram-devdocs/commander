@@ -90,29 +90,26 @@ namespace Nucleus.Game
             foreach (var t in reissue) _cmds.Execute(t);
             _committed = _mgr.CommittedUnitIds(roster);
 
-            // Autonomous commander (on by default — "do nothing = the side fights"). Generates objectives
-            // from fog-of-war intel and tasks auto-formed squads. Coexists with manual orders.
-            if (CommanderPlugin.EnableAutoCommander)
-            {
-                var known = _intel.KnownEnemiesNear(new Vec3(0f, 0f, 0f), float.MaxValue); // all tracked enemies
-                _auto.HomeBase = ForceCentroid(roster); // proximity reference for target prioritization
-                var snapshot = new WorldSnapshot(roster, known, 0f, _committed, UnityEngine.Time.unscaledTime);
-                foreach (var t in CommanderBrain.Tick(snapshot, _auto)) _cmds.Execute(t);
+            // The commander is ALWAYS on — without it, units idle (the game gives no objectives in this mode).
+            // The brain forms squads, advances operations, and tasks them; the two toggles inside it gate
+            // objective generation (AiCreatesObjectives) and squad assignment/recruit (AiAutoFill).
+            var known = _intel.KnownEnemiesNear(new Vec3(0f, 0f, 0f), float.MaxValue); // all tracked enemies
+            _auto.HomeBase = ForceCentroid(roster);
+            var snapshot = new WorldSnapshot(roster, known, 0f, _committed, UnityEngine.Time.unscaledTime);
+            foreach (var t in CommanderBrain.Tick(snapshot, _auto)) _cmds.Execute(t);
 
-                // Auto-production: turn the brain's force gaps into convoy buys (within funds). Plan only
-                // when the queue is empty so we don't pile up; the service drains affordable buys each tick.
-                if (_prodQueue.Pending.Count == 0 && _auto.ProductionNeeds.Count > 0
-                    && GameManager.GetLocalHQ(out var hq) && hq != null)
+            // Auto-recruit: turn force gaps into convoy buys (within funds) only when Auto-fill is on.
+            if (_auto.AiAutoFill && _prodQueue.Pending.Count == 0 && _auto.ProductionNeeds.Count > 0
+                && GameManager.GetLocalHQ(out var hq) && hq != null)
+            {
+                var gap = new Core.Command.Composition();
+                foreach (var need in _auto.ProductionNeeds)
+                    foreach (var kv in need.Items) gap.Add(kv.Key, kv.Value);
+                foreach (var opt in ProductionPlanner.Plan(gap, _catalog, hq.factionFunds))
                 {
-                    var gap = new Core.Command.Composition();
-                    foreach (var need in _auto.ProductionNeeds)
-                        foreach (var kv in need.Items) gap.Add(kv.Key, kv.Value);
-                    foreach (var opt in ProductionPlanner.Plan(gap, _catalog, hq.factionFunds))
-                    {
-                        _prodQueue.Enqueue(new PurchaseRequest(opt.Name, opt.Cost, null, RoleFamily.Armor, opt.Contents, manual: false));
-                        _auto.Log.Append(new ReportEvent(UnityEngine.Time.unscaledTime,
-                            ReportKind.ProductionQueued, $"AI buying {opt.Name}", null));
-                    }
+                    _prodQueue.Enqueue(new PurchaseRequest(opt.Name, opt.Cost, null, RoleFamily.Armor, opt.Contents, manual: false));
+                    _auto.Log.Append(new ReportEvent(UnityEngine.Time.unscaledTime,
+                        ReportKind.ProductionQueued, $"AI buying {opt.Name}", null));
                 }
             }
 
@@ -163,39 +160,46 @@ namespace Nucleus.Game
 
         // ---- ICampaign aliases (the shared-campaign contract the host exposes to every mod) ----
         public Core.Command.HqSnapshot Hq() => AutoHq();
-        public Core.Command.CommanderMode Mode() => CurrentMode();
         public Core.Command.ConvoyCatalog Catalog() => BuildCatalog();
 
-        /// <summary>The current commander mode (OFF when the autonomous commander is disabled, else the
-        /// commander's autonomy level). Drives the in-panel mode selector — the single source of control.</summary>
-        public CommanderMode CurrentMode()
+        // ---- the two command toggles ----
+        public bool AiCreatesObjectives => _auto.AiCreatesObjectives;
+        public bool AiAutoFill => _auto.AiAutoFill;
+        public void SetAiCreatesObjectives(bool on) => _auto.AiCreatesObjectives = on;
+        public void SetAiAutoFill(bool on) => _auto.AiAutoFill = on;
+
+        // ---- objectives (the single command primitive) ----
+        public string CreateObjective(ObjectiveKind kind, Vec3 world, string targetId = null)
         {
-            if (!CommanderPlugin.EnableAutoCommander) return CommanderMode.Off;
-            return _auto.Autonomy switch
-            {
-                AutonomyLevel.Assisted => CommanderMode.Assisted,
-                AutonomyLevel.Manual => CommanderMode.Manual,
-                _ => CommanderMode.Auto,
-            };
+            var id = "obj-" + (++_counter);
+            _auto.Objectives.Add(new Objective(id, kind, world, ObjectiveSource.Player, targetId, priority: 5f));
+            _auto.Log.Append(new ReportEvent(UnityEngine.Time.unscaledTime, ReportKind.ObjectiveAdded, $"You set {kind}", null));
+            return id;
         }
 
-        /// <summary>Set the commander mode from the panel (replaces the F1 config flag). OFF disables the
-        /// autonomous commander entirely; the rest enable it at the matching autonomy level.</summary>
-        public void SetMode(CommanderMode mode)
+        public void EditObjective(string id, ObjectiveKind? kind = null, float? priority = null)
         {
-            CommanderPlugin.EnableAutoCommander = mode != CommanderMode.Off;
-            switch (mode)
-            {
-                case CommanderMode.Manual: _auto.Autonomy = AutonomyLevel.Manual; break;
-                case CommanderMode.Assisted: _auto.Autonomy = AutonomyLevel.Assisted; break;
-                case CommanderMode.Auto: _auto.Autonomy = AutonomyLevel.Auto; break;
-            }
+            int i = _auto.Objectives.FindIndex(o => o.Id == id);
+            if (i < 0) return;
+            var o = _auto.Objectives[i];
+            if (priority.HasValue) o.Priority = priority.Value;
+            if (kind.HasValue && kind.Value != o.Kind)
+                _auto.Objectives[i] = new Objective(o.Id, kind.Value, o.Position, o.Source, o.TargetId, o.Priority);
         }
 
-        /// <summary>Authorise the top Assisted suggestion (the HQ Confirm button). No-op if none pending.</summary>
-        public void ConfirmTopProposal()
+        public void MoveObjective(string id, Vec3 world)
         {
-            if (_auto.Proposals.Count > 0) _auto.ConfirmProposal(_auto.Proposals[0].RefId);
+            int i = _auto.Objectives.FindIndex(o => o.Id == id);
+            if (i < 0) return;
+            var o = _auto.Objectives[i];
+            _auto.Objectives[i] = new Objective(o.Id, o.Kind, world, o.Source, o.TargetId, o.Priority);
+        }
+
+        public void RemoveObjective(string id)
+        {
+            _auto.Objectives.RemoveAll(o => o.Id == id);
+            var op = _auto.OperationFor(id);
+            if (op != null) { op.Status = OperationStatus.Failed; }
         }
 
         // ---- Manual production (buy troops) ----

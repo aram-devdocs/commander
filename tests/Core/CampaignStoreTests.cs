@@ -13,9 +13,9 @@ namespace Nucleus.Core.Tests
     /// </summary>
     public class CampaignStoreTests
     {
-        private static CommanderState Sample(string objId, AutonomyLevel autonomy)
+        private static CommanderState Sample(string objId, bool aiAutoFill)
         {
-            var state = new CommanderState { Autonomy = autonomy, HomeBase = new Vec3(5f, 0f, 7f) };
+            var state = new CommanderState { AiAutoFill = aiAutoFill, HomeBase = new Vec3(5f, 0f, 7f) };
             state.Objectives.Add(new Objective(objId, ObjectiveKind.DefendArea, new Vec3(1f, 0f, 2f),
                 ObjectiveSource.Player, priority: 2f));
             var squad = new Squad("sq", "Defenders", RoleFamily.AirDefense, SquadOrigin.Player, new[] { "u1" });
@@ -32,12 +32,12 @@ namespace Nucleus.Core.Tests
             var path = TempPath("rt-" + System.Guid.NewGuid().ToString("N") + ".ncs");
             try
             {
-                CampaignStore.Save(path, Sample("obj-x", AutonomyLevel.Assisted));
+                CampaignStore.Save(path, Sample("obj-x", false));
                 Assert.True(File.Exists(path));
 
                 var loaded = CampaignStore.Load(path);
                 Assert.NotNull(loaded);
-                Assert.Equal(AutonomyLevel.Assisted, loaded.Autonomy);
+                Assert.False(loaded.AiAutoFill);
                 Assert.Single(loaded.Objectives);
                 Assert.Equal("obj-x", loaded.Objectives[0].Id);
                 Assert.Single(loaded.Squads.Squads);
@@ -62,7 +62,7 @@ namespace Nucleus.Core.Tests
             var path = Path.Combine(dir, "deep", "campaign.ncs");
             try
             {
-                CampaignStore.Save(path, Sample("obj-y", AutonomyLevel.Auto));
+                CampaignStore.Save(path, Sample("obj-y", true));
                 Assert.True(File.Exists(path));
             }
             finally { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
@@ -74,11 +74,11 @@ namespace Nucleus.Core.Tests
             var path = TempPath("ow-" + System.Guid.NewGuid().ToString("N") + ".ncs");
             try
             {
-                CampaignStore.Save(path, Sample("first", AutonomyLevel.Auto));
-                CampaignStore.Save(path, Sample("second", AutonomyLevel.Manual));
+                CampaignStore.Save(path, Sample("first", true));
+                CampaignStore.Save(path, Sample("second", false));
                 var loaded = CampaignStore.Load(path);
                 Assert.Equal("second", loaded.Objectives[0].Id);
-                Assert.Equal(AutonomyLevel.Manual, loaded.Autonomy);
+                Assert.False(loaded.AiAutoFill);
                 Assert.False(File.Exists(path + ".tmp")); // temp swapped away, no leftover
             }
             finally { File.Delete(path); }

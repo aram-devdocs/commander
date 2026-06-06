@@ -7,8 +7,9 @@ namespace Nucleus.Core.Command
     /// <summary>Squad-forming tunables.</summary>
     public sealed class SquadConfig
     {
-        /// <summary>Units within this distance (m) of a squad seed join it.</summary>
-        public float FormRadius { get; set; } = 4000f;
+        /// <summary>Units within this distance (m) of a squad seed join it. Map-wide by default so squads form
+        /// by role family regardless of where units are (proximity only affects fill order, not membership).</summary>
+        public float FormRadius { get; set; } = 1_000_000f;
         public int MaxSquadSize { get; set; } = 5;
         /// <summary>A squad below this fraction of its target make-up is marked Depleted.</summary>
         public float DepletedFraction { get; set; } = 0.5f;

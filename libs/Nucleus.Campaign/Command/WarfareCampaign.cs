@@ -21,8 +21,9 @@ namespace Nucleus.Core.Command
 
         public WarfareCampaign(CommanderState blufor = null, CommanderState opfor = null)
         {
-            Blufor = blufor ?? new CommanderState { Autonomy = AutonomyLevel.Auto };
-            Opfor = opfor ?? new CommanderState { Autonomy = AutonomyLevel.Auto };
+            // Default: both sides full-AI (AiCreatesObjectives + AiAutoFill default true).
+            Blufor = blufor ?? new CommanderState();
+            Opfor = opfor ?? new CommanderState();
         }
 
         /// <summary>The per-faction tasking from one campaign step.</summary>

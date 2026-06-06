@@ -25,10 +25,10 @@ namespace Nucleus.Ui
         private readonly TextMeshProUGUI _ordersHeader;
         private readonly TextMeshProUGUI _hqHeader;
         private readonly TextMeshProUGUI _hqBody;
-        private readonly TextMeshProUGUI _modeDesc;
-        private readonly List<ModeBtn> _modeBtns = new List<ModeBtn>();
-        private readonly GameObject _confirmButton;
-        private readonly TextMeshProUGUI _confirmLabel;
+        // The two command toggles (mod is always on).
+        private Image _aiCmdImg, _autoFillImg;
+        private TextMeshProUGUI _aiCmdLabel, _autoFillLabel;
+        private bool _aiCommanderOn = true, _autoFillOn = true;
         private readonly Transform _opsContainer;
         private readonly Action<string> _onToggleOpManual;
         private readonly Action<string> _onToggleSquadManual;
@@ -44,19 +44,7 @@ namespace Nucleus.Ui
         private struct OpRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string OpId; }
         // Generic interactive row: a label + an action button carrying an id (squad id / convoy name).
         private struct EntityRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string Id; }
-        private struct ModeBtn { public Image Img; public Nucleus.Core.Command.CommanderMode Mode; }
 
-        // One-line description shown under the selector for the active mode (the "definitive selections").
-        private static string ModeDescription(Nucleus.Core.Command.CommanderMode m)
-        {
-            switch (m)
-            {
-                case Nucleus.Core.Command.CommanderMode.Off: return "OFF — the game's own AI runs the war. The Commander does nothing.";
-                case Nucleus.Core.Command.CommanderMode.Manual: return "MANUAL — you command by hand. The Commander shows your squads + targets but issues no orders.";
-                case Nucleus.Core.Command.CommanderMode.Assisted: return "ASSISTED — the Commander proposes operations; nothing runs until you press Confirm.";
-                default: return "AUTO — the Commander runs the whole war. Override any operation with its AUTO/MANUAL toggle.";
-            }
-        }
         private readonly Transform _ordersContainer;
         private readonly List<DomToggle> _domToggles = new List<DomToggle>();
         private readonly Image _attackImg, _defendImg, _captureImg, _resupplyImg, _buildImg, _moveImg;
@@ -92,8 +80,8 @@ namespace Nucleus.Ui
         private readonly PanelSections _sections;
 
         public CommanderPanel(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
-            Action<string> onClearOrder, Action<Nucleus.Core.Command.CommanderMode> onSetMode = null,
-            Action onConfirmProposal = null, Action<string> onToggleOpManual = null,
+            Action<string> onClearOrder, Action<bool> onSetAiCommander = null,
+            Action<bool> onSetAutoFill = null, Action<string> onToggleOpManual = null,
             Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null,
             PanelSections sections = PanelSections.All)
         {
@@ -170,21 +158,26 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Mode))
             {
-                // COMMANDER MODE — the single control (no F1 needed): OFF / MANUAL / ASSISTED / AUTO.
+                // The mod is always on. Two toggles: who creates objectives (AI or you), and whether the AI
+                // auto-fills objectives with squads (forms + recruits + assigns). Green when on.
                 _hqHeader = UiFactory.Label("HqHeader", layout.transform, "COMMANDER", 14f, theme.Accent);
                 UiFactory.PreferredHeight(_hqHeader.gameObject, 22f);
-                var modeRow = UiFactory.HorizontalLayout("ModeRow", layout.transform, 4f);
-                UiFactory.PreferredHeight(modeRow.gameObject, 28f);
-                AddModeButton(modeRow.transform, "OFF", Cmd.CommanderMode.Off, onSetMode);
-                AddModeButton(modeRow.transform, "MANUAL", Cmd.CommanderMode.Manual, onSetMode);
-                AddModeButton(modeRow.transform, "ASSIST", Cmd.CommanderMode.Assisted, onSetMode);
-                AddModeButton(modeRow.transform, "AUTO", Cmd.CommanderMode.Auto, onSetMode);
-                _modeDesc = UiFactory.Label("ModeDesc", layout.transform, "", 11f, theme.Muted);
-                UiFactory.PreferredHeight(_modeDesc.gameObject, 30f);
-                var confirmBtn = UiFactory.Button("Confirm", layout.transform, "Confirm proposal", theme, () => onConfirmProposal?.Invoke());
-                UiFactory.PreferredHeight(confirmBtn.gameObject, 24f);
-                _confirmButton = confirmBtn.gameObject;
-                _confirmLabel = confirmBtn.GetComponentInChildren<TextMeshProUGUI>();
+
+                var aiCmdBtn = UiFactory.Button("AiCommander", layout.transform, "AI COMMANDER", theme,
+                    () => onSetAiCommander?.Invoke(!_aiCommanderOn));
+                UiFactory.PreferredHeight(aiCmdBtn.gameObject, 28f);
+                _aiCmdImg = aiCmdBtn.GetComponent<Image>();
+                _aiCmdLabel = aiCmdBtn.GetComponentInChildren<TextMeshProUGUI>();
+
+                var autoFillBtn = UiFactory.Button("AutoFill", layout.transform, "AI AUTO-FILL", theme,
+                    () => onSetAutoFill?.Invoke(!_autoFillOn));
+                UiFactory.PreferredHeight(autoFillBtn.gameObject, 28f);
+                _autoFillImg = autoFillBtn.GetComponent<Image>();
+                _autoFillLabel = autoFillBtn.GetComponentInChildren<TextMeshProUGUI>();
+
+                UiFactory.PreferredHeight(UiFactory.Label("ToggleHint", layout.transform,
+                    "AI COMMANDER: the AI creates objectives (off = only you do).  AI AUTO-FILL: the AI forms squads, recruits, and assigns them to objectives (off = you assign).",
+                    11f, theme.Muted).gameObject, 44f);
             }
 
             if (Has(PanelSections.Operations))
@@ -192,7 +185,7 @@ namespace Nucleus.Ui
                 // OPERATIONS — one interactive row per op with an AUTO/MANUAL toggle (take a slice).
                 UiFactory.PreferredHeight(UiFactory.Label("OpsHdr", layout.transform, "OPERATIONS", 12f, theme.Accent).gameObject, 18f);
                 _opsContainer = UiFactory.VerticalLayout("HqOps", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
-                _opsEmpty = UiFactory.Label("OpsEmpty", layout.transform, "No operations running. Open CMD and set the Commander to AUTO to fight the war (or ASSISTED to approve operations).", 12f, theme.Muted);
+                _opsEmpty = UiFactory.Label("OpsEmpty", layout.transform, "No operations running. Drop an objective on the map (or enable AI COMMANDER) and the squads will form up and fight.", 12f, theme.Muted);
                 UiFactory.PreferredHeight(_opsEmpty.gameObject, 48f);
             }
 
@@ -225,46 +218,40 @@ namespace Nucleus.Ui
             RefreshControls();
         }
 
-        private void AddModeButton(Transform parent, string label, Cmd.CommanderMode mode,
-            Action<Cmd.CommanderMode> onSetMode)
-        {
-            var btn = UiFactory.Button("Mode_" + label, parent, label, _theme, () => onSetMode?.Invoke(mode));
-            _modeBtns.Add(new ModeBtn { Img = btn.GetComponent<Image>(), Mode = mode });
-        }
+        private static readonly Color OnColor = new Color(0.30f, 0.85f, 0.45f, 1f);
 
-        /// <summary>Render the commander mode selector (always) + the HQ readout (when the commander is on).</summary>
-        public void RenderHq(Cmd.HqSnapshot hq, Cmd.CommanderMode mode, Cmd.ConvoyCatalog catalog, float funds)
+        /// <summary>Render the two command toggles + the HQ readout.</summary>
+        public void RenderHq(Cmd.HqSnapshot hq, Cmd.ConvoyCatalog catalog, float funds)
         {
-            bool running = hq != null && mode != Cmd.CommanderMode.Off;
+            bool running = hq != null;
 
-            // Mode selector (Mode section) — active mode highlighted + described; Confirm shown under Assisted.
-            if (_modeDesc != null)
+            // The two toggles — green when on; reflect live state.
+            if (_aiCmdImg != null && hq != null)
             {
-                foreach (var mb in _modeBtns) mb.Img.color = mb.Mode == mode ? _theme.Accent : _theme.ButtonIdle;
-                _modeDesc.text = ModeDescription(mode);
-                int proposalCount = hq?.Proposals.Count ?? 0;
-                bool showConfirm = mode == Cmd.CommanderMode.Assisted && proposalCount > 0;
-                if (_confirmButton != null) _confirmButton.SetActive(showConfirm);
-                if (_confirmLabel != null) _confirmLabel.text = $"Confirm next proposal ({proposalCount})";
+                _aiCommanderOn = hq.AiCreatesObjectives;
+                _autoFillOn = hq.AiAutoFill;
+                _aiCmdImg.color = _aiCommanderOn ? OnColor : _theme.ButtonIdle;
+                _autoFillImg.color = _autoFillOn ? OnColor : _theme.ButtonIdle;
+                if (_aiCmdLabel != null) _aiCmdLabel.text = _aiCommanderOn ? "AI COMMANDER: ON" : "AI COMMANDER: OFF";
+                if (_autoFillLabel != null) _autoFillLabel.text = _autoFillOn ? "AI AUTO-FILL: ON" : "AI AUTO-FILL: OFF";
             }
 
-            // BUILD menu (Build section) — available whenever a catalog exists (buy in any mode, even OFF).
+            // BUILD menu (Build section) — available whenever a catalog exists.
             if (_buildContainer != null) RenderBuildRows(catalog, funds);
 
-            // OPERATIONS (Operations section) — only when the commander is running.
+            // OPERATIONS (Operations section).
             if (_opsContainer != null) RenderOpRows(running ? hq.Operations : null);
 
             // SQUADS (Squads section).
             if (_squadsContainer != null) RenderSquadRows(running ? hq.Squads : null);
 
-            // FEED (Feed section) — proposals + production + recent events.
+            // FEED (Feed section) — production + recent events.
             if (_hqBody != null)
             {
                 if (!running) { _hqBody.text = ""; }
                 else
                 {
                     var sb = new System.Text.StringBuilder();
-                    foreach (var p in hq.Proposals.Take(3)) sb.AppendLine($"? {p.Summary} — press Confirm");
                     foreach (var line in hq.Production.Take(3)) sb.AppendLine(line);
                     foreach (var e in hq.Recent.Take(5)) sb.AppendLine($"· {e.Text}");
                     _hqBody.text = sb.ToString().TrimEnd();

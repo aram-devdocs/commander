@@ -16,7 +16,12 @@ namespace Nucleus.Core.Command
         public SquadRoster Squads { get; }
         public Doctrine Doctrine { get; }
         public BrainConfig BrainConfig { get; }
-        public AutonomyLevel Autonomy { get; set; } = AutonomyLevel.Auto;
+        /// <summary>The mod is always on. Two toggles replace the old Off/Manual/Assisted/Auto ladder:</summary>
+        /// <summary>Who creates objectives — the AI (true) or only the human (false).</summary>
+        public bool AiCreatesObjectives { get; set; } = true;
+        /// <summary>Whether the AI fills objectives: forms squads, assigns them per phase, and recruits.
+        /// Off = the human assigns squads / recruits. Default on.</summary>
+        public bool AiAutoFill { get; set; } = true;
         /// <summary>Home base / HQ position — used to weight target proximity in prioritization.</summary>
         public Vec3 HomeBase { get; set; }
         /// <summary>The battle feed — the brain appends events (op started/phase changed/completed) here.</summary>

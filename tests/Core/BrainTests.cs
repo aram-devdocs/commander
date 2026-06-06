@@ -133,52 +133,48 @@ namespace Nucleus.Tests
         }
 
         [Fact]
-        public void Tick_manual_commander_observes_but_does_not_act()
+        public void AutoFill_off_surfaces_objectives_and_squads_but_opens_no_operations()
         {
-            // MANUAL = observe-only: the brain organizes squads + surfaces objectives so the player can SEE
-            // the picture, but opens no operations, issues no tasking, requests no production.
-            var state = new CommanderState(SquadCfg(), null, Cfg()) { Autonomy = AutonomyLevel.Manual };
+            // AI Auto-fill OFF: the brain still forms squads and (AI Commander on) surfaces objectives, but it
+            // opens no operations and issues no tasking — the human assigns squads.
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { AiAutoFill = false };
             var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
             var known = new List<EnemyView> { E("e1", P(5000, 0)) };
             var tasks = CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
 
-            Assert.Empty(tasks);                       // ...no orders issued
+            Assert.Empty(tasks);                       // ...no tasking
             Assert.Empty(state.Operations);            // ...no operations opened
-            Assert.Empty(state.ProductionNeeds);       // ...no production requested
-            Assert.NotEmpty(state.Objectives);         // but objectives ARE surfaced (observability)
+            Assert.Empty(state.ProductionNeeds);       // ...the human recruits, not the AI
+            Assert.NotEmpty(state.Objectives);         // AI Commander default on -> objectives surfaced
             Assert.NotEmpty(state.Squads.Squads);      // and the force IS organized into squads
         }
 
         [Fact]
-        public void Tick_yields_a_manual_operation_but_keeps_tasking_the_rest()
+        public void AiCreatesObjectives_off_means_no_auto_objectives()
         {
-            // Two separate threats -> two operations. Flip the first op to Manual; the brain must stop
-            // tasking its units (player drives that slice) yet keep tasking the Auto operation (the rest).
-            // One squad per op so each threat gets its own (MatchSquads ignores proximity, so a larger cap
-            // would let the first op grab both armor squads).
-            var state = new CommanderState(SquadCfg(), null,
-                new BrainConfig { ClusterRadius = 3000f, CoverageRadius = 4000f, MaxSquadsPerOperation = 1 });
-            var roster = new List<UnitView>
-            {
-                U("a1", Role.Armor, P(0, 0)),
-                U("b1", Role.Armor, P(60000, 0)),
-            };
-            var known = new List<EnemyView> { E("e1", P(5000, 0)), E("e2", P(65000, 0)) };
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { AiCreatesObjectives = false };
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            var known = new List<EnemyView> { E("e1", P(5000, 0)) };
             CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
-            Assert.Equal(2, state.Operations.Count);
+            Assert.Empty(state.Objectives);            // only the human creates objectives
+            Assert.NotEmpty(state.Squads.Squads);      // but squads still form (mod always on)
+        }
 
-            // Take the slice nearest a1's objective to Manual.
-            var manualOp = state.Operations.OrderBy(o => o.Objective.Position.HorizontalDistanceTo(P(0, 0))).First();
-            var autoOp = state.Operations.First(o => o.Id != manualOp.Id);
-            manualOp.Autonomy = AutonomyLevel.Manual;
-            // Forget prior tasking so a re-task would show up if the brain wrongly drove the Manual op.
+        [Fact]
+        public void Tick_yields_a_manual_operation()
+        {
+            // Per-op Manual override: flip an operation to Manual and the brain stops tasking its squads
+            // (the player drives that slice).
+            var state = new CommanderState(SquadCfg(), null, Cfg());
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            var known = new List<EnemyView> { E("e1", P(5000, 0)) };
+            CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
+            Assert.Single(state.Operations);
+
+            state.Operations[0].Autonomy = AutonomyLevel.Manual;
             state.LastObjectiveByUnit.Clear();
-
             var tasks = CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
-            var manualUnits = manualOp.SquadIds.SelectMany(sid => state.Squads.ById(sid).MemberUnitIds).ToHashSet();
-            var autoUnits = autoOp.SquadIds.SelectMany(sid => state.Squads.ById(sid).MemberUnitIds).ToHashSet();
-            Assert.DoesNotContain(tasks, t => manualUnits.Contains(t.UnitId)); // AI yielded the manual slice
-            Assert.Contains(tasks, t => autoUnits.Contains(t.UnitId));         // ...and kept driving the rest
+            Assert.Empty(tasks);   // AI yielded the manual slice
         }
 
         [Fact]
@@ -193,56 +189,25 @@ namespace Nucleus.Tests
         }
 
         [Fact]
-        public void Tick_assisted_proposes_instead_of_opening_an_operation()
+        public void MatchSquads_picks_one_squad_per_suitable_family()
         {
-            var state = new CommanderState(SquadCfg(), null, Cfg()) { Autonomy = AutonomyLevel.Assisted };
-            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
-            var known = new List<EnemyView> { E("e1", P(5000, 0)) };
-
-            var tasks = CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
-
-            Assert.Empty(tasks);                       // AI does not act on its own under Assisted
-            Assert.Empty(state.Operations);            // ...no operation opened
-            Assert.Single(state.Proposals);            // ...it proposes one
-            Assert.Equal(ProposalKind.OpenOperation, state.Proposals[0].Kind);
-            Assert.Empty(state.ProductionNeeds);       // force IS available — not a production gap
-        }
-
-        [Fact]
-        public void Tick_assisted_opens_the_operation_once_the_player_confirms()
-        {
-            var state = new CommanderState(SquadCfg(), null, Cfg()) { Autonomy = AutonomyLevel.Assisted };
-            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
-            var known = new List<EnemyView> { E("e1", P(5000, 0)) };
-
-            CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
-            Assert.Single(state.Proposals);
-            state.ConfirmProposal(state.Proposals[0].RefId);   // player authorises it
-
-            var tasks = CommanderBrain.Tick(new WorldSnapshot(roster, known), state);
-            Assert.Single(state.Operations);                   // now it opens
-            Assert.Equal(OperationStatus.Active, state.Operations[0].Status);
-            Assert.NotEmpty(tasks);                            // ...and tasks its force
-            Assert.Empty(state.Proposals);                     // no longer proposed (covered)
-            Assert.Empty(state.ConfirmedObjectives);           // confirmation consumed — authorises one open
-        }
-
-        [Fact]
-        public void MatchSquads_prefers_the_nearest_suitable_squad_when_positions_known()
-        {
+            // DestroyTarget suits Armor + Artillery + AirCombat — assign one squad of each (so each combat
+            // phase has its squad), regardless of location. Strongest squad per family.
             var obj = new Objective("o", ObjectiveKind.DestroyTarget, P(0, 0), ObjectiveSource.Auto);
-            var near = Sq("near", RoleFamily.Armor, 1);   // weaker, but close
-            var far = Sq("far", RoleFamily.Armor, 3);     // stronger, but across the map
-            var positions = new Dictionary<string, Vec3>();
-            foreach (var id in near.MemberUnitIds) positions[id] = P(1000, 0);
-            foreach (var id in far.MemberUnitIds) positions[id] = P(50000, 0);
-            var cfg = new BrainConfig { ClusterRadius = 3000f, CoverageRadius = 4000f, MaxSquadsPerOperation = 1 };
-
-            var chosen = CommanderBrain.MatchSquads(obj, new List<Squad> { far, near }, cfg, positions);
-            Assert.Equal(new[] { "near" }, chosen.ToArray());   // proximity beats raw strength
-
-            var noPos = CommanderBrain.MatchSquads(obj, new List<Squad> { far, near }, cfg);
-            Assert.Equal(new[] { "far" }, noPos.ToArray());     // without positions, strongest-first (back-compat)
+            var squads = new List<Squad>
+            {
+                Sq("armorWeak", RoleFamily.Armor, 1),
+                Sq("armorStrong", RoleFamily.Armor, 4),
+                Sq("arty", RoleFamily.Artillery, 1),
+                Sq("air", RoleFamily.AirCombat, 1),
+                Sq("supply", RoleFamily.Supply, 1),   // not suitable -> excluded
+            };
+            var chosen = CommanderBrain.MatchSquads(obj, squads, Cfg()).ToHashSet();
+            Assert.Contains("armorStrong", chosen);   // strongest of the family
+            Assert.DoesNotContain("armorWeak", chosen); // one squad per family
+            Assert.Contains("arty", chosen);
+            Assert.Contains("air", chosen);
+            Assert.DoesNotContain("supply", chosen);
         }
 
         [Fact]

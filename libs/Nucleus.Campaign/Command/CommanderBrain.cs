@@ -83,71 +83,52 @@ namespace Nucleus.Core.Command
             state.Objectives.RemoveAll(o => o.Source == ObjectiveSource.Auto
                 && state.OperationFor(o.Id) == null
                 && !AnyThreatNear(snapshot, o.Position, coverage));
-            // Drop stale confirmations whose objective is gone (no unbounded growth).
-            state.ConfirmedObjectives.RemoveWhere(id => !state.Objectives.Any(o => o.Id == id));
 
-            // 3. New objectives from known enemy clusters not already covered.
-            foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
-                         state.HomeBase, state.Doctrine))
-                state.Objectives.Add(obj);
+            // 3. New objectives from known enemy clusters — only when the AI is the objective-creator.
+            //    (When the human creates objectives, they are added to state.Objectives via the service.)
+            if (state.AiCreatesObjectives)
+                foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
+                             state.HomeBase, state.Doctrine))
+                    state.Objectives.Add(obj);
 
-            // MANUAL commander = OBSERVE ONLY: the player commands by hand. The brain has organized the force
-            // into squads and surfaced objectives (so the player can SEE the picture), but it opens no
-            // operations, requests no production, and issues no tasking. (OFF, by contrast, doesn't run the
-            // brain at all.) Auto/Assisted continue below.
-            if (state.Autonomy == AutonomyLevel.Manual)
+            // 4. AUTO-FILL: when on, open an operation for each uncovered objective and assign suitable squads —
+            //    one per needed family (so each combat phase has its squad), regardless of location (no range).
+            //    When off, the human assigns squads (via the service), which opens the operation; the brain
+            //    still advances phases + tasks assigned squads below, so units never idle.
+            var fieldable = new HashSet<string>();
+            if (state.AiAutoFill)
             {
-                state.Proposals.Clear();
-                state.ProductionNeeds.Clear();
-                return tasks;
-            }
-
-            // 4. Open an operation for each uncovered objective, matching a suitable free force. Squad
-            //    positions (member centroids) let MatchSquads send the NEAREST suitable squad, not a
-            //    cross-map one — combined arms that engages locally instead of streaming across the theater.
-            //    Under ASSISTED autonomy the brain does not open operations on its own — it surfaces a
-            //    Proposal per fieldable objective and waits for the player to confirm (autonomy ladder).
-            bool assisted = state.Autonomy == AutonomyLevel.Assisted;
-            state.Proposals.Clear();
-            var fieldable = new HashSet<string>(); // objectives we have a force for (opened OR proposed)
-            var positions = new Dictionary<string, Vec3>();
-            foreach (var u in snapshot.Roster) if (u != null) positions[u.Id] = u.Position;
-            foreach (var obj in state.Objectives)
-            {
-                if (state.OperationFor(obj.Id) != null) continue;
-                var squadIds = MatchSquads(obj, state.Squads.Squads, state.BrainConfig, positions);
-                if (squadIds.Count == 0) continue; // no force available — production request comes in P3
-                fieldable.Add(obj.Id);
-                if (assisted && !state.ConfirmedObjectives.Contains(obj.Id))
+                foreach (var obj in state.Objectives)
                 {
-                    // Propose, don't commit. RefId = objective id so ConfirmProposal can authorise it.
-                    state.Proposals.Add(new Proposal(ProposalKind.OpenOperation,
-                        $"{obj.Kind} ({squadIds.Count} squad{(squadIds.Count == 1 ? "" : "s")})", obj.Id, obj.Priority));
-                    continue;
+                    if (state.OperationFor(obj.Id) != null) continue;
+                    var squadIds = MatchSquads(obj, state.Squads.Squads, state.BrainConfig);
+                    if (squadIds.Count == 0) continue; // no force available — recruit via ProductionNeeds below
+                    fieldable.Add(obj.Id);
+                    var initial = ThreatNear(snapshot, obj.Position, coverage); // baseline for the soften gate
+                    var op = new Operation(state.NextOperationId(), obj, squadIds)
+                    {
+                        Status = OperationStatus.Active,
+                        InitialThreat = initial
+                    };
+                    foreach (var sid in squadIds) state.Squads.ById(sid).AssignedOperationId = op.Id;
+                    op.CombatPhase = PhaseGates.ActivePhase(initial, initial, new ForceState(FighterStrength(op, state)), state.Doctrine);
+                    state.Operations.Add(op);
+                    state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.OperationStarted,
+                        $"{obj.Kind} ({squadIds.Count} squad{(squadIds.Count == 1 ? "" : "s")})", op.Id));
                 }
-                var initial = ThreatNear(snapshot, obj.Position, coverage); // baseline for the soften gate
-                var op = new Operation(state.NextOperationId(), obj, squadIds)
-                {
-                    Status = OperationStatus.Active,
-                    InitialThreat = initial
-                };
-                foreach (var sid in squadIds) state.Squads.ById(sid).AssignedOperationId = op.Id;
-                // Set the starting phase now so the op tasks the right families on its very first tick.
-                op.CombatPhase = PhaseGates.ActivePhase(initial, initial, new ForceState(FighterStrength(op, state)), state.Doctrine);
-                state.Operations.Add(op);
-                // Consume any Assisted confirmation — it authorises ONE open. If this op later fails with the
-                // threat still up, the brain re-proposes rather than silently re-launching (review SHOULD-FIX).
-                state.ConfirmedObjectives.Remove(obj.Id);
-                state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.OperationStarted,
-                    $"{obj.Kind} ({squadIds.Count} squad{(squadIds.Count == 1 ? "" : "s")})", op.Id));
+            }
+            else
+            {
+                foreach (var op in state.Operations) if (!op.IsTerminal) fieldable.Add(op.Objective.Id);
             }
 
-            // 4b. Production needs: any objective we couldn't field a force for becomes a force request the
-            //     Game layer turns into convoy buys. Recomputed each tick.
+            // 4b. Production needs: an objective with no force becomes a recruit request — only when the AI
+            //     auto-fills (the human recruits otherwise). Recomputed each tick.
             state.ProductionNeeds.Clear();
-            foreach (var obj in state.Objectives)
-                if (state.OperationFor(obj.Id) == null && !fieldable.Contains(obj.Id)) // not just awaiting a confirm
-                    state.ProductionNeeds.Add(RequiredComposition(obj.Kind));
+            if (state.AiAutoFill)
+                foreach (var obj in state.Objectives)
+                    if (state.OperationFor(obj.Id) == null && !fieldable.Contains(obj.Id))
+                        state.ProductionNeeds.Add(RequiredComposition(obj.Kind));
 
             // 5. Issue tasking — only when a unit's target objective CHANGED, so we don't re-spam SetDestination
             //    every tick and fight the game AI (S1).
@@ -252,35 +233,31 @@ namespace Nucleus.Core.Command
         }
 
         /// <summary>
-        /// Pick the squad ids best suited to an objective: matching family, not empty, not already assigned,
-        /// not player-owned (Manual). When <paramref name="positions"/> (unit id -> world position) is given,
-        /// order by the NEAREST squad first (centroid of its members), then strongest, then id — so a local
-        /// threat draws the local force, not a stronger one across the map. With no positions, falls back to
-        /// strongest-first (unchanged). Capped at <see cref="BrainConfig.MaxSquadsPerOperation"/>.
+        /// Pick the squads for an objective: ONE suitable squad per needed role family (so each combat phase —
+        /// SEAD, strike, assault, … — has its squad), regardless of where they are on the map (no range). Only
+        /// free, non-empty, non-player-owned squads. Strongest-first within a family; deterministic (families
+        /// in enum order). The <paramref name="positions"/> param is ignored (kept for call-site compatibility).
         /// </summary>
         public static IReadOnlyList<string> MatchSquads(Objective objective, IReadOnlyList<Squad> squads, BrainConfig cfg,
             IReadOnlyDictionary<string, Vec3> positions = null)
         {
             var suitable = Families.SuitableFor(objective.Kind);
-            var candidates = (squads ?? new List<Squad>())
+            var available = (squads ?? new List<Squad>())
                 .Where(s => s != null && !s.IsEmpty && s.AssignedOperationId == null
                     && s.Autonomy != AutonomyLevel.Manual // player-owned squad — never auto-pulled into an op
-                    && suitable.Contains(s.Family));
-            var ranked = positions == null
-                ? candidates.OrderByDescending(s => s.Strength).ThenBy(s => s.Id)
-                : candidates.OrderBy(s => SquadDistance(s, objective.Position, positions))
-                            .ThenByDescending(s => s.Strength).ThenBy(s => s.Id);
-            return ranked.Take(cfg.MaxSquadsPerOperation).Select(s => s.Id).ToList();
-        }
+                    && suitable.Contains(s.Family))
+                .ToList();
 
-        // Horizontal distance from a squad's member centroid to a point. Unpositioned squads sort last.
-        private static float SquadDistance(Squad s, Vec3 target, IReadOnlyDictionary<string, Vec3> positions)
-        {
-            float sumX = 0f, sumZ = 0f; int n = 0;
-            foreach (var id in s.MemberUnitIds)
-                if (positions.TryGetValue(id, out var p)) { sumX += p.X; sumZ += p.Z; n++; }
-            if (n == 0) return float.MaxValue;
-            return new Vec3(sumX / n, 0f, sumZ / n).HorizontalDistanceTo(target);
+            var result = new List<string>();
+            foreach (var family in suitable.OrderBy(f => f))      // deterministic per-family coverage
+            {
+                var best = available
+                    .Where(s => s.Family == family && !result.Contains(s.Id))
+                    .OrderByDescending(s => s.Strength).ThenBy(s => s.Id)
+                    .FirstOrDefault();
+                if (best != null) result.Add(best.Id);
+            }
+            return result;
         }
     }
 }

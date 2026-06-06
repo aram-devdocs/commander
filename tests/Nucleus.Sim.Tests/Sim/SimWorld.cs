@@ -50,7 +50,7 @@ namespace Nucleus.Sim
         private readonly List<SimUnit> _friendly;
         private readonly List<SimUnit> _enemy;
         private readonly Pcg _rng;
-        private readonly CommanderState _state = new CommanderState { Autonomy = AutonomyLevel.Auto };
+        private readonly CommanderState _state = new CommanderState();
         private float _time;
 
         public SimWorld(IEnumerable<SimUnit> friendly, IEnumerable<SimUnit> enemy, ulong seed)

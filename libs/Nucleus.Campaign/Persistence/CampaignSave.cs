@@ -30,7 +30,7 @@ namespace Nucleus.Core.Persistence
             var sb = new StringBuilder();
 
             Line(sb, Header, I(s.Version));
-            Line(sb, "META", E(s.Autonomy), F(s.HomeBase.X), F(s.HomeBase.Y), F(s.HomeBase.Z),
+            Line(sb, "META", B(s.AiCreatesObjectives), B(s.AiAutoFill), F(s.HomeBase.X), F(s.HomeBase.Y), F(s.HomeBase.Z),
                 I(s.OperationIdSeed), I(s.SquadBatchSeed));
             Line(sb, "TUNE", F(s.RiskTolerance), F(s.ForceRatio), F(s.ClusterRadius), F(s.CoverageRadius),
                 I(s.MaxSquadsPerOperation), F(s.FormRadius), I(s.MaxSquadSize), F(s.DepletedFraction));
@@ -99,10 +99,11 @@ namespace Nucleus.Core.Persistence
                         snap.Version = PI(f, 1);
                         break;
                     case "META":
-                        snap.Autonomy = PE(f, 1, AutonomyLevel.Auto);
-                        snap.HomeBase = new Vec3(PF(f, 2), PF(f, 3), PF(f, 4));
-                        snap.OperationIdSeed = PI(f, 5);
-                        snap.SquadBatchSeed = PI(f, 6);
+                        snap.AiCreatesObjectives = PB(f, 1);
+                        snap.AiAutoFill = PB(f, 2);
+                        snap.HomeBase = new Vec3(PF(f, 3), PF(f, 4), PF(f, 5));
+                        snap.OperationIdSeed = PI(f, 6);
+                        snap.SquadBatchSeed = PI(f, 7);
                         break;
                     case "TUNE":
                         snap.RiskTolerance = PF(f, 1);
