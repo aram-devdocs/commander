@@ -78,6 +78,9 @@ namespace Nucleus.Abstractions
         float Funds();
         bool TryGetLocalFaction(out FactionInfo faction);
         IMapProjection MapProjection { get; }
+        /// <summary>Per-faction live force count (alive units + held airbases) for the attrition scoreboard.
+        /// The Warfare mod diffs this tick-over-tick to feed unit/base losses into the war score.</summary>
+        IReadOnlyList<Nucleus.Core.War.FactionCensus> WarCensus();
     }
 
     /// <summary>How a mod claims its in-game buttons: a map-bezel button (CMD/BLD/SQD/...) and/or a row in the

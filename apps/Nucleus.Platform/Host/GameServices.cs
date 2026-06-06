@@ -19,6 +19,7 @@ namespace Nucleus.Host
         private readonly GameUnitCommands _cmds = new GameUnitCommands();
         private readonly GamePlayerContext _player = new GamePlayerContext();
         private readonly DynamicMapProjection _projection = new DynamicMapProjection();
+        private readonly GameWar _war = new GameWar();
 
         public IReadOnlyList<UnitView> Roster() => _roster.BuildRoster();
         public IReadOnlyList<EnemyView> KnownEnemiesNear(Vec3 center, float radius) => _intel.KnownEnemiesNear(center, radius);
@@ -26,5 +27,6 @@ namespace Nucleus.Host
         public float Funds() => GameManager.GetLocalHQ(out var hq) && hq != null ? hq.factionFunds : 0f;
         public bool TryGetLocalFaction(out FactionInfo faction) => _player.TryGetLocalFaction(out faction);
         public IMapProjection MapProjection => _projection;
+        public IReadOnlyList<Nucleus.Core.War.FactionCensus> WarCensus() => _war.Census();
     }
 }
