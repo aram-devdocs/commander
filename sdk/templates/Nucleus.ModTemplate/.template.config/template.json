@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Nucleus",
+  "classifications": [ "BepInEx", "Modding", "Nuclear Option", "Nucleus" ],
+  "identity": "Nucleus.ModTemplate",
+  "name": "Nucleus mod for Nuclear Option",
+  "shortName": "nucleus-mod",
+  "sourceName": "MyMod",
+  "preferNameDirectory": true,
+  "tags": { "language": "C#", "type": "project" },
+  "symbols": {
+    "guid": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "com.example.mymod",
+      "defaultValue": "com.example.mymod",
+      "description": "The BepInEx plugin GUID (e.g. com.you.mymod)."
+    },
+    "sdkVersion": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "SDK_VERSION",
+      "defaultValue": "0.1.0",
+      "description": "Nucleus.Sdk NuGet package version to reference."
+    }
+  }
+}

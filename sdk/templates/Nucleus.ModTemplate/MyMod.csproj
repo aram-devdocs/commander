@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>MyMod</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <!-- Referencing the game DLLs surfaces unavoidable framework version-conflict warnings; demote them. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
+    <!-- Bring-your-own game DLLs: run the setup-sdk script to populate this lib/ from your Steam install. -->
+    <Lib>$(MSBuildProjectDirectory)\lib</Lib>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Nucleus SDK: the IMod contract (Abstractions) + domain + game-access + UI toolkit. -->
+    <PackageReference Include="Nucleus.Sdk" Version="SDK_VERSION" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The game/Unity/BepInEx DLLs exist at runtime (Private=false: never copy them into the plugin). -->
+    <Reference Include="BepInEx"><HintPath>$(Lib)\BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(Lib)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(Lib)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(Lib)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(Lib)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UIModule"><HintPath>$(Lib)\UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UI"><HintPath>$(Lib)\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.TextMeshPro"><HintPath>$(Lib)\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

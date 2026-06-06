@@ -1,0 +1,7 @@
+{
+  "name": "MyMod",
+  "version_number": "0.1.0",
+  "website_url": "https://github.com/you/MyMod",
+  "description": "A Nucleus mod for Nuclear Option.",
+  "dependencies": [ "Nucleus-Platform-0.1.0" ]
+}

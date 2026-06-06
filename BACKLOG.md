@@ -36,7 +36,8 @@
   game/Unity IP** (Private=false HintPath refs excluded). Plugin marked IsPackable=false. `sdk/Nucleus.Sdk`
   metapackage builds. artifacts/ gitignored. **HV**
   - [ ] metapackage `dotnet pack` quirk (silently no-ops with game-coupled project refs) — investigate/replace with nuspec.
-  - [ ] `dotnet new nucleus-mod` template (sdk/templates) + setup-sdk script + release.yml pack/push job + api-snapshot gate.
+  - [x] `dotnet new nucleus-mod` template (sdk/templates/Nucleus.ModTemplate): Plugin.cs (BepInPlugin + ModPlatform.Register), Mod.cs (IMod skeleton), csproj (Nucleus.Sdk PackageReference + BYO game-DLL refs), thunderstore/manifest.json, README. **Smoke-tested**: install→instantiate -n FooBar renames namespace/plugin/GUID + SDK_VERSION correctly. **HV**
+  - [ ] setup-sdk script (populate consumer lib/) + release.yml pack/push job + api-snapshot gate + metapackage pack fix.
 
 ## Phase 2–7 — see plan (specs to be drafted as each phase is pulled)
 - [x] P2-gamesdk — `libs/Nucleus.GameSdk` (all src/Game except CommanderService) + Generated/; codegen gameGenDir retargeted (regen verified identical); NucleusLog seam added to Domain (libs log without referencing Plugin); InternalsVisibleTo("CommanderLayer") preserves same-assembly accessibility. Gate PASS (0w/118/9/11). **HV**
