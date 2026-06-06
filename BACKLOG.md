@@ -29,7 +29,7 @@
   - [x] P3a — `libs/Nucleus.Abstractions` contract (IMod/IModContext/IModUi/IModTickContext/ILogSink/IGameServices/IButtonRegistry/ModInfo/MapButtonSpec/MenuItemSpec/ModPlatform). Refs Domain+Ui (arch-verified). Gate PASS. **HV**
   - [~] P3b — in-process host. **Core done** (build-gated, not yet live, behavior unchanged): `src/Host/{LogSink(ILogSink), GameServices(IGameServices over GameSdk adapters), ModRegistry(lifecycle: Add/TickAll/SetEnabled/Shutdown)}`. **Pending**: ModContext/IModUi impl + ModHost + button registry + the live flip (Canvas/tick ownership) — playtest-gated. **HV(core)/PT(flip)**
   - [x] P3b-probe — **YES, headless-testable.** ModRegistry moved into Nucleus.Abstractions; tests/Nucleus.Integration.Tests drives it with FakeMod (8 tests: init-on-enable, tick-only-enabled, toggle callbacks, init-once, dup-id, shutdown). Wired into audit.ps1/check.sh (game-coupled). Gate now 5 layers. **HV**
-  - [ ] P3c — `CommanderMod : IMod` (CommanderService + 4 panels + AircraftTaskingPatch); CommanderRuntime split host/mod **PT**
+  - [~] P3c — host LIVE (minimal). `src/Host/{ModHost, ModContext(+HostModUi/HostButtonRegistry placeholders), CommanderMod}`; Plugin registers CommanderMod; DynamicMap tick rerouted patch→Host.Tick→registry→CommanderMod→runtime. Wrap-not-rewrite (CommanderRuntime untouched). Build+5 gates green; deploy bundles all 7 libs. **Playtest queued: playtests/P3-host-tick.md** (confirm tick still drives the panel/commander). Buttons/pan/loader stay direct for now. **PT**
   - [ ] P3d — loader UI (MainMenu "MODS" → list/toggle mods, persisted) **PT**
   - [ ] P3-integration — `Nucleus.TestKit` FakeGame + `Nucleus.Integration.Tests` (lifecycle, slots, shared queue, no double-buy) **HV**
 - [ ] P4 — split Build **PT**

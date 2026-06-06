@@ -31,6 +31,7 @@ namespace CommanderLayer
         internal static bool CommanderDebug;
 
         internal static CommanderRuntime Runtime;
+        internal static Host.ModHost Host;
 
         private void Awake()
         {
@@ -66,6 +67,12 @@ namespace CommanderLayer
             airCfg.SettingChanged += (_, __) => { EnableAircraftTasking = airCfg.Value; Game.AircraftIntent.Enabled = airCfg.Value; };
 
             Runtime = new CommanderRuntime();
+
+            // Stand up the in-process mod host and register Commander as the first hosted mod. The per-frame
+            // tick now flows through the host registry (Host.Tick -> registry -> CommanderMod -> runtime),
+            // introducing the platform pattern with behavior preserved (single plugin, Phase 3).
+            Host = new Host.ModHost(Logger);
+            Abstractions.ModPlatform.Register(new Host.CommanderMod(Runtime));
 
             var harmony = new Harmony(Guid);
             ApplyPatch(harmony, typeof(Patches.MainMenuBadgePatch));

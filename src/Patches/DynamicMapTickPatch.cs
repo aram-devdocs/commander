@@ -27,7 +27,8 @@ namespace CommanderLayer.Patches
         [HarmonyPostfix]
         private static void Postfix()
         {
-            try { Plugin.Runtime?.Tick(); }
+            // Tick flows through the mod host (registry -> enabled mods -> Commander's runtime).
+            try { Plugin.Host?.Tick(); }
             catch (Exception e) { Plugin.Log?.LogError("Update tick threw: " + e); }
         }
     }
