@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Fast gate: the Unity-free Core logic tests (no game DLLs required).
+# Fast gate (headless, no game DLLs): Core logic tests + architecture rules. Keep it quick so it is
+# never bypassed; the full audit runs on pre-push.
 set -euo pipefail
 root="$(git rev-parse --show-toplevel)"
 echo "[pre-commit] Core logic tests..."
 dotnet test "$root/tests/Core/CommanderLayer.Tests.csproj" -c Release --nologo --verbosity quiet
+echo "[pre-commit] architecture rules..."
+dotnet test "$root/tests/Nucleus.Architecture.Tests/Nucleus.Architecture.Tests.csproj" -c Release --nologo --verbosity quiet
 echo "[pre-commit] OK"

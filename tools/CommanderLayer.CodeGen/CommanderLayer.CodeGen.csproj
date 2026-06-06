@@ -2,7 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <!-- Build tool, not shipped SDK surface: inherit Nullable=disable from Directory.Build.props so the
+         solution stays warnings-clean (the nullable-annotation noise here is benign and not worth chasing). -->
     <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
