@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
 namespace Nucleus.Sim
 {

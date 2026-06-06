@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     public enum OperationStatus { Planning, Active, Complete, Failed }
 

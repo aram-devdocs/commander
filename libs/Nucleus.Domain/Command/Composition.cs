@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>
     /// A force requirement / make-up expressed as counts per role family — e.g. "2× Armor, 1× AirDefense".

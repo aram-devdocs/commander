@@ -4,8 +4,8 @@
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-echo "[run] building + deploying plugin..."
-dotnet build "$root/src/CommanderLayer.csproj" -c Release
+echo "[run] building + deploying plugins..."
+dotnet build "$root/Nucleus.sln" -c Release
 
 exe="$root/.sandbox/game/NuclearOption.exe"
 if [ ! -f "$exe" ]; then

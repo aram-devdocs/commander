@@ -1,7 +1,7 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 using Xunit;
 
-namespace CommanderLayer.Tests
+namespace Nucleus.Tests
 {
     public class ModelTests
     {

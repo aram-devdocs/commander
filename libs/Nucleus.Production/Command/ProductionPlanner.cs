@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>
     /// Turns a force gap ("we are short 2× Armor, 1× AirDefense") into a concrete shopping list of convoy

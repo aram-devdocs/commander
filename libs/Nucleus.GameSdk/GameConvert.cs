@@ -1,7 +1,7 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 using UnityEngine;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>Boundary conversions between engine types and the Unity-free Core value types.</summary>
     internal static class GameConvert

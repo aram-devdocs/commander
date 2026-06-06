@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>What a <see cref="Proposal"/> is asking the player to authorise.</summary>
     public enum ProposalKind { OpenOperation, Reinforce, Recon }

@@ -1,7 +1,7 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 using UnityEngine;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>
     /// Centralized palette so atoms never hardcode colors. <see cref="Accent"/> mirrors the local faction

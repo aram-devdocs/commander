@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>Squad-forming tunables.</summary>
     public sealed class SquadConfig

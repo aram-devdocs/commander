@@ -6,7 +6,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
 
-namespace CommanderLayer
+namespace Nucleus
 {
     /// <summary>
     /// The Nucleus platform/host plugin. Loaded first; mods hard-depend on it. Owns the mod host (the single

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Roles;
+using Nucleus.Core.Model;
+using Nucleus.Core.Roles;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>Builds the classified friendly roster (the planner's "who's available") from UnitRegistry.</summary>
     public sealed class GameRoster

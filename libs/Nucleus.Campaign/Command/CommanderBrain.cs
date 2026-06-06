@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>Brain tunables (autonomous objective generation + force matching).</summary>
     public sealed class BrainConfig

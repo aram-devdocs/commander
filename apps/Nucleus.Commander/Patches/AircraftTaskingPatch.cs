@@ -1,8 +1,8 @@
-using CommanderLayer.Game;
-using CommanderLayer.Game.Generated;
+using Nucleus.Game;
+using Nucleus.Game.Generated;
 using HarmonyLib;
 
-namespace CommanderLayer.Patches
+namespace Nucleus.Patches
 {
     /// <summary>
     /// Steers IDLE player aircraft toward commander air-intent zones by overriding the pilot's no-target

@@ -1,7 +1,7 @@
-using CommanderLayer.Abstractions;
-using CommanderLayer.Composition;
+using Nucleus.Abstractions;
+using Nucleus.Composition;
 
-namespace CommanderLayer.Commander
+namespace Nucleus.Commander
 {
     /// <summary>
     /// Commander as a hosted mod: a thin wrapper over CommanderRuntime. Registers the CMD bezel button (the

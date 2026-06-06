@@ -33,7 +33,7 @@ if ($LASTEXITCODE -eq 0) { $buildOk = $true; Add-Result 'build' 'PASS' '0 warnin
 else { Add-Result 'build' 'FAIL' "exit $LASTEXITCODE" }
 
 # 2. Always-on headless layers (Unity-free; also run in cloud CI).
-Test-Project 'unit-core' 'tests\Core\CommanderLayer.Tests.csproj'
+Test-Project 'unit-core' 'tests\Core\Nucleus.Domain.Tests.csproj'
 Test-Project 'arch'      'tests\Nucleus.Architecture.Tests\Nucleus.Architecture.Tests.csproj'
 Test-Project 'sim'       'tests\Nucleus.Sim.Tests\Nucleus.Sim.Tests.csproj'
 Test-Project 'logaudit'  'tests\Nucleus.LogAudit.Tests\Nucleus.LogAudit.Tests.csproj'
@@ -41,7 +41,7 @@ Test-Project 'logaudit'  'tests\Nucleus.LogAudit.Tests\Nucleus.LogAudit.Tests.cs
 # 3. Game-coupled layer (only when the licensed game DLL is present). Integration tests load the
 #    Unity-referencing Abstractions/Ui assemblies at runtime, so they need lib/ too.
 if ($libPresent) {
-  Test-Project 'contract' 'tests\GameContract\CommanderLayer.GameContract.Tests.csproj'
+  Test-Project 'contract' 'tests\GameContract\Nucleus.GameContract.Tests.csproj'
   Test-Project 'integration' 'tests\Nucleus.Integration.Tests\Nucleus.Integration.Tests.csproj'
 }
 else {

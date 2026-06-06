@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>
     /// Native map/threat sprites mirrored from the game's single source of truth (the codegen'd

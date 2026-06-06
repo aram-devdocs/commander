@@ -1,6 +1,6 @@
 using System;
 
-namespace CommanderLayer.Core.Model
+namespace Nucleus.Core.Model
 {
     /// <summary>Battlefield domain a unit operates in.</summary>
     public enum Domain { Land, Sea, Air }

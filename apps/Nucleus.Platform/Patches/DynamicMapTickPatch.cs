@@ -2,7 +2,7 @@ using System;
 using HarmonyLib;
 using UnityEngine.EventSystems;
 
-namespace CommanderLayer.Patches
+namespace Nucleus.Patches
 {
     /// <summary>
     /// Drives the mod host from the map's per-frame Update via Harmony (this game does not pump a MonoBehaviour

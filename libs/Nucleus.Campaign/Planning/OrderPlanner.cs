@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Planning
+namespace Nucleus.Core.Planning
 {
     /// <summary>
     /// Pure selection logic — replaces "everyone stampedes." Picks a suitable subset within the order's

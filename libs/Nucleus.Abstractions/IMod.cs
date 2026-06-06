@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Ports;
-using CommanderLayer.Ui;
+using Nucleus.Core.Model;
+using Nucleus.Core.Ports;
+using Nucleus.Ui;
 using UnityEngine;
 
-namespace CommanderLayer.Abstractions
+namespace Nucleus.Abstractions
 {
     /// <summary>
     /// The contract a Nucleus mod implements. The host owns lifecycle: it calls <see cref="Initialize"/> once

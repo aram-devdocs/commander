@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>
     /// Stateful (engine-free) owner of the faction's squads. Each tick it reconciles squads against the live

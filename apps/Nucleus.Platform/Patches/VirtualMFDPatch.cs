@@ -1,6 +1,6 @@
 using HarmonyLib;
 
-namespace CommanderLayer.Patches
+namespace Nucleus.Patches
 {
     /// <summary>
     /// When the map MFD opens, the host attaches each enabled mod's registered bezel button to a blank slot.

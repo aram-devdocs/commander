@@ -3,6 +3,6 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>Nucleus.Domain</AssemblyName>
     <!-- PURE leaf library: no Unity, no Assembly-CSharp, no BepInEx. Enforced by Nucleus.Architecture.Tests.
-         Namespaces stay CommanderLayer.Core.* until the Phase 7 rename (folder/assembly != namespace). -->
+         Namespaces are Nucleus.Core.* (folder/assembly == namespace after the Phase 7 rename). -->
   </PropertyGroup>
 </Project>

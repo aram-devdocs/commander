@@ -1,4 +1,4 @@
-namespace CommanderLayer.Core.Model
+namespace Nucleus.Core.Model
 {
     /// <summary>
     /// Unity-free 3D position value type. The Core layer must not reference UnityEngine, so adapters

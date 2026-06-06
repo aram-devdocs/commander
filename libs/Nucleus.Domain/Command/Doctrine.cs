@@ -1,4 +1,4 @@
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>
     /// Tunable command rules. A single <see cref="RiskTolerance"/> master (0 = cautious, 1 = aggressive)

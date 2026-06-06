@@ -1,9 +1,9 @@
 using BepInEx.Logging;
-using CommanderLayer.Abstractions;
+using Nucleus.Abstractions;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace CommanderLayer.Host
+namespace Nucleus.Host
 {
     /// <summary>
     /// In-process host (single plugin, Phase 3): owns the mod registry + the shared game services and drives

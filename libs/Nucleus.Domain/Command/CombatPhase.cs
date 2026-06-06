@@ -1,4 +1,4 @@
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>The combined-arms phases an operation against a defended target steps through, in order.</summary>
     public enum CombatPhase { Recon, AirSuperiority, Sead, Strike, Assault, Capture, Hold }

@@ -1,6 +1,6 @@
 using NuclearOption.Networking;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// Commission-only production (the user's "keep it real"): queue the cheapest affordable convoy at the

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 using UnityEngine;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>
     /// The Commander modal on our overlay canvas, opened/closed by the native CMD map button. Starts
@@ -17,7 +17,7 @@ namespace CommanderLayer.Ui
         private bool _open;
 
         public CommanderMapScreen(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
-            Action<string> onClearOrder, Action<CommanderLayer.Core.Command.CommanderMode> onSetMode = null,
+            Action<string> onClearOrder, Action<Nucleus.Core.Command.CommanderMode> onSetMode = null,
             Action onConfirmProposal = null, Action<string> onToggleOpManual = null,
             Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null)
         {
@@ -63,8 +63,8 @@ namespace CommanderLayer.Ui
             IReadOnlyDictionary<string, string> unitNames = null)
             => _panel.Render(orders, faction, armed, preview, unitNames);
 
-        public void RenderHq(CommanderLayer.Core.Command.HqSnapshot hq, CommanderLayer.Core.Command.CommanderMode mode,
-            CommanderLayer.Core.Command.ConvoyCatalog catalog, float funds)
+        public void RenderHq(Nucleus.Core.Command.HqSnapshot hq, Nucleus.Core.Command.CommanderMode mode,
+            Nucleus.Core.Command.ConvoyCatalog catalog, float funds)
             => _panel.RenderHq(hq, mode, catalog, funds);
 
         public string DebugInfo()

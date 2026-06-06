@@ -1,7 +1,7 @@
-using CommanderLayer.Core.Model;
-using Gen = CommanderLayer.Core.Generated; // alias: the plugin assembly also sees the game's global enums
+using Nucleus.Core.Model;
+using Gen = Nucleus.Core.Generated; // alias: the plugin assembly also sees the game's global enums
 
-namespace CommanderLayer.Core.Roles
+namespace Nucleus.Core.Roles
 {
     /// <summary>
     /// Maps a Unity-free UnitDescriptor to a tactical Role + capability flags. Keyed off the game's OWN

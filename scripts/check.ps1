@@ -11,7 +11,7 @@ dotnet build "$root\Nucleus.sln" -c Release /p:TreatWarningsAsErrors=true
 if ($LASTEXITCODE -ne 0) { throw 'build failed' }
 
 Write-Host '[check] unit (Core)...'
-dotnet test "$root\tests\Core\CommanderLayer.Tests.csproj" -c Release --no-build
+dotnet test "$root\tests\Core\Nucleus.Domain.Tests.csproj" -c Release --no-build
 if ($LASTEXITCODE -ne 0) { throw 'Core tests failed' }
 
 Write-Host '[check] architecture rules...'

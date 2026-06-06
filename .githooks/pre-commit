@@ -4,7 +4,7 @@
 set -euo pipefail
 root="$(git rev-parse --show-toplevel)"
 echo "[pre-commit] Core logic tests..."
-dotnet test "$root/tests/Core/CommanderLayer.Tests.csproj" -c Release --nologo --verbosity quiet
+dotnet test "$root/tests/Core/Nucleus.Domain.Tests.csproj" -c Release --nologo --verbosity quiet
 echo "[pre-commit] architecture rules..."
 dotnet test "$root/tests/Nucleus.Architecture.Tests/Nucleus.Architecture.Tests.csproj" -c Release --nologo --verbosity quiet
 echo "[pre-commit] OK"

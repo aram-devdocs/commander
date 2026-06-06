@@ -1,5 +1,5 @@
 using BepInEx;
-using CommanderLayer.Abstractions;
+using Nucleus.Abstractions;
 
 namespace Nucleus.Squad
 {

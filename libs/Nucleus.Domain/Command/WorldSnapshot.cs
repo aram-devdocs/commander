@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>
     /// The read-side the brain decides over: the live friendly roster, fog-of-war enemies, and funds. Built

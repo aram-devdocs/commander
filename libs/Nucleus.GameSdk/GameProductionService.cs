@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Command;
+using Nucleus.Core.Command;
 using NuclearOption.Networking;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// Game adapter that turns the pure Core production plan into real convoy purchases. Reads the local
@@ -60,7 +60,7 @@ namespace CommanderLayer.Game
             queue.Dequeue();
             player.CmdPurchaseConvoy(req.ConvoyName);
             _lastPurchase = UnityEngine.Time.timeSinceLevelLoad;
-            CommanderLayer.Core.NucleusLog.Info($"Production purchase: {req.ConvoyName} (cost {req.Cost:0}, funds {hq.factionFunds:0})");
+            Nucleus.Core.NucleusLog.Info($"Production purchase: {req.ConvoyName} (cost {req.Cost:0}, funds {hq.factionFunds:0})");
         }
 
         /// <summary>Cost of a convoy computed defensively from its constituents (the game's GetCost throws on a

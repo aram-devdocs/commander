@@ -1,8 +1,8 @@
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Ports;
+using Nucleus.Core.Model;
+using Nucleus.Core.Ports;
 using NuclearOption.Networking;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>IPlayerContext over GameManager (global static accessors).</summary>
     public sealed class GamePlayerContext : IPlayerContext

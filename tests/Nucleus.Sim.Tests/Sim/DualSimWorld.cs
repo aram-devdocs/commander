@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Command;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Command;
+using Nucleus.Core.Model;
 
 namespace Nucleus.Sim
 {

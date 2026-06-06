@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CommanderLayer.Abstractions
+namespace Nucleus.Abstractions
 {
     /// <summary>Identity + presentation metadata for a mod (stable Id is the config/registry/Thunderstore key).</summary>
     public sealed class ModInfo

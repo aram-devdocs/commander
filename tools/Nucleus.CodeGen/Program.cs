@@ -24,7 +24,7 @@ using Mono.Cecil;
 // and/or CI point at exactly where the mod no longer fits. "Tight af."
 //
 // Discipline: list a member here only when the mod actually uses it.
-// Run: dotnet run --project tools/CommanderLayer.CodeGen   (needs lib/Assembly-CSharp.dll)
+// Run: dotnet run --project tools/Nucleus.CodeGen   (needs lib/Assembly-CSharp.dll)
 // ============================================================================
 
 // Enums PURE Core reasons about (the classifier). Mirrored so Core stays game-DLL-free.
@@ -131,7 +131,7 @@ var deps = new List<Dep>
 
 string repoRoot = FindRepoRoot() ?? throw new Exception("Could not find repo root (lib/Assembly-CSharp.dll).");
 string dllPath = Path.Combine(repoRoot, "lib", "Assembly-CSharp.dll");
-// Core mirrors (GameEnums/GameRef, namespace CommanderLayer.Core.Generated) live in the extracted pure
+// Core mirrors (GameEnums/GameRef, namespace Nucleus.Core.Generated) live in the extracted pure
 // leaf lib Nucleus.Domain. gameGenDir (GameSdk/NativeAssets) relocates to its lib in Phase 2.
 string coreGenDir = Path.Combine(repoRoot, "libs", "Nucleus.Domain", "Generated");
 string gameGenDir = Path.Combine(repoRoot, "libs", "Nucleus.GameSdk", "Generated");
@@ -174,9 +174,9 @@ if (failures.Count > 0)
     throw new Exception("Manifest drift vs Assembly-CSharp (game changed?):\n  - " + string.Join("\n  - ", failures));
 
 // ---- 1. enums ----
-var e = Header("by tools/CommanderLayer.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
+var e = Header("by tools/Nucleus.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
                "Regenerate via scripts/generate-types.sh. Drift is asserted by a contract test.");
-e.AppendLine("namespace CommanderLayer.Core.Generated");
+e.AppendLine("namespace Nucleus.Core.Generated");
 e.AppendLine("{");
 foreach (var name in enumsToMirror)
 {
@@ -195,9 +195,9 @@ File.WriteAllText(Path.Combine(coreGenDir, "GameEnums.generated.cs"), e.ToString
 
 // ---- 2. reflected member-name constants (verified) — Core-visible, game-DLL-free ----
 var reflected = resolved.Where(x => x.Dep.Reflected).ToList();
-var r = Header("by tools/CommanderLayer.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
+var r = Header("by tools/Nucleus.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
                "Verified member names for reflection seams (no magic strings).");
-r.AppendLine("namespace CommanderLayer.Core.Generated");
+r.AppendLine("namespace Nucleus.Core.Generated");
 r.AppendLine("{");
 r.AppendLine("    /// <summary>Verified names of private game members the mod reaches by reflection.</summary>");
 r.AppendLine("    public static class GameRef");
@@ -209,9 +209,9 @@ r.AppendLine("}");
 File.WriteAllText(Path.Combine(coreGenDir, "GameRef.generated.cs"), r.ToString());
 
 // ---- 3. typed reflection accessors (Game assembly — can name game types) ----
-var s = Header("by tools/CommanderLayer.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
+var s = Header("by tools/Nucleus.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
                "Typed accessors for private game members. Types discovered from the real assembly.");
-s.AppendLine("namespace CommanderLayer.Game.Generated");
+s.AppendLine("namespace Nucleus.Game.Generated");
 s.AppendLine("{");
 s.AppendLine("    /// <summary>Typed reflection seam into private game members (single source of truth).</summary>");
 s.AppendLine("    public static class GameSdk");
@@ -240,9 +240,9 @@ File.WriteAllText(Path.Combine(gameGenDir, "GameSdk.generated.cs"), s.ToString()
 var assetDeps = resolved.Where(x => x.Dep.Asset).ToList();
 foreach (var (d, _, m) in assetDeps)
     if (m is not FieldDefinition) throw new Exception($"Asset member {d.Type}.{d.Member} must be a public field.");
-var na = Header("by tools/CommanderLayer.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
+var na = Header("by tools/Nucleus.CodeGen from Assembly-CSharp.dll. DO NOT EDIT.",
                 "Typed snapshot of GameAssets visual resources — the single source of truth for native UI.");
-na.AppendLine("namespace CommanderLayer.Game.Generated");
+na.AppendLine("namespace Nucleus.Game.Generated");
 na.AppendLine("{");
 na.AppendLine("    /// <summary>One-shot typed snapshot of the game's <c>GameAssets</c> visual resources (font,");
 na.AppendLine("    /// HUD colors, map/threat icons). Captured once from <c>GameAssets.i</c>; the UI reads native");
@@ -274,13 +274,13 @@ na.AppendLine("}");
 File.WriteAllText(Path.Combine(gameGenDir, "NativeAssets.generated.cs"), na.ToString());
 
 // ---- 4. generated contract test (Cecil-based; one test, lists all drift) ----
-var c = Header("by tools/CommanderLayer.CodeGen. DO NOT EDIT.",
+var c = Header("by tools/Nucleus.CodeGen. DO NOT EDIT.",
                "One test asserting every manifest member still exists with the expected shape.");
 c.AppendLine("using System.Collections.Generic;");
 c.AppendLine("using System.Linq;");
 c.AppendLine("using Xunit;");
 c.AppendLine();
-c.AppendLine("namespace CommanderLayer.GameContract.Tests");
+c.AppendLine("namespace Nucleus.GameContract.Tests");
 c.AppendLine("{");
 c.AppendLine("    public class GeneratedManifestTests");
 c.AppendLine("    {");

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Planning
+namespace Nucleus.Core.Planning
 {
     /// <summary>Builds a ThreatPicture from the (fog-of-war) enemies known near an order point.</summary>
     public static class ThreatAssessor

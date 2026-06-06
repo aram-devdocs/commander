@@ -1,7 +1,7 @@
-using CommanderLayer.Core.Model;
-using Gen = CommanderLayer.Core.Generated; // alias: plugin also sees the game's global enums
+using Nucleus.Core.Model;
+using Gen = Nucleus.Core.Generated; // alias: plugin also sees the game's global enums
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// Extracts Unity-free UnitDescriptors from real game units. Maps the game's own subtype enums to the

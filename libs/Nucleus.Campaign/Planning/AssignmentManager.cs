@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Planning
+namespace Nucleus.Core.Planning
 {
     /// <summary>
     /// Stateful (but engine-free, testable) manager of active orders. Plans on add, and on each management

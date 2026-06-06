@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>
     /// Page-level component: the "Commander mod loaded" badge on the main menu. Resolves the game's TMP

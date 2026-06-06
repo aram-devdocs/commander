@@ -1,4 +1,4 @@
-namespace CommanderLayer.Core.Model
+namespace Nucleus.Core.Model
 {
     /// <summary>
     /// Unity-free color (components in 0..1). Keeps Core free of UnityEngine.Color; the UI layer

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Roles;
+using Nucleus.Core.Model;
+using Nucleus.Core.Roles;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// Fog-of-war intel: the enemies the local faction has DETECTED near a point, from

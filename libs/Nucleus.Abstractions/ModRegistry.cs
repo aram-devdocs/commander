@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CommanderLayer.Abstractions
+namespace Nucleus.Abstractions
 {
     /// <summary>
     /// Holds the registered mods + their enabled state and drives the host-owned lifecycle (initialize on

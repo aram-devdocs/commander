@@ -1,8 +1,8 @@
 using System;
-using CommanderLayer.Ui;
+using Nucleus.Ui;
 using HarmonyLib;
 
-namespace CommanderLayer.Patches
+namespace Nucleus.Patches
 {
     /// <summary>
     /// Postfix on MainMenu.Start: spawns the "Commander mod loaded" badge once the menu is built. Best

@@ -1,10 +1,10 @@
-using CommanderLayer.Abstractions;
-using CommanderLayer.Ui;
+using Nucleus.Abstractions;
+using Nucleus.Ui;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CommanderLayer.Host
+namespace Nucleus.Host
 {
     /// <summary>
     /// The main-menu mod loader: a "MODS" button that opens a panel listing every registered mod with a

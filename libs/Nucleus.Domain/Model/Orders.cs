@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CommanderLayer.Core.Model
+namespace Nucleus.Core.Model
 {
     /// <summary>Commander order families (P1 ships Attack + Defend; more added in later phases).</summary>
     public enum OrderKind

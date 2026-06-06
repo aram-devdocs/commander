@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>
     /// Atoms: each method creates exactly one styled uGUI element. Higher-level components compose these;

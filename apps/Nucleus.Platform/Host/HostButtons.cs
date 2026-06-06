@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using CommanderLayer.Abstractions;
-using CommanderLayer.Game.Generated;
+using Nucleus.Abstractions;
+using Nucleus.Game.Generated;
 using UnityEngine.UI;
 
-namespace CommanderLayer.Host
+namespace Nucleus.Host
 {
     /// <summary>
     /// The host-owned map-bezel button registry. Mods register a <see cref="MapButtonSpec"/> in Initialize;

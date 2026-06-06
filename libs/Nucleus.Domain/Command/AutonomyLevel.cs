@@ -1,4 +1,4 @@
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>
     /// How much the player has taken over a given entity (commander / operation / squad). The autonomy

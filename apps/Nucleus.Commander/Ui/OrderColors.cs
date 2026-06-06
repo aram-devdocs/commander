@@ -1,7 +1,7 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 using UnityEngine;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>Distinct, order-type-coded colors for the map overlay + panel rows. These are
     /// MOD-OWNED — the game has no per-order-kind palette, so they are deliberately the mod's own values

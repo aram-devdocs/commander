@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Command;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Planning;
+using Nucleus.Core.Command;
+using Nucleus.Core.Model;
+using Nucleus.Core.Planning;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// Orchestrates the commander: gathers the roster + fog-of-war threat, runs the pure planner/manager,

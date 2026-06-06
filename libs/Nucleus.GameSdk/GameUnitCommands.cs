@@ -1,6 +1,6 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>Executes a Core UnitTask on the real unit (host-side). The proven surface-unit path.</summary>
     public sealed class GameUnitCommands

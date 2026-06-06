@@ -1,16 +1,16 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Ports;
-using CommanderLayer.Game;
-using CommanderLayer.Game.Generated;
-using CommanderLayer.Patches;
-using CommanderLayer.Ui;
+using Nucleus.Core.Model;
+using Nucleus.Core.Ports;
+using Nucleus.Game;
+using Nucleus.Game.Generated;
+using Nucleus.Patches;
+using Nucleus.Ui;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace CommanderLayer.Composition
+namespace Nucleus.Composition
 {
     /// <summary>
     /// Composition root: builds the commander service, hosts the modal (own overlay canvas, opened by the
@@ -234,7 +234,7 @@ namespace CommanderLayer.Composition
         // (NativeUi.Border -> NuclearOption.UI.BetterBorder) so it reads as a native window. The library call
         // is itself guarded — a styling failure must never break the working panel.
         private static void TryAddNativeBorder(RectTransform panel, Color accent)
-            => CommanderLayer.Ui.Native.NativeUi.Border(panel, accent);
+            => Nucleus.Ui.Native.NativeUi.Border(panel, accent);
 
         // Capture the game's own visual resources (font, HUD colors, map/threat icons) from the single
         // codegen'd source of truth — NativeAssets, a typed snapshot of GameAssets — and mirror them into
@@ -242,7 +242,7 @@ namespace CommanderLayer.Composition
         // GameAssets reads, no hardcoded/duplicated values. Drift in any asset fails the contract test.
         private static void CaptureNativeAssets()
         {
-            var assets = CommanderLayer.Game.Generated.NativeAssets.Capture();
+            var assets = Nucleus.Game.Generated.NativeAssets.Capture();
             if (assets == null) return;
 
             if (assets.playerNameFont != null)

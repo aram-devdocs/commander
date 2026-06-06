@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Planning;
-using Cmd = CommanderLayer.Core.Command;
+using Nucleus.Core.Model;
+using Nucleus.Core.Planning;
+using Cmd = Nucleus.Core.Command;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>
     /// Commander modal content. Player picks domains (air/land/sea), a pull radius, then arms Attack/Defend
@@ -42,16 +42,16 @@ namespace CommanderLayer.Ui
         private struct OpRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string OpId; }
         // Generic interactive row: a label + an action button carrying an id (squad id / convoy name).
         private struct EntityRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string Id; }
-        private struct ModeBtn { public Image Img; public CommanderLayer.Core.Command.CommanderMode Mode; }
+        private struct ModeBtn { public Image Img; public Nucleus.Core.Command.CommanderMode Mode; }
 
         // One-line description shown under the selector for the active mode (the "definitive selections").
-        private static string ModeDescription(CommanderLayer.Core.Command.CommanderMode m)
+        private static string ModeDescription(Nucleus.Core.Command.CommanderMode m)
         {
             switch (m)
             {
-                case CommanderLayer.Core.Command.CommanderMode.Off: return "OFF — the game's own AI runs the war. The Commander does nothing.";
-                case CommanderLayer.Core.Command.CommanderMode.Manual: return "MANUAL — you command by hand. The Commander shows your squads + targets but issues no orders.";
-                case CommanderLayer.Core.Command.CommanderMode.Assisted: return "ASSISTED — the Commander proposes operations; nothing runs until you press Confirm.";
+                case Nucleus.Core.Command.CommanderMode.Off: return "OFF — the game's own AI runs the war. The Commander does nothing.";
+                case Nucleus.Core.Command.CommanderMode.Manual: return "MANUAL — you command by hand. The Commander shows your squads + targets but issues no orders.";
+                case Nucleus.Core.Command.CommanderMode.Assisted: return "ASSISTED — the Commander proposes operations; nothing runs until you press Confirm.";
                 default: return "AUTO — the Commander runs the whole war. Override any operation with its AUTO/MANUAL toggle.";
             }
         }
@@ -73,7 +73,7 @@ namespace CommanderLayer.Ui
         private struct RowWidgets { public GameObject Go; public TextMeshProUGUI Label; public Button Clear; public string OrderId; }
 
         public CommanderPanel(Transform parent, Theme theme, Action<OrderKind> onArm, Action onClearAll,
-            Action<string> onClearOrder, Action<CommanderLayer.Core.Command.CommanderMode> onSetMode = null,
+            Action<string> onClearOrder, Action<Nucleus.Core.Command.CommanderMode> onSetMode = null,
             Action onConfirmProposal = null, Action<string> onToggleOpManual = null,
             Action<string> onToggleSquadManual = null, Action<string> onBuyConvoy = null)
         {
@@ -386,7 +386,7 @@ namespace CommanderLayer.Ui
 
         // Interactive per-operation rows in the HQ section: label + an AUTO/MANUAL toggle that takes that one
         // operation off the AI (or hands it back). Pooled + index-captured like the order rows.
-        private void RenderOpRows(IReadOnlyList<CommanderLayer.Core.Command.OperationView> ops)
+        private void RenderOpRows(IReadOnlyList<Nucleus.Core.Command.OperationView> ops)
         {
             int count = ops?.Count ?? 0;
             EnsureOpRows(System.Math.Min(count, 5)); // cap visible op rows
@@ -398,7 +398,7 @@ namespace CommanderLayer.Ui
                     var r = _opRows[i];
                     r.OpId = op.Id;
                     r.Label.text = $"{op.Kind} — {op.Phase} [{op.Status}]";
-                    bool manual = op.Autonomy == CommanderLayer.Core.Command.AutonomyLevel.Manual;
+                    bool manual = op.Autonomy == Nucleus.Core.Command.AutonomyLevel.Manual;
                     r.BtnLabel.text = manual ? "MANUAL" : "AUTO";
                     r.BtnImg.color = manual ? _theme.Accent : _theme.ButtonIdle;
                     r.Go.SetActive(true);

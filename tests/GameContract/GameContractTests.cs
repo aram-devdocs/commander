@@ -5,7 +5,7 @@ using System.Linq;
 using Mono.Cecil;
 using Xunit;
 
-namespace CommanderLayer.GameContract.Tests
+namespace Nucleus.GameContract.Tests
 {
     /// <summary>
     /// Verifies the mod's assumptions about the REAL game assembly (lib/Assembly-CSharp.dll) using pure
@@ -169,7 +169,7 @@ namespace CommanderLayer.GameContract.Tests
         {
             if (!Game.Available) return;
             // The generated enum mirrors moved to Nucleus.Domain.dll (still namespace
-            // CommanderLayer.Core.Generated) when the pure leaf was extracted. Read them from there.
+            // Nucleus.Core.Generated) when the pure leaf was extracted. Read them from there.
             string mirrorAsm = Game.FindDomainLib();
             if (mirrorAsm == null) return; // domain lib not built yet
 
@@ -179,7 +179,7 @@ namespace CommanderLayer.GameContract.Tests
             foreach (var name in new[] { "VehicleType", "ShipType", "BuildingType" })
             {
                 var real = EnumMap(FindByName(Game.Module, name));
-                var mirror = EnumMap(pluginMod.GetType("CommanderLayer.Core.Generated." + name));
+                var mirror = EnumMap(pluginMod.GetType("Nucleus.Core.Generated." + name));
                 Assert.True(real.Count > 0, $"real enum {name} not found / empty");
                 Assert.True(mirror.Count > 0, $"generated mirror {name} not found — run scripts/generate-types.sh");
                 Assert.True(real.Count == mirror.Count && !real.Except(mirror).Any(),
@@ -337,7 +337,7 @@ namespace CommanderLayer.GameContract.Tests
             return null;
         }
 
-        // The pure leaf lib that now holds the generated enum/ref mirrors (namespace CommanderLayer.Core.Generated).
+        // The pure leaf lib that now holds the generated enum/ref mirrors (namespace Nucleus.Core.Generated).
         public static string FindDomainLib()
         {
             var dir = new DirectoryInfo(AppContext.BaseDirectory);

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Planning
+namespace Nucleus.Core.Planning
 {
     /// <summary>
     /// Derives an order's battle-plan PHASE from its live state + the area threat — pure and testable, so

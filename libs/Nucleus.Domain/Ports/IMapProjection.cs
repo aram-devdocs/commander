@@ -1,6 +1,6 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Ports
+namespace Nucleus.Core.Ports
 {
     /// <summary>
     /// Converts between the on-screen map and world space. Implemented by the Game layer over DynamicMap.

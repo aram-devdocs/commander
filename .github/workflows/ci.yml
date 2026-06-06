@@ -17,7 +17,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Core logic tests (Unity-free)
-        run: dotnet test tests/Core/CommanderLayer.Tests.csproj -c Release
+        run: dotnet test tests/Core/Nucleus.Domain.Tests.csproj -c Release
 
       - name: Architecture rules (Cecil dependency-graph guard)
         run: dotnet test tests/Nucleus.Architecture.Tests/Nucleus.Architecture.Tests.csproj -c Release

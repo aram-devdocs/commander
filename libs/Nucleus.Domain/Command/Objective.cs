@@ -1,6 +1,6 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>What the commander is trying to achieve at a place. Player-dropped or auto-generated.</summary>
     public enum ObjectiveKind { CapturePoint, DestroyTarget, DefendArea, ControlAirspace, Resupply, Recon }

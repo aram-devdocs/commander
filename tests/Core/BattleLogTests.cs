@@ -1,8 +1,8 @@
 using System.Linq;
-using CommanderLayer.Core.Command;
+using Nucleus.Core.Command;
 using Xunit;
 
-namespace CommanderLayer.Tests
+namespace Nucleus.Tests
 {
     public class BattleLogTests
     {

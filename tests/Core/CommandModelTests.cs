@@ -1,8 +1,8 @@
-using CommanderLayer.Core.Command;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Command;
+using Nucleus.Core.Model;
 using Xunit;
 
-namespace CommanderLayer.Tests
+namespace Nucleus.Tests
 {
     public class CommandModelTests
     {

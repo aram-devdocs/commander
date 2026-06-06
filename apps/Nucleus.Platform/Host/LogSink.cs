@@ -1,7 +1,7 @@
 using BepInEx.Logging;
-using CommanderLayer.Abstractions;
+using Nucleus.Abstractions;
 
-namespace CommanderLayer.Host
+namespace Nucleus.Host
 {
     /// <summary>Adapts the host's BepInEx ManualLogSource to the mod-facing <see cref="ILogSink"/>.</summary>
     public sealed class LogSink : ILogSink

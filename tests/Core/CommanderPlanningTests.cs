@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
-using CommanderLayer.Core.Generated;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Planning;
-using CommanderLayer.Core.Roles;
+using Nucleus.Core.Generated;
+using Nucleus.Core.Model;
+using Nucleus.Core.Planning;
+using Nucleus.Core.Roles;
 using Xunit;
 
-namespace CommanderLayer.Tests
+namespace Nucleus.Tests
 {
     public class CommanderPlanningTests
     {

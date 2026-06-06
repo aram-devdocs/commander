@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Ports;
+using Nucleus.Core.Model;
+using Nucleus.Core.Ports;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>
     /// Map overlay on the icon layer: a marker + lines per active order (color-coded), plus a live hover

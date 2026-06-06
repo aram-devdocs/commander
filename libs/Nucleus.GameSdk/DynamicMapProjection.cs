@@ -1,7 +1,7 @@
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Ports;
+using Nucleus.Core.Model;
+using Nucleus.Core.Ports;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// IMapProjection over DynamicMap. Cursor→world uses the map's own TryGetCursorCoordinates; world→map

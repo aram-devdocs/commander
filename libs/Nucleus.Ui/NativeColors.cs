@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CommanderLayer.Ui
+namespace Nucleus.Ui
 {
     /// <summary>
     /// Native HUD colors mirrored from the game's single source of truth (the codegen'd

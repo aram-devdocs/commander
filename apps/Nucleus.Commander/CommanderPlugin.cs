@@ -1,13 +1,13 @@
 using System;
 using BepInEx;
 using BepInEx.Logging;
-using CommanderLayer.Abstractions;
-using CommanderLayer.Commander;
-using CommanderLayer.Composition;
+using Nucleus.Abstractions;
+using Nucleus.Commander;
+using Nucleus.Composition;
 using HarmonyLib;
 using UnityEngine;
 
-namespace CommanderLayer
+namespace Nucleus
 {
     /// <summary>
     /// The Commander mod plugin: binds the Commander config (F1 menu), builds the runtime, and registers the

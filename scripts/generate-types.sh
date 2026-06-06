@@ -7,4 +7,4 @@ if [ ! -f "$root/lib/Assembly-CSharp.dll" ]; then
   echo "[gen] lib/Assembly-CSharp.dll missing — run scripts/setup-sandbox.ps1 first" >&2
   exit 1
 fi
-( cd "$root" && dotnet run --project tools/CommanderLayer.CodeGen -c Release )
+( cd "$root" && dotnet run --project tools/Nucleus.CodeGen -c Release )

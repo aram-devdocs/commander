@@ -1,6 +1,6 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Ports
+namespace Nucleus.Core.Ports
 {
     /// <summary>Access to the local player's faction. Implemented by the Game layer over GameManager.</summary>
     public interface IPlayerContext

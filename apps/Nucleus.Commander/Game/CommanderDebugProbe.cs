@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// S0 de-risk instrumentation (behind the <c>CommanderDebug</c> config flag, default off). Logs

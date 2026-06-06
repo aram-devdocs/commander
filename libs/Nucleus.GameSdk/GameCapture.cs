@@ -1,7 +1,7 @@
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 using UnityEngine;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// Game-side poll for Capture-order completion: an objective (Airbase) near the order point now owned by

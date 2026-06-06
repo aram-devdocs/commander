@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CommanderLayer.Abstractions;
+using Nucleus.Abstractions;
 using Xunit;
 
 namespace Nucleus.Integration.Tests

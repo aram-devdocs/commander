@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CommanderLayer.Abstractions
+namespace Nucleus.Abstractions
 {
     /// <summary>
     /// The registration entry point. The host installs <see cref="Register"/>; each mod calls it from its

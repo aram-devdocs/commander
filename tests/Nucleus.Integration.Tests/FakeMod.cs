@@ -1,4 +1,4 @@
-using CommanderLayer.Abstractions;
+using Nucleus.Abstractions;
 
 namespace Nucleus.Integration.Tests
 {

@@ -1,8 +1,8 @@
-using CommanderLayer.Abstractions;
-using CommanderLayer.Ui;
+using Nucleus.Abstractions;
+using Nucleus.Ui;
 using UnityEngine;
 
-namespace CommanderLayer.Host
+namespace Nucleus.Host
 {
     /// <summary>
     /// The per-mod context the host hands a mod at initialize time. Phase 3: Log + the shared Game services

@@ -1,6 +1,6 @@
 using System;
 
-namespace CommanderLayer.Core
+namespace Nucleus.Core
 {
     /// <summary>
     /// Tiny logging seam so the pure/SDK libraries can emit log lines without referencing the BepInEx

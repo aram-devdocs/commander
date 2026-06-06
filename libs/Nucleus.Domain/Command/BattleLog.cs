@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>The category of a single entry in the battle feed; drives icon/colour in the UI layer.</summary>
     public enum ReportKind

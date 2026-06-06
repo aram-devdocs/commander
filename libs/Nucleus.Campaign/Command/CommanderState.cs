@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     /// <summary>
     /// The persistent state of one faction's commander: its objectives, operations, squads, doctrine and

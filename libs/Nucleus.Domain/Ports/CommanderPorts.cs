@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Command;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Command;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Ports
+namespace Nucleus.Core.Ports
 {
     // The read (provider) + write (executor) seams the CommanderBrain depends on. The brain is a pure
     // function of these, so the SAME brain drives the local player, an AI commander, and (future) networked

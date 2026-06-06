@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using CommanderLayer.Abstractions;
-using CommanderLayer.Core.Model;
-using CommanderLayer.Core.Ports;
-using CommanderLayer.Game;
+using Nucleus.Abstractions;
+using Nucleus.Core.Model;
+using Nucleus.Core.Ports;
+using Nucleus.Game;
 
-namespace CommanderLayer.Host
+namespace Nucleus.Host
 {
     /// <summary>
     /// The single shared read/command surface over the live game, owned by the host and injected into every

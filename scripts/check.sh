@@ -11,7 +11,7 @@ echo "[check] building solution (warnings-as-errors)..."
 dotnet build "$root/Nucleus.sln" -c Release -p:TreatWarningsAsErrors=true
 
 echo "[check] Core logic tests..."
-dotnet test "$root/tests/Core/CommanderLayer.Tests.csproj" -c Release --no-build
+dotnet test "$root/tests/Core/Nucleus.Domain.Tests.csproj" -c Release --no-build
 
 echo "[check] architecture rules..."
 dotnet test "$root/tests/Nucleus.Architecture.Tests/Nucleus.Architecture.Tests.csproj" -c Release --no-build
@@ -24,7 +24,7 @@ dotnet test "$root/tests/Nucleus.LogAudit.Tests/Nucleus.LogAudit.Tests.csproj" -
 
 if [ -f "$root/lib/Assembly-CSharp.dll" ]; then
   echo "[check] game-contract tests..."
-  dotnet test "$root/tests/GameContract/CommanderLayer.GameContract.Tests.csproj" -c Release --no-build
+  dotnet test "$root/tests/GameContract/Nucleus.GameContract.Tests.csproj" -c Release --no-build
   echo "[check] integration tests (host lifecycle)..."
   dotnet test "$root/tests/Nucleus.Integration.Tests/Nucleus.Integration.Tests.csproj" -c Release --no-build
 else

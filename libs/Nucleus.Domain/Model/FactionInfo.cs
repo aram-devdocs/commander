@@ -1,4 +1,4 @@
-namespace CommanderLayer.Core.Model
+namespace Nucleus.Core.Model
 {
     /// <summary>Minimal local-faction descriptor used to label and theme the UI.</summary>
     public sealed class FactionInfo

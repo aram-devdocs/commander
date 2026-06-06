@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CommanderLayer.Core.Model
+namespace Nucleus.Core.Model
 {
     /// <summary>
     /// What WOULD be assigned if an order were placed at a point (drives the live hover UI): the units the

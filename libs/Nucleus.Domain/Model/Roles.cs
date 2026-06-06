@@ -1,4 +1,4 @@
-namespace CommanderLayer.Core.Model
+namespace Nucleus.Core.Model
 {
     /// <summary>Coarse engine class of a unit.</summary>
     public enum UnitClass

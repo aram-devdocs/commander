@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CommanderLayer.Core.Model
+namespace Nucleus.Core.Model
 {
     /// <summary>A classified friendly unit snapshot the planner selects from.</summary>
     public sealed class UnitView

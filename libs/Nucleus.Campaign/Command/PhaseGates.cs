@@ -1,7 +1,7 @@
 using System;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     // CombatPhase + ForceState live in Nucleus.Domain (Command/CombatPhase.cs) — same namespace, pure leaf —
     // so the Domain-level RoleFamily can reference CombatPhase without depending up into this gating logic.

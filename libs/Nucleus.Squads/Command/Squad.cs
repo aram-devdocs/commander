@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CommanderLayer.Core.Command
+namespace Nucleus.Core.Command
 {
     public enum SquadOrigin { Auto, Player }
 

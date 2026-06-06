@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CommanderLayer.Ui.Native
+namespace Nucleus.Ui.Native
 {
     /// <summary>Hosts the game's own UI components so our panels read as native.</summary>
     public static class NativeUi

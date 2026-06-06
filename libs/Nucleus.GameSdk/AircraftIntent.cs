@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CommanderLayer.Core.Model;
+using Nucleus.Core.Model;
 
-namespace CommanderLayer.Game
+namespace Nucleus.Game
 {
     /// <summary>
     /// Air-tasking intent: the zones idle player aircraft should ingress to (set from Air-domain orders).
