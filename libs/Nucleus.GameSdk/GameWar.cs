@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Nucleus.Core.War;
 
 namespace Nucleus.Game
@@ -16,13 +17,21 @@ namespace Nucleus.Game
 
         public IReadOnlyList<FactionCensus> Census()
         {
+            try { return CensusUnsafe(); }
+            catch { return Empty; } // live registries can mutate mid-enumeration; never throw out of the mod tick
+        }
+
+        private IReadOnlyList<FactionCensus> CensusUnsafe()
+        {
             var units = new Dictionary<string, int>();
             var bases = new Dictionary<string, int>();
 
             var all = UnitRegistry.allUnits;
             if (all == null) return Empty;
 
-            foreach (var u in all)
+            // Snapshot to an array so a unit (de)spawning mid-tick can't throw "collection was modified".
+            var snapshot = all.ToArray();
+            foreach (var u in snapshot)
             {
                 if (u == null || u.disabled) continue;
                 if (u.unitState != Unit.UnitState.Active) continue;

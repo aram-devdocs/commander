@@ -115,6 +115,19 @@ namespace Nucleus.Core.Command
                     op.Objective.Source == ObjectiveSource.Player))
                 .ToList();
 
+            // An objective the player just dropped has no Operation yet (one forms when a squad is assigned —
+            // by the AI auto-fill, or by the human). Surface those as placeholder rows/markers so a dropped
+            // objective is immediately visible, selectable, editable and movable — even with auto-fill OFF.
+            var withOps = new System.Collections.Generic.HashSet<string>(
+                state.Operations.Select(o => o.Objective.Id));
+            foreach (var obj in state.Objectives)
+            {
+                if (withOps.Contains(obj.Id)) continue;
+                operations.Add(new OperationView(
+                    obj.Id, obj.Kind, CombatPhase.Recon, OperationStatus.Planning, 0, AutonomyLevel.Auto,
+                    obj.Id, obj.Position, obj.Priority, obj.Source == ObjectiveSource.Player));
+            }
+
             var squads = state.Squads.Squads
                 .Select(s => new SquadView(
                     s.Id, s.Name, s.Family, s.Strength, s.Status, s.AssignedOperationId, s.Autonomy,

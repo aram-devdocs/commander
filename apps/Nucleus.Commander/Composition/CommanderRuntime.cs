@@ -26,6 +26,8 @@ namespace Nucleus.Composition
         private Theme _theme;
         private DynamicMap _lastMap;
         private string _dragObjId;                 // objective being dragged (mouse held on its marker)
+        private Vec3 _pressWorld;                   // cursor world at mousedown — drag only starts past a dead-zone
+        private bool _dragging;                     // true once the cursor moved beyond the dead-zone
         private Nucleus.Core.Command.HqSnapshot _lastHq;
         private bool _firstTick = true;
         private bool _loggedPanel;
@@ -136,20 +138,27 @@ namespace Nucleus.Composition
                 }
                 else
                 {
-                    // Select the nearest objective marker (within a screen-constant radius) and begin a drag.
+                    // Select the nearest objective marker (within a screen-constant radius) and arm a drag.
                     var hit = NearestObjective(cursor, 18f);
-                    if (hit != null) { _panel.SetSelectedObjective(hit); _dragObjId = hit; }
+                    if (hit != null) { _panel.SetSelectedObjective(hit); _dragObjId = hit; _pressWorld = cursor; _dragging = false; }
                 }
             }
             else if (Input.GetMouseButton(0) && _dragObjId != null)
             {
-                _service.MoveObjective(_dragObjId, cursor);   // drag-to-move (operation shares the objective ref)
+                // Dead-zone: a plain click only selects; moving past the threshold begins drag-to-move so a
+                // stationary select-click never yanks the objective to the cursor.
+                if (!_dragging && _pressWorld.HorizontalDistanceTo(cursor) > DragDeadZoneMeters) _dragging = true;
+                if (_dragging) _service.MoveObjective(_dragObjId, cursor); // operation shares the objective ref
             }
             else if (Input.GetMouseButtonUp(0))
             {
                 _dragObjId = null;
+                _dragging = false;
             }
         }
+
+        // Cursor must travel this far (world meters) from the press point before a select becomes a move.
+        private const float DragDeadZoneMeters = 250f;
 
         // Nearest live objective to a world point, in screen-constant map-local units (null if none within max).
         private string NearestObjective(Vec3 cursorWorld, float maxLocal)
@@ -160,6 +169,9 @@ namespace Nucleus.Composition
             string best = null; float bestD = maxLocal;
             foreach (var op in ops)
             {
+                // Only select markers the overlay actually draws (it skips Complete/Failed).
+                if (op.Status == Nucleus.Core.Command.OperationStatus.Complete
+                    || op.Status == Nucleus.Core.Command.OperationStatus.Failed) continue;
                 var l = _projection.WorldToMapLocal(op.Position);
                 float dx = l.X - cl.X, dy = l.Y - cl.Y;
                 float d = Mathf.Sqrt(dx * dx + dy * dy);

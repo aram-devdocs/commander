@@ -1,3 +1,4 @@
+using System.Linq;
 using Nucleus.Abstractions;
 using Nucleus.Core.Command;
 using Nucleus.Core.Persistence;
@@ -23,6 +24,7 @@ namespace Nucleus.Warfare
         private readonly System.Collections.Generic.Dictionary<string, (int units, int bases)> _lastCensus
             = new System.Collections.Generic.Dictionary<string, (int, int)>();
         private string _bluforFaction, _opforFaction;  // which mission faction maps to each war side
+        private float _attritionClock;                 // throttle: census diff runs ~1 Hz, not every frame
 
         public WarfareMod(string savePath) { _savePath = savePath; }
 
@@ -39,6 +41,8 @@ namespace Nucleus.Warfare
         {
             _ctx = ctx;
             _campaign = WarfareSave.Load(_savePath) ?? new WarfareCampaign();
+            // The mod feeds exact losses from the live census, so the roster-shrink heuristic (sim-only) is off.
+            _campaign.UseRosterAttrition = false;
 
             ctx.Log.Info("[NUCLEUS:SELFTEST] PASS warfare-mod-loaded");
             ctx.Log.Info($"[NUCLEUS:METRIC] warfareTurn={_campaign.Turn}");
@@ -76,7 +80,8 @@ namespace Nucleus.Warfare
 
         public void Tick(IModTickContext t)
         {
-            FeedAttrition();
+            _attritionClock += t.UnscaledDeltaTime;
+            if (_attritionClock >= 1f) { _attritionClock = 0f; FeedAttrition(); }
             var c = _ctx?.Campaign;
             if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Catalog(), c.Funds());
             // The attrition board reads from the Warfare campaign (both factions' score/funds/losses + win state).
@@ -84,42 +89,50 @@ namespace Nucleus.Warfare
         }
 
         // Diff the live per-faction census against last tick; feed unit/base drops into the attrition score.
-        // The two mission factions are mapped to the Blufor/Opfor war sides on first sight (sorted by name, so
-        // the mapping is stable across sessions). Exception-safe — a missing census just doesn't advance score.
+        // The two MAJOR combatants (by force, so neutral/tiny factions are excluded) bind to the Blufor/Opfor
+        // war sides on first sight, name-sorted for a stable mapping across sessions. Exception-safe — a missing
+        // census just doesn't advance the score.
         private void FeedAttrition()
         {
             if (_ctx?.Game == null || _campaign == null) return;
             var census = _ctx.Game.WarCensus();
             if (census == null || census.Count == 0) return;
 
-            // First sight: bind the two factions to the war sides (deterministic order) + show real names.
+            // First sight: bind the two factions with the most forces (units+bases), name-sorted for stability.
             if (_bluforFaction == null && census.Count >= 2)
             {
-                var names = new System.Collections.Generic.List<string>();
-                foreach (var f in census) names.Add(f.FactionName);
-                names.Sort(System.StringComparer.Ordinal);
-                _bluforFaction = names[0];
-                _opforFaction = names[1];
+                var ranked = census.OrderByDescending(f => f.AliveUnits + f.Airbases).Take(2)
+                    .Select(f => f.FactionName).OrderBy(n => n, System.StringComparer.Ordinal).ToList();
+                _bluforFaction = ranked[0];
+                _opforFaction = ranked[1];
                 _campaign.War.Blufor.FactionName = _bluforFaction;
                 _campaign.War.Opfor.FactionName = _opforFaction;
                 _ctx.Log.Info($"[NUCLEUS:SELFTEST] PASS warfare-factions-bound blufor={_bluforFaction} opfor={_opforFaction}");
             }
+            if (_bluforFaction == null) return; // not yet bound (only one faction present so far)
 
+            // Diff each bound faction. A faction that has been WIPED drops out of the census entirely, so we
+            // can't just iterate it — we iterate the bound names and treat a missing faction as zero forces,
+            // which feeds the decisive final losses (down to 0) instead of silently dropping them.
+            FeedSide(census, _bluforFaction, blufor: true);
+            FeedSide(census, _opforFaction, blufor: false);
+        }
+
+        private void FeedSide(System.Collections.Generic.IReadOnlyList<Nucleus.Core.War.FactionCensus> census,
+            string faction, bool blufor)
+        {
+            int units = 0, bases = 0;
             foreach (var f in census)
-            {
-                bool isBlu = f.FactionName == _bluforFaction;
-                bool isOp = f.FactionName == _opforFaction;
-                if (!isBlu && !isOp) continue;
+                if (f.FactionName == faction) { units = f.AliveUnits; bases = f.Airbases; break; }
 
-                if (_lastCensus.TryGetValue(f.FactionName, out var prev))
-                {
-                    int unitDrop = prev.units - f.AliveUnits;
-                    int baseDrop = prev.bases - f.Airbases;
-                    if (unitDrop > 0) _campaign.RecordUnitLost(isBlu, unitDrop);
-                    if (baseDrop > 0) _campaign.RecordBaseLost(isBlu, baseDrop);
-                }
-                _lastCensus[f.FactionName] = (f.AliveUnits, f.Airbases);
+            if (_lastCensus.TryGetValue(faction, out var prev))
+            {
+                int unitDrop = prev.units - units;
+                int baseDrop = prev.bases - bases;
+                if (unitDrop > 0) _campaign.RecordUnitLost(blufor, unitDrop);
+                if (baseDrop > 0) _campaign.RecordBaseLost(blufor, baseDrop);
             }
+            _lastCensus[faction] = (units, bases);
         }
 
         public void OnEnabled() { }
