@@ -1,54 +1,61 @@
 # STATUS — Nucleus build ledger
 
 > Machine-readable progress ledger. The autonomous loop reads this FIRST every wake to find the next
-> action. Gate codes: ① spec ② test ③ review ④ playtest. State: TODO / WIP / GATE-n / DONE / BLOCKED.
-> Update this on every state transition. Source of truth for "what's next" — survives context compaction.
+> action. State: TODO / WIP / DONE / PLAYTEST (Unity-gated, awaiting human) / BLOCKED.
+> Update on every state transition. Source of truth for "what's next" — survives context compaction.
 
-**Branch:** `nucleus-platform` · **Baseline (known-good):** build 0 warnings · 118 Core · 11 GameContract (2026-06-06)
-**Current phase:** Phase 3 — host flip PLAYTEST PASSED (P3-host-tick: plugin loaded, 4/4 patches, host-driven tick reached runtime, 0 exceptions). Unblocks P3d/P4/P5.
-**Platform structure COMPLETE.** Built + gated: 8 libs, host/loader, 3 mods (Commander/Build/Squad) each as/in a plugin with its own bezel button, enable-state persisted, SDK+template+release, docs, 17-test sim, log-audit + self-test. **Two things now gate further high-value progress:**
-  1. **One verification run** (you): `scripts/run.ps1` once → open map → `audit.ps1 -LogPath .sandbox/game/BepInEx/LogOutput.log` confirms loader-ui-built / build-mod-loaded / squad-mod-loaded / bezel-buttons-attached in one shot. Unblocks the host **real UI layer** (host-owned Canvas → Build buy-menu + Squad manager panels) — held back so it isn't built on unverified UI.
-  2. **Outward actions** (you): Phase 7 `gh repo rename no_nucleus` + local folder rename; publish (nuget.org/Thunderstore accounts + GH secrets, per docs/DEPLOYMENT.md).
-**Next loop action:** if no verification run yet, do only safe/finite hardening (per-lib READMEs, ARCHITECTURE.md) and re-check playtests/results; else build the host UI layer. (tag → dotnet pack+push NuGet, gated on api-snapshot) + `setup-sdk` script (populate consumer lib/ from their Steam install) + fix the metapackage `dotnet pack` no-op. Then dual-faction Sim (both sides run brains) toward the north-star. Resume P3d (loader UI) once playtests/results/P3-host-tick.md lands → then `audit.ps1 -LogPath <log>` audits it mechanically.
-**Gate now 7 layers:** build 0w · unit-core 118 · arch 9 · sim **17** · logaudit 5 · contract 11 · integration 8.
-**Headless runway note:** most remaining work (P3d loader UI, P4 Build mod, P5 Squad mod) is **playtest-gated** on P3-host-tick. Remaining headless north-star item: **campaign persistence** (save/resume model + round-trip tests) — do that next; then park on the playtest if nothing else is headless-verifiable.
-**Docs landed:** docs/TESTING.md, docs/TESTING-WORKSHEET.md, docs/DEPLOYMENT.md.
-**SDK DX so far:** 7 libs packable + IP-clean; `dotnet new nucleus-mod` template smoke-tested; `tools/Nucleus.LogAudit` CLI ready.
-**PENDING PLAYTEST:** playtests/P3-host-tick.md (host-driven tick — confirm panel/commander still work). Check playtests/results/ each wake.
-**Sim landed:** 14 headless tests over the real brain (determinism, no-NaN, 2000-tick stability, objectives, tasks, war-progresses, operations-opened, phases-advance, 6-seed fuzz). Gate = 6 layers.
-**Gate now:** 5 layers — build 0w · unit-core 118 · arch 9 · contract 11 · integration 8 (host lifecycle headless-proven).
-**P3b core done (not live):** src/Host/{LogSink, GameServices}; ModRegistry now in Nucleus.Abstractions (tested). CommanderRuntime still drives live.
-**Gate now:** `pwsh scripts/audit.ps1` → AUDIT: PASS (build 0w · unit-core 118 · arch 9 · contract 11). 7 libs: Domain/Squads/Production/Campaign/GameSdk/Ui (+Abstractions next).
-**src shell now:** Plugin.cs, Composition/CommanderRuntime, Patches/{MainMenuBadge,DynamicMapTick,VirtualMFD,AircraftTasking}, Game/CommanderService, Ui/{CommanderPanel,CommanderMapScreen,MapOverlay,OrderColors}.
+**Branch:** `nucleus-platform` · **Baseline (known-good):** `pwsh scripts/audit.ps1` → AUDIT: PASS
+**Gate (7 layers):** build 0w · unit-core 118 · arch 9 · sim 17 · logaudit 7 · contract 11 · integration 9 (2026-06-06)
+
+## Where we are
+The full platform is **built, renamed, and headless-green.** The monorepo is the planned shape:
+`apps/` (Nucleus.Platform host + Nucleus.Commander/Build/Squad mods) over `libs/` (8 libs:
+Domain/Squads/Production/Campaign pure; GameSdk/Ui engine; Abstractions host contract), plus
+`sdk/` `tools/` `tests/` `build/` `docs/`. Phase 7 rename is **complete** — no `CommanderLayer`
+anywhere in source/build/scripts/CI/hooks; folder == assembly == namespace throughout.
+
+What is proven headlessly: every shared library, the host mod-registry lifecycle (register → init →
+tick → enable/disable, persisted), the dependency DAG (Cecil arch rules), the game-reflection contract,
+the dual-faction campaign sim over the real brain, and the log-audit/self-test instrumentation.
 
 ## Phase status
 | Phase | Title | State | Notes |
 |-------|-------|-------|-------|
-| 0 | Tooling & ledger foundation | DONE | sln+props+build helpers, arch test (9, synthetic-proven), gate scripts, active hooks, warnings-clean, CI headless gate. TestKit/Sim/coverage/api-snap sequenced into P1; LogAudit→pre-P3 |
-| 1 | Extract pure libs (Domain/Squads/Production/Campaign) | TODO | namespaces frozen at CommanderLayer.* |
-| 2 | Extract GameSdk + Ui + retarget codegen | TODO | |
-| 3 | Stand up host; Commander first | TODO | riskiest — Canvas/tick ownership inversion |
-| 4 | Split Build | TODO | one host queue, no double-buy |
-| 5 | Split Squad | TODO | external SquadRoster ctor |
-| 6 | Warfare + SDK packaging + dual-faction + persistence | TODO | north-star |
-| 7 | Rename pass (CommanderLayer.*→Nucleus.*, repo+folder no_nucleus) | TODO | human folder-rename touchpoint |
+| 0 | Tooling & ledger foundation | DONE | sln, props, build helpers, arch test, gate scripts, active hooks, CI |
+| 1 | Extract pure libs (Domain/Squads/Production/Campaign) | DONE | per-lib test projects; arch-enforced Unity-free |
+| 2 | Extract GameSdk + Ui + retarget codegen | DONE | codegen → lib Generated/ dirs; contract green |
+| 3 | Stand up host; Commander first | DONE (in-game ✅) | P3-host-tick PASSED: plugin loaded, 4/4 patches, host tick reached, 0 exceptions |
+| 4 | Split Build | DONE | own plugin/bezel; no-skew deploy verified; PLAYTEST pending in-game |
+| 5 | Split Squad | DONE | own plugin/bezel; external SquadRoster ctor; PLAYTEST pending in-game |
+| 6 | Warfare + SDK packaging + dual-faction + persistence | DONE (headless) | dual-faction sim green; SDK packable + template; persistence model next-deepen |
+| 7 | Rename CommanderLayer.* → Nucleus.* | DONE | source/projects/sln/scripts/CI/hooks; repo+folder rename = human touchpoint (below) |
 
-## Work-items in flight
-| ID | Phase | Item | Gate | Owner | Last gate result | Next action |
-|----|-------|------|------|-------|------------------|-------------|
-| P3c | 3 | live host flip (tick) | ④ playtest | loop | built, playtest queued | await playtests/results/P3-host-tick.md |
-| P3d | 3 | mod loader UI (MODS menu) | ④ | loop | built, playtest queued | await playtests/results/P3d-loader.md |
-| P4 | 4 | Build as its own plugin | ④ | loop | built (no-skew verified) | playtest auto-verifies build-mod-loaded |
-| P5 | 5 | Squad as its own plugin | ④ | loop | built (no-skew verified) | playtest auto-verifies squad-mod-loaded |
-| P-buttons | 3-4 | host bezel-button registry | ④ | loop | built (CMD untouched) | next run auto-verifies bezel-buttons-attached |
-| P-persist | 3 | persist loader/button enable-state | — | loop | next (small) | bind ModRegistry enabled to BepInEx config |
-| P6-sdk | 6 | SDK NuGet packaging | — | loop | libs packable + template done | setup-sdk + release.yml + metapackage-pack fix |
+## Remaining work
+### Headless (the loop can do now)
+- **Campaign persistence deepening** — the save/resume model + round-trip tests toward the multi-hour
+  north-star campaign. Highest-value headless item remaining.
+- **Host real UI layer** (host-owned Canvas → Build buy-menu + Squad manager panels) — *gated on the
+  one verification run below* so it isn't built on unverified UI. Until then, do persistence + hardening.
 
-## Pending playtests (Unity-gated, awaiting human)
-- ✅ **P3-host-tick — PASSED** (playtests/results/P3-host-tick.md). Host flip confirmed in-game.
-- Next playtest will be richer: host now emits [NUCLEUS:SELFTEST]/[NUCLEUS:METRIC] lines → `audit.ps1 -LogPath` auto-verifies.
+### Playtest-gated (awaiting one human verification run)
+One run mechanically verifies all four mods + loader + bezel buttons at once:
+1. `scripts/run.ps1` → open the map (and the MODS menu from the main menu).
+2. `scripts/audit.ps1 -LogPath .sandbox/game/BepInEx/LogOutput.log`
+   → confirms `loader-ui-built` / `build-mod-loaded` / `squad-mod-loaded` / `bezel-buttons-attached`
+   from the `[NUCLEUS:SELFTEST]`/`[NUCLEUS:METRIC]` lines.
+Packet: `playtests/P-apps-split.md`. Result lands in `playtests/results/`.
+
+### Outward actions (human only — prepared, parked for explicit go)
+- `gh repo rename no_nucleus` (current remote is `commander`) + local folder rename
+  `C:\Users\aram\dev\nuclear_option_command` → `no_nucleus` (close session, rename, reopen; update remotes).
+- Publish: nuget.org (SDK), Thunderstore (mods), Steam Workshop (mission) — accounts + GH secrets per
+  `docs/DEPLOYMENT.md`.
+
+## Pending playtests (Unity-gated)
+- ✅ **P3-host-tick — PASSED** (`playtests/results/P3-host-tick.md`). Host flip confirmed in-game.
+- ⏳ **P-apps-split** — the one combined run above; auto-audited via LogAudit.
 
 ## Gates / commands
 - Fast: `pwsh scripts/check.ps1` (build + changed-project unit + arch)
-- Full: `pwsh scripts/audit.ps1` (everything → PASS/FAIL dashboard + artifacts/audit-summary.json)
-- Baseline today (pre-monorepo): `dotnet build src/CommanderLayer.csproj -c Release` + `dotnet test tests/Core` + `dotnet test tests/GameContract`
+- Full: `pwsh scripts/audit.ps1` (7 layers → PASS/FAIL dashboard + `artifacts/audit-summary.json`)
+- Log audit: `pwsh scripts/audit.ps1 -LogPath <BepInEx log>` (turns a playtest into a mechanical verdict)
