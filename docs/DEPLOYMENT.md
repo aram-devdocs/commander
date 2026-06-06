@@ -8,7 +8,14 @@ How Nucleus ships to its four audiences and what you must set up once.
 | Mod **developers** | NuGet (nuget.org) | the `Nucleus.*` SDK packages + `Nucleus.Sdk` metapackage | nuget.org API key |
 | **Players** | Thunderstore (r2modman) | `Nucleus-Platform` (host + shared libs) + each mod | Thunderstore team + token |
 | Players | GitHub Releases / native loader / source | per-mod zips | — (GitHub) |
+| Players | **Native installer** (`tools/Nucleus.Installer`) | a CLI that copies the plugin folders into their game's `BepInEx/plugins` | — |
 | Players | Steam Workshop | the **Nucleus Dynamic Warfare** mission (depends on the mod stack) | Steam / Steamworks |
+
+**Native installer.** `dotnet run --project tools/Nucleus.Installer -- install --game "<Nuclear Option folder>"`
+copies every `Nucleus.*` plugin folder (from the installer's own folder, or `--source <dir>`) into
+`<game>/BepInEx/plugins`. Bounded — it only ever touches `Nucleus.*` folders, never anything else; supports
+`--dry-run` and `uninstall`. BepInEx 5 (x64, Mono) must already be installed (prerequisite, not installed by
+this tool). Ship it alongside the built plugin folders in a GitHub Release zip.
 
 **No game IP ships anywhere** — the SDK packages reference the game DLLs as build-time `HintPath`s
 (`Private=false`); verified: a lib's nupkg contains only its own DLL. Consumers bring their own via `setup-sdk`.

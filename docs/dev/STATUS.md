@@ -5,7 +5,7 @@
 > Update on every state transition. Source of truth for "what's next" — survives context compaction.
 
 **Branch:** `master` (everything consolidated here; feature branches merged + deleted) · **Baseline:** `pwsh scripts/audit.ps1` → AUDIT: PASS
-**Gate (7 layers):** build 0w · unit-core 129 · arch 9 · sim 22 · logaudit 7 · contract 11 · integration 9 (2026-06-06)
+**Gate (8 layers):** build 0w · unit-core 129 · arch 9 · sim 22 · logaudit 7 · installer 5 · contract 11 · integration 9 (2026-06-06)
 
 ## Where we are
 The full platform is **built, renamed, and headless-green.** The monorepo is the planned shape:
@@ -42,6 +42,9 @@ log-audit/self-test instrumentation.
   `WarfareSave` (whole-war save/resume) in the pure lib, driven by the `Nucleus.Warfare` plugin/IMod (WAR
   button, resumes on load, persists on shutdown). 3 dual-faction Sim tests incl. whole-war continuation
   determinism.
+- ✅ **Native installer** (`tools/Nucleus.Installer`) — CLI install/uninstall of the mod folders into a
+  player's `BepInEx/plugins` (bounded, dry-run, BepInEx-prerequisite check). 5 tests + new gate layer.
+  Completes Phase 6 distribution tooling. Documented in `docs/DEPLOYMENT.md`.
 
 ### Headless — still open
 - **Host real UI layer** (host-owned Canvas → Build buy-menu + Squad manager + Warfare status panels) —
@@ -69,5 +72,5 @@ Packet: `playtests/P-apps-split.md`. Result lands in `playtests/results/`.
 
 ## Gates / commands
 - Fast: `pwsh scripts/check.ps1` (build + changed-project unit + arch)
-- Full: `pwsh scripts/audit.ps1` (7 layers → PASS/FAIL dashboard + `artifacts/audit-summary.json`)
+- Full: `pwsh scripts/audit.ps1` (8 layers → PASS/FAIL dashboard + `artifacts/audit-summary.json`)
 - Log audit: `pwsh scripts/audit.ps1 -LogPath <BepInEx log>` (turns a playtest into a mechanical verdict)
