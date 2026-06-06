@@ -31,6 +31,16 @@ $out = [System.Text.RegularExpressions.Regex]::Replace(
     [System.Text.RegularExpressions.RegexOptions]::Singleline, [System.TimeSpan]::FromSeconds(10))
 if ($out -eq $raw) { throw "Could not find the description field to replace in $Source." }
 
+# Neuter the game's scripted objectives so ONLY Nucleus objectives drive this mode (the north-star: with no
+# scripted objectives the forces idle, and OUR objectives become what is dynamic). Replace the top-level
+# objectives block (the LAST "objectives" key - factions' own objectives come earlier in the file) with a
+# single inert "Mission Start" None objective and no outcomes. The forked Escalation ships 62 scripted
+# objectives ("Capture Airbase" etc.) that otherwise render on the map and compete with ours.
+$idx = $out.LastIndexOf('"objectives"')
+if ($idx -lt 0) { throw "Could not find the top-level objectives block to neuter." }
+$inert = '"objectives": { "Objectives": [ { "UniqueName": "Mission Start", "Faction": "", "DisplayName": "", "Hidden": true, "Type": 0, "TypeName": "None", "Data": [], "Outcomes": [] } ], "Outcomes": [] }' + "`n}"
+$out = $out.Substring(0, $idx) + $inert
+
 # Sanity: the result must still parse as JSON.
 try { $null = $out | ConvertFrom-Json } catch { throw "Forked mission is not valid JSON: $($_.Exception.Message)" }
 

@@ -27,20 +27,16 @@ namespace Nucleus.Game
                 var pos = GameConvert.ToVec3(info.GetPosition());
                 if (pos.HorizontalDistanceTo(center) > radius) continue;
 
-                UnitClass cls = UnitClass.Other;
-                UnitCapability cap = default;
-                int armor = 0;
-                bool accurate = false;
-                if (info.TryGetUnit(out var u) && u != null)
-                {
-                    if (u.NetworkHQ == hq) continue; // guard: never treat own units as enemies
-                    var d = GameClassifier.Describe(u);
-                    cap = RoleClassifier.Classify(d);
-                    cls = d.Class;
-                    armor = d.ArmorTier;
-                    accurate = true;
-                }
-                list.Add(new EnemyView(kv.Key.ToString(), pos, cls, cap, accurate, info.GetStrategicPriority(), armor));
+                // Only emit a CONFIRMED enemy: the tracking entry must resolve to a live unit of a DIFFERENT
+                // faction. Unresolvable/stale entries (destroyed units, contacts that no longer map to a Unit)
+                // and own/neutral units are dropped — otherwise they become phantom enemies at stale positions,
+                // and the brain drops DestroyTarget objectives on our own bases / empty map (bug: phantom ops).
+                if (!info.TryGetUnit(out var u) || u == null) continue;
+                if (u.NetworkHQ == hq) continue;                 // never treat own units as enemies
+                if (u.NetworkHQ == null) continue;               // unaligned/neutral — not a war target
+                var d = GameClassifier.Describe(u);
+                var cap = RoleClassifier.Classify(d);
+                list.Add(new EnemyView(kv.Key.ToString(), pos, d.Class, cap, true, info.GetStrategicPriority(), d.ArmorTier));
             }
             return list;
         }
