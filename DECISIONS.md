@@ -23,4 +23,16 @@
   packages + `docs/DEPLOYMENT.md`, park for the human to create accounts/secrets and approve first publish.
 
 ## Per-phase retros
-_(appended at each phase close)_
+- **2026-06-06 · Phase 0 (Tooling & ledger) retro.** Landed: durable ledger (STATUS/BACKLOG/DECISIONS/
+  north-star); `Nucleus.sln` + conservative `Directory.Build.props` + `build/` helpers over the existing
+  4 projects with the monolith still 0-warnings/118/11; `Nucleus.Architecture.Tests` (Cecil DAG/ownership
+  rules) **with synthetic proofs the rules bite** — the key call that avoids a false-green vacuous pass;
+  `scripts/check.ps1`+`audit.ps1` (PASS/FAIL dashboard + JSON), `check.sh` to the solution gate; `.githooks`
+  modernized + activated via `core.hooksPath` (verified: pre-commit ran on commit); codegen made
+  warnings-clean (inherit Nullable=disable) so `-p:TreatWarningsAsErrors=true` is meaningful; `ci.yml` to a
+  headless-always-on + game-coupled-conditional gate. **Lesson:** a root `Directory.Build.props` only risks
+  properties the existing projects don't set themselves (Nullable/warnings) — keep it conservative and apply
+  warnings-as-errors at gate time (CLI), not globally, to protect the inner loop. **Lesson:** building the
+  full `Nucleus.sln` can't run on cloud CI (monolith needs game DLLs); run the Unity-free projects directly.
+  **Re-sequenced:** TestKit/Sim/Integration/coverage/api-snapshot build against the *extracted* libs, so they
+  moved into Phase 1 rather than being stood up against the monolith.
