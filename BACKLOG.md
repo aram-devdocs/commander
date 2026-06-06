@@ -30,6 +30,11 @@
   - [x] deepen — operations-opened, **combat phases advance past Recon**, multi-seed fuzz (6 seeds: deterministic+finite+active). Sim layer now 14 tests. **HV**
   - [ ] deepen further (Phase 6 proper): dual-faction (both sides run brains), persistence save/resume, production-within-funds in-sim.
 
+## Phase 6 — deliverable docs (user-requested)
+- [x] P6-docs — `docs/TESTING.md` (headless gates + in-game steps), `docs/TESTING-WORKSHEET.md` (fill-in
+  feedback sheet, agent-parseable), `docs/DEPLOYMENT.md` (channels + GH secrets NUGET_API_KEY/TCLI_AUTH_TOKEN/
+  Steam + self-hosted runner + release flow + folder rename). Describe the system as built; refine at the end. **HV**
+
 ## Phase 6 — SDK NuGet (headless, unblocked)
 - [~] P6-sdk — all 7 shared libs packable via `libs/Directory.Build.props` (chains root + imports
   Packaging.props + IsPackable + single Version 0.1.0). **Verified: GameSdk nupkg ships ONLY its own DLL — no
