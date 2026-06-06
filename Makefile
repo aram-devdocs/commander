@@ -13,7 +13,7 @@ PS      := powershell -NoProfile -ExecutionPolicy Bypass -File
 LAUNCH  := $(PS) scripts/run.ps1
 
 .DEFAULT_GOAL := help
-.PHONY: help dev run build rebuild clean test audit check logaudit \
+.PHONY: help dev run build rebuild clean test audit check logaudit smoke \
         platform commander build-mod squad warfare \
         sandbox mission codegen
 
@@ -26,6 +26,7 @@ help:
 	@echo "  make test        full gate (8 layers: build/unit/arch/sim/logaudit/installer/contract/integration)"
 	@echo "  make check       fast gate (build + core unit + arch)"
 	@echo "  make logaudit    audit the last in-game BepInEx log"
+	@echo "  make smoke       launch the game, verify mods load + no exceptions, kill it (self-test)"
 	@echo ""
 	@echo "  per-mod (rebuild+deploy that mod, then launch):"
 	@echo "  make platform | make commander | make build-mod | make squad | make warfare"
@@ -60,6 +61,10 @@ check:
 
 logaudit:
 	$(PS) scripts/audit.ps1 -LogPath $(LOG)
+
+# Automated in-game smoke test: launch the game, wait for the mod's self-test markers, kill it, verdict.
+smoke:
+	$(PS) scripts/smoketest.ps1
 
 # ---- per-mod fast iteration (build that mod's DLL -> deploy -> launch) -------
 platform:
