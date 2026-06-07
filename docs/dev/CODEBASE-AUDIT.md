@@ -32,4 +32,9 @@ apps (thin wrappers): Platform · Commander · Build · Squad · Warfare   sdk: 
 - CB3: DONE (local) — extracted `CommanderPanel.BuildRow`; EnsureEntityRows/EnsureOpRows/EnsureRows now share it
   (duplicated row-construction boilerplate removed; per-section struct/binding kept). No-deploy compile + arch 9/9 PASS.
   Visual confirm deferred (behavior-preserving — same heights/widths/names).
-- Next: CB5 (package metadata + READMEs), CB6 (SDK routing audit), CB4 (thin apps), CB8 (public surface/docs).
+- CB5: DONE (local) — packaging infra already enterprise (build/Packaging.props: MIT, repo/project URL, tags,
+  symbols, SourceLink, deterministic CI; libs/Directory.Build.props: IsPackable + lockstep Version 0.1.0; apps
+  IsPackable=false). Added the missing per-package <Description> to all 8 libs (Domain/Squads/Production/Campaign/
+  Sim/Abstractions/GameSdk/Ui) so each NuGet package self-describes. No-deploy compile PASS. (Optional later:
+  packed PackageReadmeFile per lib.)
+- Next: CB6 (SDK routing audit), CB4 (thin apps), CB8 (public surface/docs).
