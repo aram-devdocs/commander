@@ -261,10 +261,19 @@ namespace Nucleus.Composition
             return false;
         }
 
+        private Dictionary<string, Vec3> _posCache;
+        private object _posCacheKey;
+
+        // Unit-id -> position map for the map overlay. Rebuilt only when the roster list instance changes (the
+        // throttled 3s management tick swaps in a new list), not on every render frame over ~400 units.
         private Dictionary<string, Vec3> PositionsById()
         {
-            var dict = new Dictionary<string, Vec3>();
-            foreach (var u in _service.LastRoster) dict[u.Id] = u.Position;
+            var roster = _service.LastRoster;
+            if (ReferenceEquals(_posCacheKey, roster) && _posCache != null) return _posCache;
+            var dict = new Dictionary<string, Vec3>(roster.Count);
+            foreach (var u in roster) dict[u.Id] = u.Position;
+            _posCacheKey = roster;
+            _posCache = dict;
             return dict;
         }
 

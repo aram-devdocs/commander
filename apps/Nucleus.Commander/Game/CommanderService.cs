@@ -36,6 +36,17 @@ namespace Nucleus.Game
         /// <summary>Roster from the last Place/Tick (refreshed on the throttled management loop).</summary>
         public IReadOnlyList<UnitView> LastRoster { get; private set; } = new List<UnitView>();
 
+        // Unit-id -> Role map, rebuilt only when LastRoster changes (the throttled 3s tick) rather than on every
+        // render (~7Hz commander, ~2Hz HUD, and the WAR panel) — AutoHq reuses it for squad composition labels.
+        private readonly Dictionary<string, Role> _roleMap = new Dictionary<string, Role>();
+
+        private void SetRoster(IReadOnlyList<UnitView> roster)
+        {
+            LastRoster = roster;
+            _roleMap.Clear();
+            foreach (var u in roster) _roleMap[u.Id] = u.Role;
+        }
+
         // Committed-units snapshot, refreshed on Place/Tick and reused by the per-frame hover preview so we
         // don't rebuild it every frame (review S1).
         private System.Collections.Generic.HashSet<string> _committed = new System.Collections.Generic.HashSet<string>();
@@ -55,7 +66,7 @@ namespace Nucleus.Game
             }
 
             var roster = _roster.BuildRoster();
-            LastRoster = roster;
+            SetRoster(roster);
             float r = radius > 0f ? radius : _cfg.SelectionRadius;
             var threat = ThreatAssessor.Assess(_intel.KnownEnemiesNear(world, r));
             var order = new CommanderOrder("ord-" + (++_counter), kind, world, r, domains);
@@ -70,7 +81,7 @@ namespace Nucleus.Game
         /// <summary>Live preview of who'd be assigned at a hover point (uses the cached roster).</summary>
         public AssignmentPreview PreviewAt(OrderKind kind, Vec3 world, DomainSet domains, float radius)
         {
-            if (LastRoster.Count == 0) LastRoster = _roster.BuildRoster();
+            if (LastRoster.Count == 0) SetRoster(_roster.BuildRoster());
             float r = radius > 0f ? radius : _cfg.SelectionRadius;
             var threat = ThreatAssessor.Assess(_intel.KnownEnemiesNear(world, r));
             var order = new CommanderOrder("preview", kind, world, r, domains);
@@ -82,7 +93,7 @@ namespace Nucleus.Game
         public void Tick()
         {
             var roster = _roster.BuildRoster();
-            LastRoster = roster;
+            SetRoster(roster);
             _catalog = _prodService.Catalog(); // refresh the buy menu once per (throttled) tick, not per frame
             var reissue = _mgr.Tick(roster,
                 o => ThreatAssessor.Assess(_intel.KnownEnemiesNear(o.Position, _cfg.ThreatRadius)),
@@ -153,9 +164,7 @@ namespace Nucleus.Game
         /// Passes a unit-id→role map (from the live roster) so squad rows can show composition ("2× MBT, 1× IFV").</summary>
         public Core.Command.HqSnapshot AutoHq()
         {
-            var roles = new Dictionary<string, Role>(LastRoster.Count);
-            foreach (var u in LastRoster) roles[u.Id] = u.Role;
-            return Core.Command.HqView.Build(_auto, _auto.Log, _prodQueue, 10, roles);
+            return Core.Command.HqView.Build(_auto, _auto.Log, _prodQueue, 10, _roleMap);
         }
 
         // ---- ICampaign aliases (the shared-campaign contract the host exposes to every mod) ----

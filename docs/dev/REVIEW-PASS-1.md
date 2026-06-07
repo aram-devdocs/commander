@@ -84,3 +84,11 @@ NO push, NO smoke/visual probe. Verify each wave: full no-deploy build (0 warn) 
 - **B6 DONE** — crash-safe save: CampaignStore.Save + WarfareSave.Save now use File.Replace (atomic on NTFS) when
   the destination exists, else File.Move — removing the no-file window of Delete-then-Move. Doc comment corrected.
   Covered by the existing Overwriting_an_existing_save_keeps_the_latest test. Core 141 PASS, 0 warn.
+- **D2 DONE** — WarfareMod.Tick now throttles the HQ panel + scoreboard render to ~7Hz (RenderInterval 0.14f)
+  like CommanderRuntime, instead of rebuilding the full LINQ HqSnapshot every frame.
+- **D16 DONE** — CommanderService caches the unit-id→Role map (_roleMap), rebuilt only when the roster changes
+  (via SetRoster, routing all 3 assignment sites) instead of allocating a ~400-entry dict on every AutoHq render.
+- **D17 DONE** — CommanderRuntime.PositionsById caches its dict keyed on ReferenceEquals(LastRoster); rebuilt only
+  when the throttled tick swaps in a new roster list. Full build 0 warn + Core 141 + Sim 41 + arch 9 PASS.
+- D15 (HqView.Build micro-allocs) + D28 (GameRoster id-string) — DEFERRED to a later pass (lower value; D15 has a
+  MemberUnitIds-aliasing caveat to handle carefully).

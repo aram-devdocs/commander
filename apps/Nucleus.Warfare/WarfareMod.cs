@@ -176,11 +176,20 @@ namespace Nucleus.Warfare
             if (_attritionClock >= 1f) { _attritionClock = 0f; ResetForNewMissionIfNeeded(); FeedAttrition(); ApplySetup(); }
             _enemyClock += t.UnscaledDeltaTime;
             if (_enemyClock >= 1.5f) { _enemyClock = 0f; DriveEnemyAi(); }
+
+            // Throttle the panel render to ~7Hz like CommanderRuntime — rebuilding the whole HQ snapshot
+            // (LINQ over all ops/squads + per-squad composition strings) EVERY frame over hundreds of units was
+            // the in-mission lag the commander runtime already fixed; the WAR panel must not reintroduce it.
+            _renderClock += t.UnscaledDeltaTime;
+            if (_renderClock < RenderInterval) return;
+            _renderClock = 0f;
             var c = _ctx?.Campaign;
             if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Catalog(), c.Funds());
             // The attrition board reads from the Warfare campaign (both factions' score/funds/losses + win state).
             if (_panel != null && _campaign != null) _panel.RenderScoreboard(_campaign.SnapshotBoard());
         }
+        private float _renderClock;
+        private const float RenderInterval = 0.14f;
 
         // Diff the live per-faction census against last tick; feed unit/base drops into the attrition score.
         // The two MAJOR combatants (by force, so neutral/tiny factions are excluded) bind to the Blufor/Opfor
