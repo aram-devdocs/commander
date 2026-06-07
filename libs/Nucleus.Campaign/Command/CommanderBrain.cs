@@ -160,7 +160,14 @@ namespace Nucleus.Core.Command
             {
                 if (op.Status != OperationStatus.Active) continue;
                 if (op.Autonomy == AutonomyLevel.Manual) continue; // player drives this slice — brain yields it
-                var active = Families.ActiveInPhase(op.CombatPhase); // only this phase's families engage
+                // A DefendArea holds ground — it does NOT run the offensive air-superiority→SEAD→strike sequence,
+                // so gate its squads by the families that FILL it ({AirDefense,Armor}) rather than by the combat
+                // phase. Without this, a defence against an armor pocket sits in the Strike phase (active families
+                // {AirCombat,Artillery}), none of its squads match, ZERO tasks are issued, the threat is never
+                // engaged, the phase never advances — the AI's defence is a silent no-op in-game (review P2-#1).
+                var active = op.Objective.Kind == ObjectiveKind.DefendArea
+                    ? Families.SuitableFor(ObjectiveKind.DefendArea)
+                    : Families.ActiveInPhase(op.CombatPhase); // only this phase's families engage
                 var verb = op.Objective.TargetId != null && op.Objective.Kind == ObjectiveKind.DestroyTarget
                     ? TaskVerb.AttackTarget : TaskVerb.MoveTo;
                 // De-dup on the full TASK (id + destination + target + verb), not just the objective id — so an

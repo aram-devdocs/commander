@@ -163,6 +163,26 @@ namespace Nucleus.Tests
         }
 
         [Fact]
+        public void DefendArea_op_tasks_its_defensive_squads()
+        {
+            // review P2-#1: a DefendArea holds ground — it must task its {AirDefense, Armor} squads. Previously
+            // the phase-gated active set ({AirCombat,Artillery} in Strike) excluded them, so the AI's home
+            // defence issued ZERO unit tasks in-game (a silent no-op the sim masked via proximity attrition).
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { AiCreatesObjectives = false };
+            var roster = new List<UnitView> { U("adu0", Role.GroundAirDefense, P(1000, 0)), U("armu0", Role.Armor, P(1000, 0)) };
+            state.Squads.Add(Sq("ad", RoleFamily.AirDefense, 1));   // member adu0
+            state.Squads.Add(Sq("arm", RoleFamily.Armor, 1));       // member armu0
+            state.Objectives.Add(new Objective("def-1", ObjectiveKind.DefendArea, P(1000, 0), ObjectiveSource.Auto, priority: 50f));
+            var enemy = new List<EnemyView> { E("e1", P(1000, 0)) };  // within coverage → op stays active
+
+            var tasks = CommanderBrain.Tick(new WorldSnapshot(roster, enemy, 0f, null, 0f), state);
+            Assert.Single(state.Operations);
+            Assert.Contains(tasks, t => t.UnitId == "adu0");   // air-defense tasked to hold (never tasked before the fix)
+            Assert.Contains(tasks, t => t.UnitId == "armu0");  // armor tasked too
+            Assert.All(tasks, t => Assert.Equal(TaskVerb.MoveTo, t.Verb));
+        }
+
+        [Fact]
         public void Tick_fails_operation_and_reports_when_force_is_wiped_but_threat_remains()
         {
             // Core repertoire behavior (review F23): an active op that loses its whole force while the threat
