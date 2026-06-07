@@ -141,6 +141,9 @@ namespace Nucleus.Warfare
             var state = enemy == _bluforFaction ? _campaign.Blufor : _campaign.Opfor;
             var roster = _ctx.Game.RosterFor(enemy);
             var intel = _ctx.Game.KnownEnemiesFor(enemy, new Nucleus.Core.Model.Vec3(0, 0, 0), 5_000_000f);
+            // Give the enemy brain a home base (roster centroid) so it can mount a DefendArea when threatened —
+            // without this its HomeBase stays at the origin and home defense never triggers for the AI side.
+            state.HomeBase = RosterCentroid(roster);
             var snapshot = new Nucleus.Core.Command.WorldSnapshot(roster, intel, 0f, null, 0f);
             var tasks = Nucleus.Core.Command.CommanderBrain.Tick(snapshot, state);
             foreach (var task in tasks) _ctx.Game.Execute(task);
@@ -152,6 +155,16 @@ namespace Nucleus.Warfare
             }
         }
         private bool _enemyLogged;
+
+        // Average position of a roster — a cheap "home base" for the enemy commander's defensive reasoning.
+        private static Nucleus.Core.Model.Vec3 RosterCentroid(System.Collections.Generic.IReadOnlyList<Nucleus.Core.Model.UnitView> roster)
+        {
+            if (roster == null || roster.Count == 0) return new Nucleus.Core.Model.Vec3(0, 0, 0);
+            float sx = 0f, sy = 0f, sz = 0f;
+            foreach (var u in roster) { sx += u.Position.X; sy += u.Position.Y; sz += u.Position.Z; }
+            float inv = 1f / roster.Count;
+            return new Nucleus.Core.Model.Vec3(sx * inv, sy * inv, sz * inv);
+        }
 
         public void Tick(IModTickContext t)
         {

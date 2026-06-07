@@ -77,8 +77,10 @@ namespace Nucleus.Core.Command
         }
 
         /// <summary>
-        /// Simple rule: a pocket dominated by a holdable ground presence (armor/infantry) is something to
-        /// capture and hold; everything else is destroyed.
+        /// Pick the objective kind for a pocket: a pocket dominated by a holdable ground presence (armor/infantry)
+        /// is something to CAPTURE and hold; everything else is DESTROYED. (Recon-on-low-confidence is deferred to
+        /// the personality/roster-aware pass — it needs scout assets to be actionable, so a pure-accuracy rule can
+        /// starve a force with no recon units; <see cref="ThreatGroup.InaccurateCount"/> already carries the signal.)
         /// </summary>
         private static ObjectiveKind SuggestKind(ThreatGroup group)
         {

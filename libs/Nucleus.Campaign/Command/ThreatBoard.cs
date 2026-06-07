@@ -30,6 +30,10 @@ namespace Nucleus.Core.Command
         /// <summary>Number of enemies in the group.</summary>
         public int Count { get; }
 
+        /// <summary>Members whose track is low-confidence (<see cref="EnemyView.Accurate"/> == false) — a pocket
+        /// we don't have a clear picture of, so the commander should scout it before committing a strike force.</summary>
+        public int InaccurateCount { get; }
+
         /// <summary>The enemies in the group (so callers can pick a representative target without reaching into Threat).</summary>
         public IReadOnlyList<EnemyView> Members { get; }
 
@@ -43,13 +47,16 @@ namespace Nucleus.Core.Command
             Count = live.Count;
 
             float sx = 0f, sy = 0f, sz = 0f, priority = 0f;
+            int inaccurate = 0;
             foreach (var e in live)
             {
                 sx += e.Position.X;
                 sy += e.Position.Y;
                 sz += e.Position.Z;
                 priority += e.StrategicPriority;
+                if (!e.Accurate) inaccurate++;
             }
+            InaccurateCount = inaccurate;
             float inv = 1f / Count;
             Center = new Vec3(sx * inv, sy * inv, sz * inv);
             TotalStrategicPriority = priority;
