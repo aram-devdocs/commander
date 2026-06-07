@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Nucleus.Core.Command;
 using Nucleus.Core.Model;
@@ -64,8 +65,12 @@ namespace Nucleus.Core.Persistence
                             B(e.Accurate), F(e.StrategicPriority), I(e.ArmorTier));
             }
 
-            foreach (var id in s.ConfirmedObjectives) Line(sb, "CONFIRMED", Enc(id));
-            foreach (var kv in s.LastObjectiveByUnit) Line(sb, "LASTOBJ", Enc(kv.Key), Enc(kv.Value));
+            // Deterministic order: these come from a HashSet / Dictionary, whose enumeration order is
+            // process-randomized — sort on write so the save text is byte-identical across runs.
+            foreach (var id in s.ConfirmedObjectives.OrderBy(x => x, StringComparer.Ordinal))
+                Line(sb, "CONFIRMED", Enc(id));
+            foreach (var kv in s.LastObjectiveByUnit.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+                Line(sb, "LASTOBJ", Enc(kv.Key), Enc(kv.Value));
 
             return sb.ToString();
         }
