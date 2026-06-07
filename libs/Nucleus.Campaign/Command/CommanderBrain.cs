@@ -190,8 +190,7 @@ namespace Nucleus.Core.Command
                 }
             }
             // Forget units no longer tasked so they re-task cleanly if re-engaged.
-            foreach (var k in state.LastObjectiveByUnit.Keys.Where(k => !tasked.Contains(k)).ToList())
-                state.LastObjectiveByUnit.Remove(k);
+            state.PurgeUntaskedMemory(tasked);
 
             return tasks;
         }
@@ -419,10 +418,10 @@ namespace Nucleus.Core.Command
                 .ToList();
 
             var result = new List<string>();
-            foreach (var family in suitable.OrderBy(f => f))      // deterministic per-family coverage
+            foreach (var family in suitable.OrderBy(f => f))   // each distinct family once → picks never collide
             {
                 var best = available
-                    .Where(s => s.Family == family && !result.Contains(s.Id))
+                    .Where(s => s.Family == family)
                     .OrderByDescending(s => s.Strength).ThenBy(s => s.Id)
                     .FirstOrDefault();
                 if (best != null) result.Add(best.Id);

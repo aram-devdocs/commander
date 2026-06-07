@@ -13,10 +13,8 @@ namespace Nucleus.Core.Command
     public sealed class SquadRoster
     {
         private readonly SquadConfig _cfg;
-        private readonly List<Squad> _squads = new List<Squad>();
-        // Id -> squad index for O(1) ById (the brain's primary lookup, hit many times per tick). Rebuilt when
-        // the squad set changes (Add / end of Reconcile); _squads list ORDER is untouched, so determinism holds.
-        private readonly Dictionary<string, Squad> _byId = new Dictionary<string, Squad>();
+        private readonly List<Squad> _squads = new List<Squad>();              // ordered, determinism source of truth
+        private readonly Dictionary<string, Squad> _byId = new Dictionary<string, Squad>(); // O(1) ById index
         private int _batch;
 
         public SquadRoster(SquadConfig cfg) { _cfg = cfg ?? new SquadConfig(); }

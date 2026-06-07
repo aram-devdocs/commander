@@ -34,8 +34,18 @@ namespace Nucleus.Core.Command
         /// the two-toggle model replaced it). Retained so the save format is unchanged.</summary>
         public HashSet<string> ConfirmedObjectives { get; } = new HashSet<string>();
 
+        private readonly List<string> _purgeScratch = new List<string>();
         private int _opId;
         private int _objId;
+
+        /// <summary>Forget tasking memory for units not tasked this tick (reused buffer; can't remove mid-enumeration).</summary>
+        public void PurgeUntaskedMemory(ICollection<string> tasked)
+        {
+            _purgeScratch.Clear();
+            foreach (var k in LastObjectiveByUnit.Keys)
+                if (!tasked.Contains(k)) _purgeScratch.Add(k);
+            foreach (var k in _purgeScratch) LastObjectiveByUnit.Remove(k);
+        }
 
         /// <summary>The operation-id counter (last issued). Exposed so persistence can save/restore it,
         /// keeping <see cref="NextOperationId"/> from colliding with restored ids. Same-assembly only.</summary>
