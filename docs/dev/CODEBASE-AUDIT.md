@@ -29,4 +29,7 @@ apps (thin wrappers): Platform · Commander · Build · Squad · Warfare   sdk: 
 - CB2: DONE-clean — RoleLabels.Short (Domain) is already the SOLE role→label source (one call site, HqView); no dup to remove.
 - CB7: DONE (local) — Nucleus.Sim added to the arch allow-list ({Domain,Squads,Production,Campaign}, its real
   Campaign closure) + PureLibs (Unity-free asserted). Arch 9/9 PASS. (Canary caught the transitive Squads ref → declared it.)
-- Next: CB3 (DRY row pooling), then CB4/CB5/CB6/CB8.
+- CB3: DONE (local) — extracted `CommanderPanel.BuildRow`; EnsureEntityRows/EnsureOpRows/EnsureRows now share it
+  (duplicated row-construction boilerplate removed; per-section struct/binding kept). No-deploy compile + arch 9/9 PASS.
+  Visual confirm deferred (behavior-preserving — same heights/widths/names).
+- Next: CB5 (package metadata + READMEs), CB6 (SDK routing audit), CB4 (thin apps), CB8 (public surface/docs).

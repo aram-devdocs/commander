@@ -638,21 +638,30 @@ namespace Nucleus.Ui
             }
         }
 
+        // Shared row scaffold for the pooled list builders (DRY): a fixed-height HorizontalLayout with a
+        // flexible label + a fixed-width action button. Each caller wires the button's onClick to its own id
+        // source and stores it in its own pool struct — the construction boilerplate lives here once.
+        private (GameObject go, TextMeshProUGUI label, Button btn) BuildRow(Transform container, string name, string btnText, float btnWidth)
+        {
+            var row = UiFactory.HorizontalLayout(name, container, 4f);
+            UiFactory.PreferredHeight(row.gameObject, 18f);
+            var label = UiFactory.Label("L", row.transform, "", 12f, _theme.Text);
+            var btn = UiFactory.Button("B", row.transform, btnText, _theme, null);
+            var le = btn.gameObject.GetComponent<LayoutElement>() ?? btn.gameObject.AddComponent<LayoutElement>();
+            le.preferredWidth = btnWidth; le.flexibleWidth = 0f;
+            return (row.gameObject, label, btn);
+        }
+
         // Build/grow a pool of generic label+button rows in a container; button calls onClick(row.Id).
         private void EnsureEntityRows(List<EntityRow> pool, Transform container, int count, string tag,
             Action<string> onClick)
         {
             while (pool.Count < count)
             {
-                var row = UiFactory.HorizontalLayout(tag + "Row" + pool.Count, container, 4f);
-                UiFactory.PreferredHeight(row.gameObject, 18f);
-                var label = UiFactory.Label("L", row.transform, "", 12f, _theme.Text);
-                var btn = UiFactory.Button("B", row.transform, "", _theme, null);
-                var le = btn.gameObject.GetComponent<LayoutElement>() ?? btn.gameObject.AddComponent<LayoutElement>();
-                le.preferredWidth = 64f; le.flexibleWidth = 0f;
+                var (go, label, btn) = BuildRow(container, tag + "Row" + pool.Count, "", 64f);
                 int idx = pool.Count;
                 btn.onClick.AddListener(() => { var id = pool[idx].Id; if (id != null) onClick?.Invoke(id); });
-                pool.Add(new EntityRow { Go = row.gameObject, Label = label, BtnImg = btn.GetComponent<Image>(),
+                pool.Add(new EntityRow { Go = go, Label = label, BtnImg = btn.GetComponent<Image>(),
                     BtnLabel = btn.GetComponentInChildren<TextMeshProUGUI>() });
             }
         }
@@ -786,15 +795,10 @@ namespace Nucleus.Ui
         {
             while (_opRows.Count < count)
             {
-                var row = UiFactory.HorizontalLayout("OpRow" + _opRows.Count, _opsContainer, 4f);
-                UiFactory.PreferredHeight(row.gameObject, 18f);
-                var label = UiFactory.Label("L", row.transform, "", 12f, _theme.Text);
-                var btn = UiFactory.Button("Auto", row.transform, "AUTO", _theme, null);
-                var le = btn.gameObject.GetComponent<LayoutElement>() ?? btn.gameObject.AddComponent<LayoutElement>();
-                le.preferredWidth = 62f; le.flexibleWidth = 0f;
+                var (go, label, btn) = BuildRow(_opsContainer, "OpRow" + _opRows.Count, "AUTO", 62f);
                 int idx = _opRows.Count;
                 btn.onClick.AddListener(() => { var id = _opRows[idx].OpId; if (id != null) _onToggleOpManual?.Invoke(id); });
-                _opRows.Add(new OpRow { Go = row.gameObject, Label = label, BtnImg = btn.GetComponent<Image>(),
+                _opRows.Add(new OpRow { Go = go, Label = label, BtnImg = btn.GetComponent<Image>(),
                     BtnLabel = btn.GetComponentInChildren<TextMeshProUGUI>() });
             }
         }
@@ -803,15 +807,10 @@ namespace Nucleus.Ui
         {
             while (_rows.Count < count)
             {
-                var row = UiFactory.HorizontalLayout("OrderRow" + _rows.Count, _ordersContainer, 4f);
-                UiFactory.PreferredHeight(row.gameObject, 18f);
-                var label = UiFactory.Label("L", row.transform, "", 12f, _theme.Text);
-                var clearBtn = UiFactory.Button("X", row.transform, "X", _theme, null);
-                var le = clearBtn.gameObject.GetComponent<LayoutElement>() ?? clearBtn.gameObject.AddComponent<LayoutElement>();
-                le.preferredWidth = 22f; le.flexibleWidth = 0f;
+                var (go, label, clearBtn) = BuildRow(_ordersContainer, "OrderRow" + _rows.Count, "X", 22f);
                 int idx = _rows.Count;
                 clearBtn.onClick.AddListener(() => { var id = _rows[idx].OrderId; if (id != null) _onClearOrder?.Invoke(id); });
-                _rows.Add(new RowWidgets { Go = row.gameObject, Label = label, Clear = clearBtn });
+                _rows.Add(new RowWidgets { Go = go, Label = label, Clear = clearBtn });
             }
         }
     }
