@@ -48,4 +48,15 @@ apps (thin wrappers): Platform · Commander · Build · Squad · Warfare   sdk: 
   added `NativeUi.SlicedButtonSprite()` (reuses NativeUi's cached button template via new
   private `ButtonTemplate()` — DRY with Button()); the app now just consumes it. No stray
   harvest left in apps. Full no-deploy compile (0 warn) + arch 9/9 PASS.
-- Next: CB4 (thin apps), CB8 (public surface/docs).
+- CB4: DONE (local) — surveyed every app for non-wiring logic. Apps are already thin
+  (CommanderService is textbook composition: wires pure libs to game adapters). The ONE
+  real finding: `ForceCentroid` (CommanderService) and `RosterCentroid` (WarfareMod) were
+  the SAME pure function (avg unit position → Vec3, origin when empty) duplicated across two
+  apps. Extracted to `Nucleus.Domain/Model/RosterGeometry.Centroid` (pure, Unity-free, SSOT
+  for force-centre); both apps now call it; both private copies deleted. Added 2 unit tests
+  (averages-all-axes, empty/null→origin). NOT moved (correctly app-local): MapOverlay's
+  StatusPhrase/StatusColor (need both the SquadStatus enum from Squads AND Unity.Color — the
+  Ui lib must NOT ref Squads per the arch rule, and Campaign is Unity-free, so there's no
+  clean lib home; the planned Nucleus.Presentation lib (WS4) would be it). Full no-deploy
+  compile (0 warn) + Core 139 (+2) + arch 9/9 PASS.
+- Next: CB8 (public surface/docs) — last item.
