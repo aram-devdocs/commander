@@ -9,18 +9,14 @@ using UnityEngine.UI;
 
 namespace Nucleus.Ui
 {
-    /// <summary>
-    /// The shared commander panel each mod renders its slice of (objectives, the two command toggles,
-    /// operations, squads, build, the battle feed, and the dynamic-war scoreboard), selected via
-    /// <see cref="PanelSections"/>. Pure presentation over the campaign read-models — no game access.
-    /// </summary>
+    /// <summary>The shared commander panel each mod renders its slice of, selected via <see cref="PanelSections"/>.
+    /// Pure presentation over the campaign read-models — no game access.</summary>
     public sealed class CommanderPanel
     {
         private readonly Theme _theme;
         private readonly RectTransform _root;
         private readonly TextMeshProUGUI _hqHeader;
         private readonly TextMeshProUGUI _hqBody;
-        // The two command toggles (mod is always on).
         private Image _aiCmdImg, _autoFillImg;
         private TextMeshProUGUI _aiCmdLabel, _autoFillLabel;
         private bool _aiCommanderOn = true, _autoFillOn = true;
@@ -28,7 +24,6 @@ namespace Nucleus.Ui
         private readonly Action<string> _onToggleOpManual;
         private readonly Action<string> _onToggleSquadManual;
         private readonly Action<string> _onBuyConvoy;
-        // Objectives section (drop-then-edit-in-place).
         private readonly Action<Cmd.ObjectiveKind> _onArmObjective;
         private readonly Action<string> _onSelectObjective;
         private readonly Action<string> _onRemoveObjective;
@@ -50,19 +45,15 @@ namespace Nucleus.Ui
         private readonly List<EntityRow> _squadRows = new List<EntityRow>();
         private readonly Transform _buildContainer;
         private readonly List<EntityRow> _buildRows = new List<EntityRow>();
-        // Empty-state hints (shown when a section has no data, so a screen never looks blank/broken).
         private TextMeshProUGUI _buildEmpty, _squadsEmpty, _opsEmpty;
-        // Build section feedback: current funds + the production queue / last order echo.
         private TextMeshProUGUI _buildFunds, _buildStatus;
-        // Scoreboard widgets (dynamic-war attrition board).
         private TextMeshProUGUI _scoreTitle, _scoreBlu, _scoreOp, _scoreStatus;
         private Image _scoreBluBar, _scoreOpBar;
-        private float _scoreMax;  // highest score seen — the 100%% bar reference (so bars shrink as sides attrit)
+        private float _scoreMax;  // highest score seen = the full-bar reference, so bars shrink as sides attrit
         private static readonly Color BluColor = new Color(0.35f, 0.6f, 1f, 1f);
         private static readonly Color OpColor = new Color(1f, 0.45f, 0.4f, 1f);
 
         private struct OpRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string OpId; }
-        // Generic interactive row: a label + an action button carrying an id (squad id / convoy name).
         private struct EntityRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string Id; }
 
         public RectTransform Root => _root;
@@ -105,8 +96,7 @@ namespace Nucleus.Ui
             _onNudgePriority = onNudgePriority;
             _onCycleKind = onCycleKind;
             _root = UiFactory.Panel("CommanderPanel", parent, theme.PanelBackground);
-            // Scrollable content: a clipped viewport + a content column whose height fits its children, so the
-            // many sections never compress (the jerk) — they extend and the panel scrolls instead.
+            // Clipped viewport + content column sized to its children, so sections extend and scroll, never compress.
             var viewport = UiFactory.Panel("Viewport", _root, new Color(0f, 0f, 0f, 0f));
             UiFactory.Stretch(viewport);
             viewport.gameObject.AddComponent<RectMask2D>();
@@ -120,8 +110,7 @@ namespace Nucleus.Ui
             scroll.content = lrt; scroll.viewport = viewport;
             scroll.horizontal = false; scroll.vertical = true;
             scroll.movementType = ScrollRect.MovementType.Clamped; scroll.scrollSensitivity = 24f;
-            // Visible, grabbable scrollbar — the panel often exceeds its height; without this the player can't
-            // tell it scrolls (wheel-only was undiscoverable). Permanent so the affordance is always shown.
+            // Permanent scrollbar — wheel-only scrolling was undiscoverable.
             scroll.verticalScrollbar = UiFactory.VerticalScrollbar(_root, theme);
             scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
 
@@ -129,11 +118,8 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Objectives))
             {
-                // OBJECTIVES — the single command primitive. Pick a kind, click the map to DROP it, then select
-                // a marker to EDIT in place (priority, retype, remove). The AI fills it with squads (or you do).
                 UiFactory.SectionHeader(layout.transform, "OBJECTIVES — drop on the map", theme);
 
-                // Palette: one button per objective kind; clicking arms that kind for the next map click.
                 var pRow1 = UiFactory.HorizontalLayout("ObjPalette1", layout.transform, 4f);
                 UiFactory.PreferredHeight(pRow1.gameObject, 28f);
                 AddKindButton(pRow1.transform, "CAPTURE", Cmd.ObjectiveKind.CapturePoint);
@@ -148,10 +134,8 @@ namespace Nucleus.Ui
                 _objHint = UiFactory.Label("ObjHint", layout.transform, "Pick a kind, then click the map to drop an objective.", 11f, theme.Muted);
                 UiFactory.PreferredHeight(_objHint.gameObject, 30f);
 
-                // List of live objectives — each row selects (to edit in place); plus a per-row REMOVE.
                 _objContainer = UiFactory.VerticalLayout("ObjList", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
 
-                // Editor for the selected objective: priority -/+, retype (cycle kind), remove.
                 _objEditor = UiFactory.Label("ObjEditor", layout.transform, "", 11f, theme.Text);
                 UiFactory.PreferredHeight(_objEditor.gameObject, 18f);
                 var eRow = UiFactory.HorizontalLayout("ObjEdit", layout.transform, 4f);
@@ -162,8 +146,6 @@ namespace Nucleus.Ui
                 var removeBtn = UiFactory.Button("ObjRemove", eRow.transform, "REMOVE", theme, () => { if (_selectedObjectiveId != null) { _onRemoveObjective?.Invoke(_selectedObjectiveId); _selectedObjectiveId = null; } });
                 if (removeBtn.image != null) removeBtn.image.color = theme.Danger; // destructive = the ONLY red
 
-                // ASSIGN FORCE — when an objective is selected, list free, suitable squads to hand it. So the
-                // player can actually command ("assign this squad to that objective"), not only toggle autonomy.
                 _assignHdr = UiFactory.Label("AssignHdr", layout.transform, "", 11f, theme.Accent);
                 UiFactory.PreferredHeight(_assignHdr.gameObject, 16f);
                 _assignContainer = UiFactory.VerticalLayout("AssignList", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
@@ -171,8 +153,6 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Mode))
             {
-                // The mod is always on. Two toggles: who creates objectives (AI or you), and whether the AI
-                // auto-fills objectives with squads (forms + recruits + assigns). Green when on.
                 _hqHeader = UiFactory.SectionHeader(layout.transform, "COMMANDER", theme);
 
                 var aiCmdBtn = UiFactory.Button("AiCommander", layout.transform, "AI COMMANDER", theme,
@@ -194,7 +174,6 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Operations))
             {
-                // OPERATIONS — one interactive row per op with an AUTO/MANUAL toggle (take a slice).
                 UiFactory.SectionHeader(layout.transform, "OPERATIONS", theme);
                 UiFactory.PreferredHeight(UiFactory.Label("OpsHint", layout.transform,
                     "Each operation is run by AI (the commander sequences its phases) or YOU (manual). Tap the AI/YOU button to switch.",
@@ -206,7 +185,6 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Squads))
             {
-                // SQUADS — name + what it's doing + an AUTO/MANUAL toggle (manage each squad).
                 UiFactory.SectionHeader(layout.transform, "SQUADS", theme);
                 UiFactory.PreferredHeight(UiFactory.Label("SquadsHint", layout.transform,
                     "Each squad is AI-run (the commander tasks it) or YOURS (you hold it for manual orders). Tap the AI/YOU button to switch.",
@@ -218,7 +196,6 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Build))
             {
-                // BUILD — buy reinforcement convoys: a row per convoy (name + contents + cost) with a BUY button.
                 UiFactory.SectionHeader(layout.transform, "BUILD — reinforce", theme);
                 UiFactory.PreferredHeight(UiFactory.Label("BuildAircraft", layout.transform,
                     "AIRCRAFT — spawn from your airbases (not bought here).", 11f, theme.Muted).gameObject, 16f);
@@ -230,7 +207,6 @@ namespace Nucleus.Ui
                 _buildContainer = UiFactory.VerticalLayout("HqBuild", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
                 _buildEmpty = UiFactory.Label("BuildEmpty", layout.transform, "No convoys offered for this faction/map. Aircraft still spawn from your airbases.", 12f, theme.Muted);
                 UiFactory.PreferredHeight(_buildEmpty.gameObject, 36f);
-                // Order/queue echo so the player sees their purchase reflected HERE (not only in the WAR feed).
                 UiFactory.PreferredHeight(UiFactory.Label("BuildQHdr", layout.transform, "ORDERS", 11f, theme.Muted).gameObject, 16f);
                 _buildStatus = UiFactory.Label("BuildStatus", layout.transform, "No orders yet. Pick a convoy above to reinforce.", 11f, theme.Text);
                 UiFactory.PreferredHeight(_buildStatus.gameObject, 64f);
@@ -238,7 +214,6 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Scoreboard))
             {
-                // SCOREBOARD — the attrition win condition: both factions' score (with a bar), funds, losses.
                 UiFactory.SectionHeader(layout.transform, "ATTRITION", theme);
                 _scoreTitle = UiFactory.Label("ScoreTitle", layout.transform,
                     "Drive the enemy's score to zero. It falls as a side loses units and bases — and as it spends on reinforcement (faster once bases are lost).",
@@ -259,7 +234,6 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Feed))
             {
-                // FEED — production status + recent battle events (what the commander is doing).
                 UiFactory.SectionHeader(layout.transform, "FEED", theme);
                 _hqBody = UiFactory.Label("HqBody", layout.transform, "", 12f, theme.Muted);
                 UiFactory.PreferredHeight(_hqBody.gameObject, 110f);
@@ -280,8 +254,6 @@ namespace Nucleus.Ui
             return bar.GetComponent<Image>();
         }
 
-        /// <summary>Render the attrition scoreboard — both factions' score (as a bar), funds, losses, and the
-        /// win state. The bar reference is the highest score yet seen, so both bars shrink as the war attrits.</summary>
         public void RenderScoreboard(Cmd.WarfareCampaign.Scoreboard b)
         {
             if (_scoreBlu == null) return;
@@ -316,17 +288,12 @@ namespace Nucleus.Ui
 
         // ---- Objectives section ------------------------------------------------------------------------
 
-        /// <summary>The kind the player has armed to drop on the next map click (null = none).</summary>
         public Cmd.ObjectiveKind? ArmedObjective => _armedObjective;
-        /// <summary>The objective currently selected for editing (null = none).</summary>
-        // A small kind-colored bullet (TMP rich-text) so rows read by kind at a glance — color from the single
-        // source of truth (ObjectiveVisuals), so the row dot and the map marker can never drift apart.
+        // Kind-colored bullet from ObjectiveVisuals (shared with the map markers, so they can't drift).
         private static string Dot(Cmd.ObjectiveKind kind) => $"<color=#{ObjectiveVisuals.Hex(kind)}>●</color> ";
 
         public string SelectedObjectiveId => _selectedObjectiveId;
-        /// <summary>Set the selected objective (e.g. when the player clicks its map marker).</summary>
         public void SetSelectedObjective(string id) => _selectedObjectiveId = id;
-        /// <summary>Clear the armed drop-kind (e.g. after a successful drop).</summary>
         public void ClearArmedObjective() => _armedObjective = null;
 
         private void AddKindButton(Transform parent, string label, Cmd.ObjectiveKind kind)
@@ -339,13 +306,12 @@ namespace Nucleus.Ui
             _kindButtons.Add(new KindButton { Img = btn.GetComponent<Image>(), Kind = kind });
         }
 
-        /// <summary>Render the objective palette state + the live objective list + the selected-objective editor.
-        /// The list rows come from the same operations read-model the map markers use, so panel and map agree.</summary>
+        /// <summary>Render the objective palette, live objective list, and selected-objective editor from the same
+        /// operations read-model the map markers use, so panel and map agree.</summary>
         public void RenderObjectives(Cmd.HqSnapshot hq)
         {
             if (_objContainer == null) return;
 
-            // Palette: highlight the armed kind.
             foreach (var kb in _kindButtons)
                 kb.Img.color = _armedObjective == kb.Kind ? OnColor : _theme.ButtonIdle;
 
@@ -372,7 +338,7 @@ namespace Nucleus.Ui
                     r.Label.text = $"{(sel ? "▸ " : "")}{Dot(op.Kind)}{ObjectiveVisuals.Name(op.Kind)} · {ObjectiveVisuals.PhaseLabel(op.Phase)} · {op.SquadCount} sq [{owner}]";
                     r.Label.color = sel ? OnColor : _theme.Text;
                     r.BtnLabel.text = "SELECT";
-                    r.BtnImg.color = sel ? OnColor : _theme.ButtonIdle;   // selected = active green (consistent)
+                    r.BtnImg.color = sel ? OnColor : _theme.ButtonIdle;
                     r.Go.SetActive(true);
                     _objRows[i] = r;
                 }
@@ -389,8 +355,6 @@ namespace Nucleus.Ui
                         foreach (var o in ops)
                             if (o.ObjectiveId == _selectedObjectiveId)
                             {
-                                // Show the objective + its live state so selecting it explains itself: who's on
-                                // it (squad count), what combat phase, and whose objective it is.
                                 string owner = o.PlayerOwned ? "yours" : "AI";
                                 text = $"{ObjectiveVisuals.Name(o.Kind)} · {ObjectiveVisuals.PhaseLabel(o.Phase)} · {o.SquadCount} squad{(o.SquadCount == 1 ? "" : "s")} · {owner} · Priority {o.Priority:0.#} (PRIO -/+)";
                                 break;
@@ -402,16 +366,14 @@ namespace Nucleus.Ui
             RenderAssignList(hq);
         }
 
-        // List the FREE, suitable squads for the selected objective, each with an ASSIGN button, so the player
-        // can hand a squad to that objective. (Releasing a squad back to the AI is done from the squad card's
-        // AI/YOU autonomy toggle, not here — there is no release action in this list.)
+        // Free, suitable squads for the selected objective, each with an ASSIGN button. (Release is the squad
+        // card's AI/YOU toggle, not here.)
         private void RenderAssignList(Cmd.HqSnapshot hq)
         {
             if (_assignContainer == null) return;
             var ops = hq?.Operations;
             var squads = hq?.Squads;
 
-            // Find the selected objective's kind.
             Cmd.ObjectiveKind? selKind = null;
             if (_selectedObjectiveId != null && ops != null)
                 foreach (var o in ops) if (o.ObjectiveId == _selectedObjectiveId) { selKind = o.Kind; break; }
@@ -424,7 +386,6 @@ namespace Nucleus.Ui
             }
 
             var suitable = Cmd.Families.SuitableFor(selKind.Value);
-            // Free (unassigned) + suitable squads — the ones that can be handed to this objective.
             var candidates = new List<Cmd.SquadView>();
             foreach (var s in squads)
                 if (string.IsNullOrEmpty(s.AssignedOperationId) && suitable.Contains(s.Family))
@@ -446,7 +407,7 @@ namespace Nucleus.Ui
                     string comp = !string.IsNullOrEmpty(s.Composition) ? s.Composition : $"{s.Family} ×{s.Strength}";
                     r.Label.text = $"{s.Name} · {comp}";
                     r.BtnLabel.text = "ASSIGN";
-                    r.BtnImg.color = OnColor;   // actionable = green (was faction-accent magenta — clashed)
+                    r.BtnImg.color = OnColor;
                     r.Go.SetActive(true);
                     _assignRows[i] = r;
                 }
@@ -459,7 +420,6 @@ namespace Nucleus.Ui
         {
             bool running = hq != null;
 
-            // The two toggles — green when on; reflect live state.
             if (_aiCmdImg != null && hq != null)
             {
                 _aiCommanderOn = hq.AiCreatesObjectives;
@@ -470,8 +430,7 @@ namespace Nucleus.Ui
                 if (_autoFillLabel != null) _autoFillLabel.text = _autoFillOn ? "AI AUTO-FILL: ON" : "AI AUTO-FILL: OFF";
             }
 
-            // BUILD menu (Build section) — available whenever a catalog exists. Affordability is judged net of
-            // already-queued spend so the per-row BUY tint agrees with the "After" over-commit warning below.
+            // Affordability is net of already-queued spend, so the BUY tint agrees with the "After" warning below.
             if (_buildContainer != null) RenderBuildRows(catalog, funds, hq?.QueuedCost ?? 0f);
             if (_buildFunds != null)
             {
@@ -481,7 +440,6 @@ namespace Nucleus.Ui
             }
             if (_buildStatus != null)
             {
-                // Echo the production queue + the most recent order so a purchase is visible HERE, not only the feed.
                 var sb = new System.Text.StringBuilder();
                 if (hq != null)
                 {
@@ -493,13 +451,9 @@ namespace Nucleus.Ui
                     : "No orders in progress. Pick a convoy above to reinforce (it arrives off-map and drives in).";
             }
 
-            // OPERATIONS (Operations section).
             if (_opsContainer != null) RenderOpRows(running ? hq.Operations : null);
-
-            // SQUADS (Squads section).
             if (_squadsContainer != null) RenderSquadRows(running ? hq.Squads : null);
 
-            // FEED (Feed section) — production + recent events.
             if (_hqBody != null)
             {
                 if (!running) { _hqBody.text = ""; }
@@ -513,7 +467,6 @@ namespace Nucleus.Ui
             }
         }
 
-        // Squad rows: "Name · Family ×N — activity" + an AUTO/MANUAL toggle. Pooled + index-captured.
         private void RenderSquadRows(System.Collections.Generic.IReadOnlyList<Cmd.SquadView> squads)
         {
             int count = squads?.Count ?? 0;
@@ -527,13 +480,12 @@ namespace Nucleus.Ui
                 {
                     var s = squads[i];
                     r.Id = s.Id;
-                    // Composition ("2× MBT, 1× IFV") when known, else family ×strength; show have/need when under target.
                     string comp = !string.IsNullOrEmpty(s.Composition) ? s.Composition : $"{s.Family} ×{s.Strength}";
                     string need = s.TargetStrength > s.Strength ? $" ({s.Strength}/{s.TargetStrength})" : "";
                     r.Label.text = $"{s.Name} · {comp}{need} — {s.Activity}";
                     r.Label.color = s.Depleted ? new Color(1f, 0.5f, 0.5f) : _theme.Text;
                     bool manual = s.Autonomy == Cmd.AutonomyLevel.Manual;
-                    r.BtnLabel.text = manual ? "YOU" : "AI";   // who controls this squad (tap to switch)
+                    r.BtnLabel.text = manual ? "YOU" : "AI";
                     r.BtnImg.color = manual ? _theme.Accent : OnColor;
                     r.Go.SetActive(true);
                     _squadRows[i] = r;
@@ -542,7 +494,6 @@ namespace Nucleus.Ui
             }
         }
 
-        // Build rows: "name [contents] · cost" + a BUY button (greyed when unaffordable). Pooled.
         private void RenderBuildRows(Cmd.ConvoyCatalog catalog, float funds, float queuedCost)
         {
             var opts = catalog?.Options;
@@ -569,9 +520,7 @@ namespace Nucleus.Ui
             }
         }
 
-        // Shared row scaffold for the pooled list builders (DRY): a fixed-height HorizontalLayout with a
-        // flexible label + a fixed-width action button. Each caller wires the button's onClick to its own id
-        // source and stores it in its own pool struct — the construction boilerplate lives here once.
+        // Shared scaffold for the pooled list builders: flexible label + fixed-width action button.
         private (GameObject go, TextMeshProUGUI label, Button btn) BuildRow(Transform container, string name, string btnText, float btnWidth)
         {
             var row = UiFactory.HorizontalLayout(name, container, 4f);
@@ -583,7 +532,7 @@ namespace Nucleus.Ui
             return (row.gameObject, label, btn);
         }
 
-        // Build/grow a pool of generic label+button rows in a container; button calls onClick(row.Id).
+        // Grow a pool of label+button rows; each button calls onClick(row.Id).
         private void EnsureEntityRows(List<EntityRow> pool, Transform container, int count, string tag,
             Action<string> onClick)
         {
@@ -602,13 +551,11 @@ namespace Nucleus.Ui
             if (_root != null) _root.gameObject.SetActive(visible);
         }
 
-        // Interactive per-operation rows in the HQ section: label + an AUTO/MANUAL toggle that takes that one
-        // operation off the AI (or hands it back). Pooled + index-captured like the order rows.
         private void RenderOpRows(IReadOnlyList<Nucleus.Core.Command.OperationView> ops)
         {
             int count = ops?.Count ?? 0;
             if (_opsEmpty != null) _opsEmpty.gameObject.SetActive(count == 0);
-            EnsureOpRows(System.Math.Min(count, 5)); // cap visible op rows
+            EnsureOpRows(System.Math.Min(count, 5));
             for (int i = 0; i < _opRows.Count; i++)
             {
                 if (ops != null && i < count && i < 5)
@@ -618,7 +565,7 @@ namespace Nucleus.Ui
                     r.OpId = op.Id;
                     r.Label.text = $"{Dot(op.Kind)}{ObjectiveVisuals.Name(op.Kind)} — {ObjectiveVisuals.PhaseLabel(op.Phase)} [{op.Status}]";
                     bool manual = op.Autonomy == Nucleus.Core.Command.AutonomyLevel.Manual;
-                    r.BtnLabel.text = manual ? "YOU" : "AI";   // who runs this operation (tap to switch)
+                    r.BtnLabel.text = manual ? "YOU" : "AI";
                     r.BtnImg.color = manual ? _theme.Accent : OnColor;
                     r.Go.SetActive(true);
                     _opRows[i] = r;

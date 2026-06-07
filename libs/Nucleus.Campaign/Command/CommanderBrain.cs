@@ -4,51 +4,30 @@ using Nucleus.Core.Model;
 
 namespace Nucleus.Core.Command
 {
-    /// <summary>Brain tunables (autonomous objective generation + force matching).</summary>
     public sealed class BrainConfig
     {
-        /// <summary>Known enemies within this distance cluster into one objective.</summary>
         public float ClusterRadius { get; set; } = 3000f;
-        /// <summary>An enemy cluster already within this distance of an existing objective is not re-targeted.</summary>
         public float CoverageRadius { get; set; } = 4000f;
-        /// <summary>Known enemies within this distance of the home base trigger a DefendArea objective — the AI
-        /// reacts to a threat on its base/HQ before the enemy is on top of it (larger than CoverageRadius).</summary>
-        public float DefendRadius { get; set; } = 8000f;
+        public float DefendRadius { get; set; } = 8000f;   // home-defence trigger band; wider than CoverageRadius
         public int MaxSquadsPerOperation { get; set; } = 2;
-        /// <summary>The most AUTO objectives the AI keeps active at once — it orchestrates the highest-priority
-        /// targets instead of spamming one per enemy cluster across a huge map (which buried the map in markers
-        /// and spread squads thin). Player-dropped objectives are NOT counted/capped.</summary>
-        public int MaxAutoObjectives { get; set; } = 6;
+        public int MaxAutoObjectives { get; set; } = 6;    // caps AUTO objectives only; player drops are uncapped
     }
 
-    /// <summary>
-    /// The pure decision core of the autonomous commander — no Unity, no game refs, fully unit-testable.
-    /// Turns fog-of-war intel into objectives and matches squads to them. The full per-tick orchestration
-    /// (create operations, issue tasking via the executor, advance phases) wires these in P1c/P2; keeping
-    /// these as pure functions is what lets the same brain drive AI commanders + multiplayer later.
-    /// </summary>
+    /// <summary>Pure decision core of the autonomous commander (no Unity/game refs): turns fog-of-war intel
+    /// into objectives and matches squads to them. Pure so the same brain can drive AI + multiplayer.</summary>
     public static class CommanderBrain
     {
-        /// <summary>Priority for an auto-generated home-defense objective — above typical offensive scores so a
-        /// threatened base gets force assigned first (defense is funded before attacks within the objective cap).</summary>
-        private const float DefendPriority = 50f;
+        private const float DefendPriority = 50f;   // outranks offensive scores so a threatened base funds first
 
-        /// <summary>
-        /// One autonomous decision tick (pure): reconcile squads against the live roster, generate objectives
-        /// from fog-of-war intel, spin up operations for uncovered objectives with a matched force, prune
-        /// terminal/forceless operations, and emit the per-unit tasking to execute. Mutates <paramref
-        /// name="state"/>; returns the tasks the executor should issue. Never adds faction objectives (the
-        /// stampede trap) — tasking is always the assigned squads' own units. With no enemies + no objectives
-        /// it returns nothing, preserving "do nothing = the game still runs".
-        /// </summary>
+        /// <summary>One decision tick (pure, mutates <paramref name="state"/>): reconcile squads, generate
+        /// objectives, open/advance/prune operations, return the per-unit tasking to issue. Tasks only the
+        /// assigned squads' own units (never faction objectives — the stampede trap).</summary>
         public static IReadOnlyList<UnitTask> Tick(WorldSnapshot snapshot, CommanderState state)
         {
             var tasks = new List<UnitTask>();
-            // Manual-owned units are excluded so the brain and manual orders never task the same unit (S2).
-            state.Squads.Reconcile(snapshot.Roster, snapshot.CommittedUnitIds);
+            state.Squads.Reconcile(snapshot.Roster, snapshot.CommittedUnitIds);   // exclude manual units
 
-            // 1. Advance each live operation: drop dead squads, COMPLETE when its threat is gone, FAIL when it
-            //    has lost its whole force.
+            // 1. Advance live operations: drop dead squads, complete when threat is gone, fail when force is lost.
             foreach (var op in state.Operations)
             {
                 if (op.IsTerminal) continue;
@@ -66,9 +45,8 @@ namespace Nucleus.Core.Command
                     state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.Blocked, $"{ObjectiveText.Name(op.Objective.Kind)}: lost the force", op.Id));
                     continue;
                 }
-                // Advance the combined-arms cursor: air superiority -> SEAD -> soften -> assault, per gates.
-                // Skip for a player-driven (Manual) operation — the player sequences its phases (autonomy ladder).
-                if (op.Autonomy == AutonomyLevel.Manual) continue;
+                if (op.Autonomy == AutonomyLevel.Manual) continue;   // player sequences a manual op's phases
+
                 var prevPhase = op.CombatPhase;
                 op.CombatPhase = PhaseGates.ActivePhase(current, op.InitialThreat ?? current,
                     new ForceState(FighterStrength(op, state)), state.Doctrine);
@@ -77,9 +55,7 @@ namespace Nucleus.Core.Command
                         PhaseReason(op.Objective.Kind, op.CombatPhase), op.Id));
             }
 
-            // 2. Free squads from terminal operations (B1), then drop the terminal ops and prune auto
-            //    objectives whose threat is gone and have no live operation (B2 — no unbounded growth, no
-            //    squad stuck moving to a dead target).
+            // 2. Free squads from terminal ops, drop those ops, prune auto objectives with no threat + no op.
             foreach (var op in state.Operations)
             {
                 if (!op.IsTerminal) continue;
@@ -94,9 +70,8 @@ namespace Nucleus.Core.Command
                 && state.OperationFor(o.Id) == null
                 && !AnyThreatNear(snapshot, o.Position, ResolveRadius(o.Kind, state.BrainConfig)));
 
-            // 3. New objectives from known enemy clusters — only when the AI is the objective-creator. Each
-            //    gets a unique MONOTONIC id (GenerateObjectives' tick-local ids would collide across ticks and
-            //    corrupt OperationFor / LastObjectiveByUnit / RemoveObjective).
+            // 3. New objectives from enemy clusters (AI-created only). AddAutoObjective re-ids them monotonically;
+            //    tick-local generator ids would collide across ticks.
             if (state.AiCreatesObjectives)
             {
                 int autoCount = state.Objectives.Count(o => o.Source == ObjectiveSource.Auto);
@@ -112,23 +87,20 @@ namespace Nucleus.Core.Command
                 }
             }
 
-            // 4. AUTO-FILL: when on, open an operation for each uncovered objective and assign suitable squads —
-            //    one per needed family (so each combat phase has its squad), regardless of location (no range).
-            //    When off, the human assigns squads (via the service), which opens the operation; the brain
-            //    still advances phases + tasks assigned squads below, so units never idle.
+            // 4. AUTO-FILL: open an operation per uncovered objective with a matched force. Off = the human
+            //    assigns squads; the brain still advances phases + tasks them below so units never idle.
             var fieldable = new HashSet<string>();
             if (state.AiAutoFill)
             {
-                // Allocate scarce squads in PRIORITY order (a freshly-raised home defence outranks an older
-                // low-priority offensive), not raw creation order — a squad picked for an earlier objective is
-                // marked AssignedOperationId so it can't be reused this tick. Deterministic (Id tie-break).
+                // Priority order, not creation order, so a fresh home defence outbids an older offensive for
+                // scarce squads (AssignedOperationId locks a pick for the tick). Id tie-break keeps it deterministic.
                 foreach (var obj in state.Objectives.OrderByDescending(o => o.Priority).ThenBy(o => o.Id))
                 {
                     if (state.OperationFor(obj.Id) != null) continue;
                     var squadIds = MatchSquads(obj, state.Squads.Squads, state.BrainConfig);
-                    if (squadIds.Count == 0) continue; // no force available — recruit via ProductionNeeds below
+                    if (squadIds.Count == 0) continue; // no force — recruit via ProductionNeeds below
                     fieldable.Add(obj.Id);
-                    var initial = ThreatNear(snapshot, obj.Position, ResolveRadius(obj.Kind, state.BrainConfig)); // baseline for the soften gate
+                    var initial = ThreatNear(snapshot, obj.Position, ResolveRadius(obj.Kind, state.BrainConfig));
                     var op = new Operation(state.NextOperationId(), obj, squadIds)
                     {
                         Status = OperationStatus.Active,
@@ -146,40 +118,36 @@ namespace Nucleus.Core.Command
                 foreach (var op in state.Operations) if (!op.IsTerminal) fieldable.Add(op.Objective.Id);
             }
 
-            // 4b. Production needs: an objective with no force becomes a recruit request — only when the AI
-            //     auto-fills (the human recruits otherwise). Recomputed each tick.
+            // 4b. Production needs: an unfielded objective becomes a recruit request (auto-fill only). Per tick.
             state.ProductionNeeds.Clear();
             if (state.AiAutoFill)
                 foreach (var obj in state.Objectives)
                     if (state.OperationFor(obj.Id) == null && !fieldable.Contains(obj.Id))
                         state.ProductionNeeds.Add(RequiredComposition(obj.Kind));
 
-            // 5. Issue tasking — only when a unit's target objective CHANGED, so we don't re-spam SetDestination
-            //    every tick and fight the game AI (S1).
+            // 5. Issue tasking, but only when a unit's task signature CHANGED — re-spamming SetDestination every
+            //    tick fights the game AI (S1).
             var tasked = new HashSet<string>();
             foreach (var op in state.Operations)
             {
                 if (op.Status != OperationStatus.Active) continue;
-                if (op.Autonomy == AutonomyLevel.Manual) continue; // player drives this slice — brain yields it
-                // A DefendArea holds ground — it does NOT run the offensive air-superiority→SEAD→strike sequence,
-                // so gate its squads by the families that FILL it ({AirDefense,Armor}) rather than by the combat
-                // phase. Without this, a defence against an armor pocket sits in the Strike phase (active families
-                // {AirCombat,Artillery}), none of its squads match, ZERO tasks are issued, the threat is never
-                // engaged, the phase never advances — the AI's defence is a silent no-op in-game (review P2-#1).
+                if (op.Autonomy == AutonomyLevel.Manual) continue;
+                // DefendArea holds ground — it skips the offensive phase sequence, so gate its squads by the
+                // families that FILL it, not by CombatPhase. Otherwise its squads never match the active phase,
+                // zero tasks issue, and the defence is a silent in-game no-op (review P2-#1).
                 var active = op.Objective.Kind == ObjectiveKind.DefendArea
                     ? Families.SuitableFor(ObjectiveKind.DefendArea)
-                    : Families.ActiveInPhase(op.CombatPhase); // only this phase's families engage
+                    : Families.ActiveInPhase(op.CombatPhase);
                 var verb = op.Objective.TargetId != null && op.Objective.Kind == ObjectiveKind.DestroyTarget
                     ? TaskVerb.AttackTarget : TaskVerb.MoveTo;
-                // De-dup on the full TASK (id + destination + target + verb), not just the objective id — so an
-                // in-place Move/EditObjective (which mutates Position/Kind on the shared reference) re-routes the
-                // already-committed units instead of being short-circuited and left driving to the old point.
+                // Signature covers id + destination + target + verb so an in-place edit (mutating the shared
+                // objective) re-routes committed units instead of being de-duped to the stale point.
                 string sig = TaskSignature(op.Objective, verb);
                 foreach (var sid in op.SquadIds)
                 {
                     var squad = state.Squads.ById(sid);
-                    if (squad == null || !active.Contains(squad.Family)) continue; // not this phase's turn — hold back
-                    if (squad.Autonomy == AutonomyLevel.Manual) continue;          // player drives this squad directly
+                    if (squad == null || !active.Contains(squad.Family)) continue; // not this phase's turn
+                    if (squad.Autonomy == AutonomyLevel.Manual) continue;
                     foreach (var uid in squad.MemberUnitIds)
                     {
                         tasked.Add(uid);
@@ -195,8 +163,7 @@ namespace Nucleus.Core.Command
             return tasks;
         }
 
-        /// <summary>Materialize a planned objective into live state with a unique MONOTONIC id (tick-local
-        /// generator ids would collide across ticks) and bark the decision once so the player sees the AI think.</summary>
+        // Re-ids the planned objective monotonically (tick-local ids collide across ticks) and barks it once.
         private static void AddAutoObjective(CommanderState state, WorldSnapshot snapshot, Objective planned)
         {
             var created = new Objective(state.NextObjectiveId(), planned.Kind, planned.Position,
@@ -206,10 +173,8 @@ namespace Nucleus.Core.Command
                 ObjectiveBark(created.Kind, state.HomeBase, created.Position)));
         }
 
-        /// <summary>When an operation's objective is "done" and should auto-complete: an offence (DestroyTarget)
-        /// or a defence (DefendArea) is done when no threat remains near it; a Recon is done once no low-confidence
-        /// contact remains (the intel is resolved). Capture/ControlAirspace/Resupply hold the ground (pruned by
-        /// the auto-objective cleanup, not auto-completed here).</summary>
+        // Offence/defence resolve when no threat remains; Recon resolves when no fuzzy contact remains. The
+        // ground-holding kinds (Capture/ControlAirspace/Resupply) never auto-complete — the prune pass clears them.
         private static bool IsObjectiveResolved(ObjectiveKind kind, ThreatPicture current)
         {
             switch (kind)
@@ -225,12 +190,9 @@ namespace Nucleus.Core.Command
             }
         }
 
-        /// <summary>If known enemies are pressing the home base (within <see cref="BrainConfig.DefendRadius"/>) and
-        /// no DefendArea already covers it, emit ONE high-priority DefendArea at home so the AI mounts a defence.
-        /// The "covered" radius is DefendRadius (the band the defence is raised + pruned over), NOT CoverageRadius:
-        /// home is a MOVING centroid, so checking the tighter 4000m would spawn a fresh chase DefendArea every time
-        /// home drifts past it while the previous one (still threatened within 8000m) lingers — proliferation that
-        /// starved the offence. Aligning covered-check with the prune radius keeps it to a single, stable defence.</summary>
+        // Emits one high-priority DefendArea at home when enemies press within DefendRadius and none already
+        // covers it. The covered-check uses DefendRadius (not CoverageRadius) because home is a MOVING centroid:
+        // the tighter radius would spawn a fresh chase defence each time home drifts, starving the offence (A4).
         private static Objective GenerateDefense(WorldSnapshot snapshot, CommanderState state)
         {
             var home = state.HomeBase;
@@ -242,10 +204,7 @@ namespace Nucleus.Core.Command
             return new Objective("auto-def", ObjectiveKind.DefendArea, home, ObjectiveSource.Auto, priority: DefendPriority);
         }
 
-        /// <summary>A deterministic signature of the actual command a unit is being given — objective id +
-        /// verb + destination + target. Stored in LastObjectiveByUnit so the per-tick de-dup re-tasks when ANY
-        /// of these change (move/retype/retarget), not just when the objective id changes. Uses Fnv1a over the
-        /// position's raw float bits — never string.GetHashCode (process-randomized → breaks save/resume).</summary>
+        // Fnv1a over the raw float bits, never string.GetHashCode (process-randomized → breaks save/resume).
         private static string TaskSignature(Objective obj, TaskVerb verb)
         {
             var p = obj.Position;
@@ -257,10 +216,7 @@ namespace Nucleus.Core.Command
             return Fnv1a.Hash(raw).ToString();
         }
 
-        // A DefendArea owns the whole band it was raised over (DefendRadius), not the tighter CoverageRadius:
-        // GenerateDefense triggers at DefendRadius, so judging its advance/prune at CoverageRadius would see no
-        // threat through the smaller lens and complete/prune-and-re-create the objective every tick (flapping).
-        // Offensive/recon objectives keep CoverageRadius.
+        // DefendArea advances/prunes over the same DefendRadius it was raised at; a narrower lens would flap it.
         private static float ResolveRadius(ObjectiveKind kind, BrainConfig cfg)
             => kind == ObjectiveKind.DefendArea ? cfg.DefendRadius : cfg.CoverageRadius;
 
@@ -272,7 +228,7 @@ namespace Nucleus.Core.Command
             return new ThreatPicture(near);
         }
 
-        /// <summary>A sensible combined-arms force for an objective kind — the gap Production tries to fill.</summary>
+        // The combined-arms force an objective kind wants — the gap Production fills.
         private static Composition RequiredComposition(ObjectiveKind kind)
         {
             var c = new Composition();
@@ -283,8 +239,7 @@ namespace Nucleus.Core.Command
                 case ObjectiveKind.DefendArea: c.Add(RoleFamily.AirDefense, 1); c.Add(RoleFamily.Armor, 1); break;
                 case ObjectiveKind.ControlAirspace: c.Add(RoleFamily.AirCombat, 2); break;
                 case ObjectiveKind.Resupply: c.Add(RoleFamily.Supply, 1); break;
-                // Recon must recruit families MatchSquads can actually field for it (Recon/AirCombat); the old
-                // Armor default could never satisfy a Recon objective, so it re-bought armor forever.
+                // Must match the families MatchSquads fields for Recon, else it re-buys armor forever.
                 case ObjectiveKind.Recon: c.Add(RoleFamily.Recon, 1); c.Add(RoleFamily.AirCombat, 1); break;
                 default: c.Add(RoleFamily.Armor, 1); break;
             }
@@ -309,12 +264,11 @@ namespace Nucleus.Core.Command
             return false;
         }
 
-        // --- Narration ("barks"): plain-language lines so the player can SEE what the AI is doing and why. ---
+        // --- Narration ("barks"): plain-language feed lines so the player can read what the AI is doing. ---
 
         private static readonly string[] Compass = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 
-        /// <summary>An 8-point compass bearing + distance in km from <paramref name="from"/> to <paramref name="to"/>
-        /// (X = east, Z = north). Deterministic; no clock/RNG.</summary>
+        // 8-point bearing + km from -> to (X = east, Z = north). Deterministic; no clock/RNG.
         private static string Bearing(Vec3 from, Vec3 to)
         {
             float dx = to.X - from.X, dz = to.Z - from.Z;
@@ -325,7 +279,6 @@ namespace Nucleus.Core.Command
             return $"{Compass[i]} {km:0}km";
         }
 
-        /// <summary>One-line "why" for a newly created objective, relative to the home base.</summary>
         private static string ObjectiveBark(ObjectiveKind kind, Vec3 home, Vec3 pos)
         {
             switch (kind)
@@ -340,8 +293,6 @@ namespace Nucleus.Core.Command
             }
         }
 
-        /// <summary>Feed line when an objective auto-resolves — worded per kind (a defended area being clear or a
-        /// recon being resolved is not "secured").</summary>
         private static string CompletionText(ObjectiveKind kind)
         {
             switch (kind)
@@ -352,7 +303,6 @@ namespace Nucleus.Core.Command
             }
         }
 
-        /// <summary>Why a combat phase is what it is — so the player understands why ground holds back, etc.</summary>
         private static string PhaseReason(ObjectiveKind kind, CombatPhase phase)
         {
             string reason;
@@ -370,13 +320,9 @@ namespace Nucleus.Core.Command
             return ObjectiveText.Name(kind) + ": " + reason;
         }
 
-        /// <summary>
-        /// Generate objectives from the fog-of-war intel: cluster known enemies into a <see cref="ThreatBoard"/>,
-        /// rank the pockets with <see cref="TargetPrioritizer"/> (strategic value + proximity to home, doctrine-
-        /// weighted), and emit a DestroyTarget objective at each pocket no existing objective already covers
-        /// (priority = the pocket's score, so operations open against the best targets first). One clustering
-        /// implementation, shared with the threat board.
-        /// </summary>
+        /// <summary>Cluster known enemies (<see cref="ThreatBoard"/>), rank the pockets
+        /// (<see cref="TargetPrioritizer"/>), and emit one objective per uncovered pocket at its ranked kind,
+        /// priority = score.</summary>
         public static IReadOnlyList<Objective> GenerateObjectives(
             IReadOnlyList<EnemyView> known, IReadOnlyList<Objective> existing, BrainConfig cfg,
             Vec3 homeBase = default(Vec3), Doctrine doctrine = null)
@@ -393,27 +339,21 @@ namespace Nucleus.Core.Command
                     existing.Any(o => o.Position.HorizontalDistanceTo(center) <= cfg.CoverageRadius);
                 if (covered) continue;
 
-                // Honor the ranker's recommended kind (capture armor/infantry pockets, scout fuzzy contacts,
-                // destroy the rest) instead of forcing DestroyTarget — this is what made the AI feel one-note.
                 result.Add(new Objective($"auto-obj-{idx++}", st.SuggestedKind, center,
                     ObjectiveSource.Auto, priority: st.Score));
             }
             return result;
         }
 
-        /// <summary>
-        /// Pick the squads for an objective: ONE suitable squad per needed role family (so each combat phase —
-        /// SEAD, strike, assault, … — has its squad), regardless of where they are on the map (no range). Only
-        /// free, non-empty, non-player-owned squads. Strongest-first within a family; deterministic (families
-        /// in enum order). The <paramref name="positions"/> param is ignored (kept for call-site compatibility).
-        /// </summary>
+        /// <summary>One free squad per role family the objective needs (so each combat phase has its squad),
+        /// strongest-first, deterministic. <paramref name="positions"/> is ignored (call-site compatibility).</summary>
         public static IReadOnlyList<string> MatchSquads(Objective objective, IReadOnlyList<Squad> squads, BrainConfig cfg,
             IReadOnlyDictionary<string, Vec3> positions = null)
         {
             var suitable = Families.SuitableFor(objective.Kind);
             var available = (squads ?? new List<Squad>())
                 .Where(s => s != null && !s.IsEmpty && s.AssignedOperationId == null
-                    && s.Autonomy != AutonomyLevel.Manual // player-owned squad — never auto-pulled into an op
+                    && s.Autonomy != AutonomyLevel.Manual   // never auto-pull a player squad
                     && suitable.Contains(s.Family))
                 .ToList();
 
