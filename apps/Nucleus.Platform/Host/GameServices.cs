@@ -66,5 +66,20 @@ namespace Nucleus.Host
         {
             get { try { return MissionManager.CurrentMission?.Name; } catch { return null; } }
         }
+
+        private static readonly IReadOnlyList<UnitView> EmptyRoster = new List<UnitView>();
+        private static readonly IReadOnlyList<EnemyView> EmptyEnemies = new List<EnemyView>();
+
+        public IReadOnlyList<UnitView> RosterFor(string factionName)
+        {
+            try { var hq = FactionRegistry.HqFromName(factionName); return hq != null ? _roster.BuildRosterFor(hq) : EmptyRoster; }
+            catch { return EmptyRoster; }
+        }
+
+        public IReadOnlyList<EnemyView> KnownEnemiesFor(string factionName, Vec3 center, float radius)
+        {
+            try { var hq = FactionRegistry.HqFromName(factionName); return hq != null ? _intel.KnownEnemiesNearFor(hq, center, radius) : EmptyEnemies; }
+            catch { return EmptyEnemies; }
+        }
     }
 }

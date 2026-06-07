@@ -11,11 +11,14 @@ namespace Nucleus.Game
 
         public IReadOnlyList<UnitView> BuildRoster()
         {
-            if (!GameManager.GetLocalHQ(out var hq) || hq == null)
-            {
-                return Empty;
-            }
+            return GameManager.GetLocalHQ(out var hq) && hq != null ? BuildRosterFor(hq) : Empty;
+        }
 
+        /// <summary>Build the classified roster for a SPECIFIC faction HQ — used to drive an AI commander for the
+        /// non-local (enemy) faction in-mission (we are the offline host, so we can task any faction's units).</summary>
+        public IReadOnlyList<UnitView> BuildRosterFor(FactionHQ hq)
+        {
+            if (hq == null) return Empty;
             var list = new List<UnitView>();
             foreach (var u in UnitRegistry.allUnits)
             {

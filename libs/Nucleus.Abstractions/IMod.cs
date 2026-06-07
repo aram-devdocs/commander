@@ -89,6 +89,10 @@ namespace Nucleus.Abstractions
         bool JoinFaction(string factionName);
         /// <summary>The loaded mission's name (so a mod can gate behaviour to a specific mission), or null.</summary>
         string CurrentMissionName { get; }
+        /// <summary>The classified roster of a SPECIFIC faction — to drive an AI commander for the enemy side.</summary>
+        IReadOnlyList<UnitView> RosterFor(string factionName);
+        /// <summary>The enemies a SPECIFIC faction has detected — to drive its AI commander's intel.</summary>
+        IReadOnlyList<EnemyView> KnownEnemiesFor(string factionName, Vec3 center, float radius);
     }
 
     /// <summary>How a mod claims its in-game buttons: a map-bezel button (CMD/BLD/SQD/...) and/or a row in the

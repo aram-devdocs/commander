@@ -14,11 +14,14 @@ namespace Nucleus.Game
 
         public IReadOnlyList<EnemyView> KnownEnemiesNear(Vec3 center, float radius)
         {
-            if (!GameManager.GetLocalHQ(out var hq) || hq == null)
-            {
-                return Empty;
-            }
+            return GameManager.GetLocalHQ(out var hq) && hq != null ? KnownEnemiesNearFor(hq, center, radius) : Empty;
+        }
 
+        /// <summary>The enemies a SPECIFIC faction HQ has detected — used to drive an AI commander for the
+        /// non-local (enemy) faction in-mission. Reads that HQ's own fog-of-war tracking, never ground truth.</summary>
+        public IReadOnlyList<EnemyView> KnownEnemiesNearFor(FactionHQ hq, Vec3 center, float radius)
+        {
+            if (hq == null) return Empty;
             var list = new List<EnemyView>();
             foreach (var kv in hq.trackingDatabase)
             {

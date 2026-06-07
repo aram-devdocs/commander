@@ -112,14 +112,53 @@ namespace Nucleus.Warfare
             if (mission == _lastMission) return;
             _lastMission = mission;
             _setupApplied = false;
+            _enemyLogged = false;
             _bluforFaction = _opforFaction = null;
             _lastCensus.Clear();
         }
+
+        private float _enemyClock;
+
+        // Drive the ENEMY (non-local) faction with our AI brain — the north-star "either side human or AI". We
+        // are the offline host, so we can read that faction's own roster + fog-of-war intel and task its units.
+        // The local faction is driven by the Commander mod; this handles the other side. Throttled (the brain
+        // doesn't need frame rate, and it reads ~400 units).
+        private void DriveEnemyAi()
+        {
+            if (_ctx?.Game == null || _campaign == null || _bluforFaction == null) return;
+            if (!_ctx.Game.TryGetLocalFaction(out var local) || local == null) return;
+
+            // The enemy is the bound side that isn't the local player's faction.
+            string enemy = local.Name == _bluforFaction ? _opforFaction
+                : local.Name == _opforFaction ? _bluforFaction : null;
+            if (enemy == null) return;
+
+            // Only drive it if that side is AI-commanded (default; the setup screen can make it human too).
+            if (Nucleus.Core.War.WarSetup.Configured
+                && Nucleus.Core.War.WarSetup.Commanders.TryGetValue(enemy, out var kind)
+                && kind == Nucleus.Core.War.CommanderKind.Human) return;
+
+            var state = enemy == _bluforFaction ? _campaign.Blufor : _campaign.Opfor;
+            var roster = _ctx.Game.RosterFor(enemy);
+            var intel = _ctx.Game.KnownEnemiesFor(enemy, new Nucleus.Core.Model.Vec3(0, 0, 0), 5_000_000f);
+            var snapshot = new Nucleus.Core.Command.WorldSnapshot(roster, intel, 0f, null, 0f);
+            var tasks = Nucleus.Core.Command.CommanderBrain.Tick(snapshot, state);
+            foreach (var task in tasks) _ctx.Game.Execute(task);
+
+            if (!_enemyLogged && tasks.Count > 0)
+            {
+                _enemyLogged = true;
+                _ctx.Log.Info($"[NUCLEUS:SELFTEST] PASS enemy-ai-driving faction='{enemy}' roster={roster.Count} tasks={tasks.Count}");
+            }
+        }
+        private bool _enemyLogged;
 
         public void Tick(IModTickContext t)
         {
             _attritionClock += t.UnscaledDeltaTime;
             if (_attritionClock >= 1f) { _attritionClock = 0f; ResetForNewMissionIfNeeded(); FeedAttrition(); ApplySetup(); }
+            _enemyClock += t.UnscaledDeltaTime;
+            if (_enemyClock >= 1.5f) { _enemyClock = 0f; DriveEnemyAi(); }
             var c = _ctx?.Campaign;
             if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Catalog(), c.Funds());
             // The attrition board reads from the Warfare campaign (both factions' score/funds/losses + win state).
