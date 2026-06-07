@@ -32,6 +32,11 @@ namespace Nucleus.Composition
         private bool _firstTick = true;
         private bool _loggedPanel;
         private float _nextManage;
+        private float _nextRender;
+        // The heavy projection (AutoHq) + overlay/panel render run at this rate, not every frame — clicks/drag
+        // stay per-frame for responsiveness, but re-rendering the whole map+panel each frame over hundreds of
+        // units was the in-mission lag. ~7 Hz is smooth enough for strategic markers.
+        private const float RenderIntervalSeconds = 0.14f;
 
         public CommanderRuntime()
         {
@@ -98,25 +103,25 @@ namespace Nucleus.Composition
                 _service.Tick();
             }
 
-            _lastHq = _service.AutoHq();
-            if (!open)
-            {
-                _overlay?.Clear();
-                _dragObjId = null;
-            }
-            else if (_panel != null)
-            {
-                HandleMapInteraction();
-                _overlay?.RenderObjectives(_lastHq?.Operations, _panel.SelectedObjectiveId,
-                    _lastHq?.Squads, PositionsById());
-            }
+            // Input is handled every frame so clicks/drag stay responsive.
+            if (!open) { _overlay?.Clear(); _dragObjId = null; }
+            else if (_panel != null) HandleMapInteraction();
 
-            // Keep the panel content fresh (it renders only when the native screen shows it).
-            if (_panel != null)
+            // The heavy projection + overlay/panel render is throttled (was every frame -> in-mission lag).
+            if (Time.unscaledTime >= _nextRender)
             {
-                _panel.RenderObjectives(_lastHq);
-                _panel.RenderHq(_lastHq, _service.BuildCatalog(), _service.Funds());
-                if (!_loggedPanel) { _loggedPanel = true; CommanderPlugin.Log?.LogInfo("[panel] Commander panel rendering."); }
+                _nextRender = Time.unscaledTime + RenderIntervalSeconds;
+                _lastHq = _service.AutoHq();
+                if (open && _panel != null)
+                    _overlay?.RenderObjectives(_lastHq?.Operations, _panel.SelectedObjectiveId,
+                        _lastHq?.Squads, PositionsById());
+
+                if (_panel != null)
+                {
+                    _panel.RenderObjectives(_lastHq);
+                    _panel.RenderHq(_lastHq, _service.BuildCatalog(), _service.Funds());
+                    if (!_loggedPanel) { _loggedPanel = true; CommanderPlugin.Log?.LogInfo("[panel] Commander panel rendering."); }
+                }
             }
         }
 
