@@ -27,9 +27,6 @@ namespace Nucleus.Core.Model
         }
     }
 
-    /// <summary>An operation's battle-plan phase. Persisted in the campaign save (Operation.Phase).</summary>
-    public enum OrderPhase { Forming, Advancing, Engaging, Suppressing, Holding, AirTasking, Queued, Complete, Failed }
-
     /// <summary>Commander tunables. Pure data.</summary>
     public sealed class CommanderConfig
     {

@@ -52,8 +52,8 @@ namespace Nucleus.Core.Persistence
 
             foreach (var op in s.Operations)
             {
-                Line(sb, "OP", Enc(op.Id), Enc(op.Objective?.Id), E(op.Autonomy), E(op.Status), E(op.Phase),
-                    E(op.CombatPhase), Enc(op.OrderId), op.InitialThreat != null ? "1" : "0");
+                Line(sb, "OP", Enc(op.Id), Enc(op.Objective?.Id), E(op.Autonomy), E(op.Status),
+                    E(op.CombatPhase), op.InitialThreat != null ? "1" : "0");
                 foreach (var sid in op.SquadIds)
                     Line(sb, "OPSQUAD", Enc(op.Id), Enc(sid));
                 if (op.InitialThreat != null)
@@ -212,11 +212,9 @@ namespace Nucleus.Core.Persistence
                 {
                     Autonomy = PE(f, 3, AutonomyLevel.Auto),
                     Status = PE(f, 4, OperationStatus.Planning),
-                    Phase = PE(f, 5, OrderPhase.Forming),
-                    CombatPhase = PE(f, 6, CombatPhase.Recon),
-                    OrderId = PS(f, 7),
+                    CombatPhase = PE(f, 5, CombatPhase.Recon),
                 };
-                bool hasThreat = f.Length > 8 && f[8] == "1";
+                bool hasThreat = f.Length > 6 && f[6] == "1";
                 if (hasThreat)
                     op.InitialThreat = new ThreatPicture(opThreat.TryGetValue(opId, out var en) ? en : new List<EnemyView>());
                 snap.Operations.Add(op);

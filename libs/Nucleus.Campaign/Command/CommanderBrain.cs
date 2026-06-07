@@ -57,7 +57,6 @@ namespace Nucleus.Core.Command
                 if (IsObjectiveResolved(op.Objective.Kind, current))
                 {
                     op.Status = OperationStatus.Complete;
-                    op.Phase = OrderPhase.Complete;
                     state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.ObjectiveComplete, CompletionText(op.Objective.Kind), op.Id));
                     continue;
                 }

@@ -18,12 +18,10 @@ namespace Nucleus.Core.Command
         public List<string> SquadIds { get; }
         public AutonomyLevel Autonomy { get; set; }
         public OperationStatus Status { get; set; }
-        public OrderPhase Phase { get; set; }
         /// <summary>Combined-arms phase cursor (advances via PhaseGates each tick).</summary>
         public CombatPhase CombatPhase { get; set; } = CombatPhase.Recon;
         /// <summary>Threat at the objective when the operation opened — the baseline for the "softened" gate.</summary>
         public ThreatPicture InitialThreat { get; set; }
-        public string OrderId { get; set; }
 
         public Operation(string id, Objective objective, IEnumerable<string> squadIds = null)
         {
@@ -32,7 +30,6 @@ namespace Nucleus.Core.Command
             SquadIds = squadIds != null ? new List<string>(squadIds) : new List<string>();
             Autonomy = AutonomyLevel.Auto;
             Status = OperationStatus.Planning;
-            Phase = OrderPhase.Forming;
         }
 
         public bool IsTerminal => Status == OperationStatus.Complete || Status == OperationStatus.Failed;
