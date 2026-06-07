@@ -11,6 +11,9 @@ namespace Nucleus.Core.Command
         public float ClusterRadius { get; set; } = 3000f;
         /// <summary>An enemy cluster already within this distance of an existing objective is not re-targeted.</summary>
         public float CoverageRadius { get; set; } = 4000f;
+        /// <summary>Known enemies within this distance of the home base trigger a DefendArea objective — the AI
+        /// reacts to a threat on its base/HQ before the enemy is on top of it (larger than CoverageRadius).</summary>
+        public float DefendRadius { get; set; } = 8000f;
         public int MaxSquadsPerOperation { get; set; } = 2;
         /// <summary>The most AUTO objectives the AI keeps active at once — it orchestrates the highest-priority
         /// targets instead of spamming one per enemy cluster across a huge map (which buried the map in markers
@@ -26,6 +29,10 @@ namespace Nucleus.Core.Command
     /// </summary>
     public static class CommanderBrain
     {
+        /// <summary>Priority for an auto-generated home-defense objective — above typical offensive scores so a
+        /// threatened base gets force assigned first (defense is funded before attacks within the objective cap).</summary>
+        private const float DefendPriority = 50f;
+
         /// <summary>
         /// One autonomous decision tick (pure): reconcile squads against the live roster, generate objectives
         /// from fog-of-war intel, spin up operations for uncovered objectives with a matched force, prune
@@ -48,7 +55,7 @@ namespace Nucleus.Core.Command
                 if (op.IsTerminal) continue;
                 op.SquadIds.RemoveAll(sid => state.Squads.ById(sid) == null);
                 var current = ThreatNear(snapshot, op.Objective.Position, coverage);
-                if (current.Count == 0 && op.Objective.Kind == ObjectiveKind.DestroyTarget)
+                if (IsObjectiveResolved(op.Objective.Kind, current))
                 {
                     op.Status = OperationStatus.Complete;
                     op.Phase = OrderPhase.Complete;
@@ -99,10 +106,18 @@ namespace Nucleus.Core.Command
                 int autoCount = state.Objectives.Count(o => o.Source == ObjectiveSource.Auto);
                 int room = state.BrainConfig.MaxAutoObjectives - autoCount;
                 if (room > 0)
-                    foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
-                                 state.HomeBase, state.Doctrine).Take(room))
+                {
+                    // Defence first (highest priority), then the ranked offensive/recon mix — sharing the cap so a
+                    // threatened base is funded before attacks, and the AI fields a believable spread of kinds.
+                    var planned = new List<Objective>();
+                    var defense = GenerateDefense(snapshot, state);
+                    if (defense != null) planned.Add(defense);
+                    planned.AddRange(GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
+                        state.HomeBase, state.Doctrine));
+                    foreach (var obj in planned.Take(room))
                         state.Objectives.Add(new Objective(state.NextObjectiveId(), obj.Kind, obj.Position,
                             obj.Source, obj.TargetId, obj.Priority));
+                }
             }
 
             // 4. AUTO-FILL: when on, open an operation for each uncovered objective and assign suitable squads —
@@ -175,6 +190,39 @@ namespace Nucleus.Core.Command
             return tasks;
         }
 
+        /// <summary>When an operation's objective is "done" and should auto-complete: an offence (DestroyTarget)
+        /// or a defence (DefendArea) is done when no threat remains near it; a Recon is done once no low-confidence
+        /// contact remains (the intel is resolved). Capture/ControlAirspace/Resupply hold the ground (pruned by
+        /// the auto-objective cleanup, not auto-completed here).</summary>
+        private static bool IsObjectiveResolved(ObjectiveKind kind, ThreatPicture current)
+        {
+            switch (kind)
+            {
+                case ObjectiveKind.DestroyTarget:
+                case ObjectiveKind.DefendArea:
+                    return current.Count == 0;
+                case ObjectiveKind.Recon:
+                    foreach (var e in current.Enemies) if (!e.Accurate) return false;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>If known enemies are pressing the home base (within <see cref="BrainConfig.DefendRadius"/>) and
+        /// no DefendArea already covers it, emit ONE high-priority DefendArea at home so the AI mounts a defence
+        /// instead of only ever attacking. Returns null when home is unknown, unthreatened, or already covered.</summary>
+        private static Objective GenerateDefense(WorldSnapshot snapshot, CommanderState state)
+        {
+            var home = state.HomeBase;
+            if (home.X == 0f && home.Y == 0f && home.Z == 0f) return null;   // home unknown / unset
+            if (!AnyThreatNear(snapshot, home, state.BrainConfig.DefendRadius)) return null;
+            bool covered = state.Objectives.Any(o => o.Kind == ObjectiveKind.DefendArea
+                && o.Position.HorizontalDistanceTo(home) <= state.BrainConfig.CoverageRadius);
+            if (covered) return null;
+            return new Objective("auto-def", ObjectiveKind.DefendArea, home, ObjectiveSource.Auto, priority: DefendPriority);
+        }
+
         private static ThreatPicture ThreatNear(WorldSnapshot snapshot, Vec3 point, float radius)
         {
             var near = new List<EnemyView>();
@@ -240,7 +288,9 @@ namespace Nucleus.Core.Command
                     existing.Any(o => o.Position.HorizontalDistanceTo(center) <= cfg.CoverageRadius);
                 if (covered) continue;
 
-                result.Add(new Objective($"auto-obj-{idx++}", ObjectiveKind.DestroyTarget, center,
+                // Honor the ranker's recommended kind (capture armor/infantry pockets, scout fuzzy contacts,
+                // destroy the rest) instead of forcing DestroyTarget — this is what made the AI feel one-note.
+                result.Add(new Objective($"auto-obj-{idx++}", st.SuggestedKind, center,
                     ObjectiveSource.Auto, priority: st.Score));
             }
             return result;
