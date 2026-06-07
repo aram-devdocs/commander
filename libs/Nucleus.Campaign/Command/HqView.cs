@@ -55,9 +55,11 @@ namespace Nucleus.Core.Command
         public AutonomyLevel Autonomy { get; }
         /// <summary>What the squad is doing right now, e.g. "DestroyTarget — Strike" or "Reserve". For the UI.</summary>
         public string Activity { get; }
+        /// <summary>The squad's member unit ids — so the map can track its units + draw lines to its objective.</summary>
+        public IReadOnlyList<string> MemberUnitIds { get; }
 
         public SquadView(string id, string name, RoleFamily family, int strength, SquadStatus status,
-            string assignedOperationId, AutonomyLevel autonomy, string activity)
+            string assignedOperationId, AutonomyLevel autonomy, string activity, IReadOnlyList<string> memberUnitIds = null)
         {
             Id = id;
             Name = name;
@@ -67,6 +69,7 @@ namespace Nucleus.Core.Command
             AssignedOperationId = assignedOperationId;
             Autonomy = autonomy;
             Activity = activity ?? "";
+            MemberUnitIds = memberUnitIds ?? new List<string>();
         }
     }
 
@@ -131,7 +134,7 @@ namespace Nucleus.Core.Command
             var squads = state.Squads.Squads
                 .Select(s => new SquadView(
                     s.Id, s.Name, s.Family, s.Strength, s.Status, s.AssignedOperationId, s.Autonomy,
-                    SquadActivity(s, state)))
+                    SquadActivity(s, state), new List<string>(s.MemberUnitIds)))
                 .ToList();
 
             var productionLines = production != null

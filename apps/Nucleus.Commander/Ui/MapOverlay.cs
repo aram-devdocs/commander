@@ -48,7 +48,9 @@ namespace Nucleus.Ui
         /// <summary>Draw a selectable marker per live objective (colored by kind), with a ring on the selected
         /// one. The objective list comes from the same operations read-model the panel renders, so the map and
         /// the panel always agree. Replaces the old range-order overlay (everything is objectives now).</summary>
-        public void RenderObjectives(IReadOnlyList<Nucleus.Core.Command.OperationView> ops, string selectedId)
+        public void RenderObjectives(IReadOnlyList<Nucleus.Core.Command.OperationView> ops, string selectedId,
+            IReadOnlyList<Nucleus.Core.Command.SquadView> squads = null,
+            IReadOnlyDictionary<string, Vec3> unitPositions = null)
         {
             int mi = 0;
             Vec3 selLocal = default; bool haveSel = false;
@@ -75,7 +77,27 @@ namespace Nucleus.Ui
             }
             for (int i = mi; i < _markers.Count; i++) _markers[i].gameObject.SetActive(false);
             for (int i = mi; i < _objLabels.Count; i++) _objLabels[i].gameObject.SetActive(false);
-            for (int i = 0; i < _lines.Count; i++) _lines[i].gameObject.SetActive(false);
+
+            // When an objective is selected, draw a line from it to every unit of its assigned squads — so the
+            // player sees exactly who's working it and where they're headed.
+            int li = 0;
+            if (haveSel && squads != null && unitPositions != null)
+            {
+                string selOpId = null;
+                foreach (var op in ops) if (op.ObjectiveId == selectedId) { selOpId = op.Id; break; }
+                if (selOpId != null)
+                    foreach (var sq in squads)
+                    {
+                        if (sq.AssignedOperationId != selOpId || sq.MemberUnitIds == null) continue;
+                        foreach (var uid in sq.MemberUnitIds)
+                        {
+                            if (!unitPositions.TryGetValue(uid, out var uw)) continue;
+                            var ul = _projection.WorldToMapLocal(uw);
+                            DrawLine(Line(li++), new Vec3(selLocal.X, selLocal.Y, 0f), ul, NativeColors.Friendly);
+                        }
+                    }
+            }
+            for (int i = li; i < _lines.Count; i++) _lines[i].gameObject.SetActive(false);
 
             EnsureSelRing();
             if (haveSel)

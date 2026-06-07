@@ -107,7 +107,8 @@ namespace Nucleus.Composition
             else if (_panel != null)
             {
                 HandleMapInteraction();
-                _overlay?.RenderObjectives(_lastHq?.Operations, _panel.SelectedObjectiveId);
+                _overlay?.RenderObjectives(_lastHq?.Operations, _panel.SelectedObjectiveId,
+                    _lastHq?.Squads, PositionsById());
             }
 
             // Keep the panel content fresh (it renders only when the native screen shows it).
