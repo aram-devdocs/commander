@@ -9,6 +9,17 @@ namespace Nucleus.Game
     {
         private static readonly IReadOnlyList<UnitView> Empty = new List<UnitView>();
 
+        // Memoize the per-unit id STRING by instance id: GetInstanceID() never changes for a unit, but
+        // .ToString() allocates a fresh heap string on every roster build (~400 units, every 1.5–3s). The
+        // classification (Describe/Classify) is NOT cached — it reads the live, mutable CaptureStrength.
+        private readonly Dictionary<int, string> _idStr = new Dictionary<int, string>();
+
+        private string IdString(int instanceId)
+        {
+            if (!_idStr.TryGetValue(instanceId, out var s)) { s = instanceId.ToString(); _idStr[instanceId] = s; }
+            return s;
+        }
+
         public IReadOnlyList<UnitView> BuildRoster()
         {
             return GameManager.GetLocalHQ(out var hq) && hq != null ? BuildRosterFor(hq) : Empty;
@@ -30,7 +41,7 @@ namespace Nucleus.Game
                 var cap = RoleClassifier.Classify(d);
                 var pos = GameConvert.ToVec3(u.transform.GlobalPosition());
                 list.Add(new UnitView(
-                    u.GetInstanceID().ToString(),
+                    IdString(u.GetInstanceID()),
                     DisplayName(u),
                     pos,
                     d.Class,

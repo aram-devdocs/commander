@@ -131,19 +131,23 @@ namespace Nucleus.Core.Command
         public static HqSnapshot Build(CommanderState state, BattleLog log, ProductionQueue production,
             int recentCount = 10, IReadOnlyDictionary<string, Role> unitRoles = null)
         {
-            var operations = state.Operations
-                .Select(op => new OperationView(
+            // Pre-sized manual loops (no LINQ Select/ToList) — Build runs on the render path (~7Hz commander,
+            // ~2Hz HUD, the WAR panel) over all ops/squads, so per-render enumerator/closure/list garbage adds up.
+            var operations = new List<OperationView>(state.Operations.Count + state.Objectives.Count);
+            var withOps = new System.Collections.Generic.HashSet<string>();
+            foreach (var op in state.Operations)
+            {
+                operations.Add(new OperationView(
                     op.Id, op.Objective.Kind, op.CombatPhase, op.Status, op.SquadIds.Count, op.Autonomy,
                     op.Objective.Id, op.Objective.Position, op.Objective.Priority,
                     op.Objective.Source == ObjectiveSource.Player,
-                    op.InitialThreat?.Count ?? 0, op.InitialThreat?.AirDefenseCount ?? 0))
-                .ToList();
+                    op.InitialThreat?.Count ?? 0, op.InitialThreat?.AirDefenseCount ?? 0));
+                withOps.Add(op.Objective.Id);
+            }
 
             // An objective the player just dropped has no Operation yet (one forms when a squad is assigned —
             // by the AI auto-fill, or by the human). Surface those as placeholder rows/markers so a dropped
             // objective is immediately visible, selectable, editable and movable — even with auto-fill OFF.
-            var withOps = new System.Collections.Generic.HashSet<string>(
-                state.Operations.Select(o => o.Objective.Id));
             foreach (var obj in state.Objectives)
             {
                 if (withOps.Contains(obj.Id)) continue;
@@ -152,12 +156,16 @@ namespace Nucleus.Core.Command
                     obj.Id, obj.Position, obj.Priority, obj.Source == ObjectiveSource.Player));
             }
 
-            var squads = state.Squads.Squads
-                .Select(s => new SquadView(
+            // One scratch dict reused across squads (CompositionLabel cleared it per call) instead of allocating
+            // a Dictionary per squad. The MemberUnitIds defensive copy is KEPT — the snapshot outlives the tick
+            // and that list is mutated by squad reconcile, so aliasing it would be a cross-frame footgun.
+            var scratch = unitRoles != null ? new Dictionary<string, int>() : null;
+            var squads = new List<SquadView>(state.Squads.Squads.Count);
+            foreach (var s in state.Squads.Squads)
+                squads.Add(new SquadView(
                     s.Id, s.Name, s.Family, s.Strength, s.Status, s.AssignedOperationId, s.Autonomy,
                     SquadActivity(s, state), new List<string>(s.MemberUnitIds),
-                    CompositionLabel(s, unitRoles), s.TargetComposition?.Total ?? 0))
-                .ToList();
+                    CompositionLabel(s, unitRoles, scratch), s.TargetComposition?.Total ?? 0));
 
             var productionLines = production != null
                 ? production.Describe()
@@ -173,10 +181,10 @@ namespace Nucleus.Core.Command
 
         /// <summary>Composition string from a unit-id→role map: "2× MBT, 1× IFV" (top 3 by count). Empty when
         /// no map is supplied (e.g. the enemy-side Hq) — the UI then falls back to the family ×strength form.</summary>
-        private static string CompositionLabel(Squad s, IReadOnlyDictionary<string, Role> unitRoles)
+        private static string CompositionLabel(Squad s, IReadOnlyDictionary<string, Role> unitRoles, Dictionary<string, int> counts)
         {
             if (unitRoles == null || s.MemberUnitIds == null || s.MemberUnitIds.Count == 0) return "";
-            var counts = new Dictionary<string, int>();
+            counts.Clear();
             foreach (var id in s.MemberUnitIds)
             {
                 if (!unitRoles.TryGetValue(id, out var role)) continue;
