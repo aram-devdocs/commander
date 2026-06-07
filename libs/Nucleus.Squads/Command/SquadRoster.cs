@@ -14,6 +14,9 @@ namespace Nucleus.Core.Command
     {
         private readonly SquadConfig _cfg;
         private readonly List<Squad> _squads = new List<Squad>();
+        // Id -> squad index for O(1) ById (the brain's primary lookup, hit many times per tick). Rebuilt when
+        // the squad set changes (Add / end of Reconcile); _squads list ORDER is untouched, so determinism holds.
+        private readonly Dictionary<string, Squad> _byId = new Dictionary<string, Squad>();
         private int _batch;
 
         public SquadRoster(SquadConfig cfg) { _cfg = cfg ?? new SquadConfig(); }
@@ -26,8 +29,8 @@ namespace Nucleus.Core.Command
         public SquadConfig Config => _cfg;
 
         public IReadOnlyList<Squad> Squads => _squads;
-        public Squad ById(string id) => _squads.FirstOrDefault(s => s.Id == id);
-        public void Add(Squad squad) => _squads.Add(squad); // player-created
+        public Squad? ById(string id) => _byId.TryGetValue(id, out var s) ? s : null;
+        public void Add(Squad squad) { _squads.Add(squad); _byId[squad.Id] = squad; } // player-created
 
         /// <summary><paramref name="excludeIds"/> = units owned by the manual layer; treated as unavailable
         /// (pruned from squads, never auto-formed) so the autonomous brain and manual orders don't fight.</summary>
@@ -54,6 +57,9 @@ namespace Nucleus.Core.Command
                 .Where(u => u != null && alive.Contains(u.Id) && !inSquad.Contains(u.Id)).ToList();
             if (loose.Count > 0)
                 _squads.AddRange(SquadFormer.Form(loose, _cfg, "auto" + _batch++));
+
+            _byId.Clear();
+            foreach (var s in _squads) _byId[s.Id] = s;
         }
 
         private SquadStatus StatusFor(Squad s)
