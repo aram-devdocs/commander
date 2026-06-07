@@ -284,6 +284,9 @@ namespace Nucleus.Core.Command
                 case ObjectiveKind.DefendArea: c.Add(RoleFamily.AirDefense, 1); c.Add(RoleFamily.Armor, 1); break;
                 case ObjectiveKind.ControlAirspace: c.Add(RoleFamily.AirCombat, 2); break;
                 case ObjectiveKind.Resupply: c.Add(RoleFamily.Supply, 1); break;
+                // Recon must recruit families MatchSquads can actually field for it (Recon/AirCombat); the old
+                // Armor default could never satisfy a Recon objective, so it re-bought armor forever.
+                case ObjectiveKind.Recon: c.Add(RoleFamily.Recon, 1); c.Add(RoleFamily.AirCombat, 1); break;
                 default: c.Add(RoleFamily.Armor, 1); break;
             }
             return c;

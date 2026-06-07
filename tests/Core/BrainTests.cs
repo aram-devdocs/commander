@@ -278,6 +278,23 @@ namespace Nucleus.Tests
         }
 
         [Fact]
+        public void Recon_production_need_uses_only_recon_suitable_families()
+        {
+            // review P2-#8: an unfillable Recon objective must request families MatchSquads can field for it
+            // (Recon/AirCombat) — the old Armor default could never satisfy it, looping wasted buys.
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { AiCreatesObjectives = false };
+            state.Objectives.Add(new Objective("r", ObjectiveKind.Recon, P(5000, 0), ObjectiveSource.Player, priority: 5f));
+
+            CommanderBrain.Tick(new WorldSnapshot(new List<UnitView>(), new List<EnemyView>(), 0f, null, 0f), state);
+
+            Assert.NotEmpty(state.ProductionNeeds);
+            var suitable = Families.SuitableFor(ObjectiveKind.Recon);
+            foreach (var need in state.ProductionNeeds)
+                foreach (var kv in need.Items)
+                    Assert.Contains(kv.Key, suitable);
+        }
+
+        [Fact]
         public void Tick_excludes_manually_committed_units()
         {
             var state = new CommanderState(SquadCfg(), null, Cfg());
