@@ -43,6 +43,7 @@ namespace Nucleus.Composition
 
             _header = UiFactory.Label("HudHeader", col.transform, "NUCLEUS", 15f, NativeColors.Friendly);
             UiFactory.PreferredHeight(_header.gameObject, 20f);
+            UiFactory.Divider(col.transform, NativeColors.Friendly); // accent rule so the HUD reads as intentional
             _intent = UiFactory.Label("HudIntent", col.transform, "", 12f, new Color(0.8f, 0.85f, 0.9f, 1f));
             UiFactory.PreferredHeight(_intent.gameObject, 18f);
 
