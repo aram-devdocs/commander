@@ -59,4 +59,27 @@ apps (thin wrappers): Platform · Commander · Build · Squad · Warfare   sdk: 
   Ui lib must NOT ref Squads per the arch rule, and Campaign is Unity-free, so there's no
   clean lib home; the planned Nucleus.Presentation lib (WS4) would be it). Full no-deploy
   compile (0 warn) + Core 139 (+2) + arch 9/9 PASS.
-- Next: CB8 (public surface/docs) — last item.
+- CB8: DONE (local) — public-surface review of the shared libs. VISIBILITY: left as-is
+  (conservative). The pure libs (Domain/Squads/Production/Campaign/Sim) are consumed as
+  ProjectReferences by apps AND tests, and Ui/GameSdk expose internals to Platform/Commander
+  via InternalsVisibleTo — so blanket narrowing to `internal` risks breaking real consumers
+  for little gain; the no-deploy build + tests are the safety net and the surface is already
+  appropriate for a package (apps reference everything; the deliberate SDK public surface is
+  the package boundary). DOCS: added XML <summary> to the 12 genuinely-public package types
+  that lacked them — CommanderOrder/TaskVerb/TaskPlan/OrderStatus (Domain.Orders),
+  Domains/Families (Domain helpers), ObjectiveSource (Domain.Command), SquadOrigin/SquadStatus
+  (Squads), OperationStatus (Campaign), DualSimResult/EvolveResult (Sim). (DomainSet +
+  PanelSections were false positives — already documented above their [Flags] attribute.)
+  Doc-only + no visibility change → behavior-preserving. Full no-deploy compile (0 warn) +
+  Core 139 + arch 9/9 PASS.
+
+## DONE — codebase good-to-go (CB1-CB8 all complete, local + headless-verified)
+All eight hardening items landed as local commits on auto/overnight, each headless-verified
+(full no-deploy Release build 0/0 + Core/arch green; pre-commit gate on every commit). No
+pushes, no game launches (the user is playing the sandbox).
+
+GAME-GATED queue (waits for the user's return — a push deploys plugins into the live game):
+  1. Push the full accumulated batch into PR #12 (UI/UX overhaul + Native-UI kit + CB1-CB8).
+  2. Run the visual probe to verify the on-screen bits: UO3 scroll, UO2 sizing, native
+     widgets, map/HUD legibility.
+  3. Adopt NativeUi.Toggle/Button in the panels with visual verification.

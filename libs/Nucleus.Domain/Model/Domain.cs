@@ -16,6 +16,7 @@ namespace Nucleus.Core.Model
         All = Land | Sea | Air
     }
 
+    /// <summary>Helpers mapping a <see cref="Role"/> to its <see cref="Domain"/> and testing domain membership in a <see cref="DomainSet"/> mask.</summary>
     public static class Domains
     {
         /// <summary>Domain a role belongs to, or null for non-commandable "things" (missiles, buildings).</summary>

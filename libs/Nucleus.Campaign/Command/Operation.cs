@@ -3,6 +3,7 @@ using Nucleus.Core.Model;
 
 namespace Nucleus.Core.Command
 {
+    /// <summary>Lifecycle of a commander operation: being planned, actively running, completed, or failed/abandoned.</summary>
     public enum OperationStatus { Planning, Active, Complete, Failed }
 
     /// <summary>

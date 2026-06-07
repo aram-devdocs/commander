@@ -2,8 +2,11 @@ using System.Collections.Generic;
 
 namespace Nucleus.Core.Command
 {
+    /// <summary>Whether a squad was auto-formed by the commander or created by the player.</summary>
     public enum SquadOrigin { Auto, Player }
 
+    /// <summary>A squad's live readiness, derived from its roster each tick: forming up, ready/en-route,
+    /// engaged, depleted (below strength), or held in reserve.</summary>
     public enum SquadStatus { Forming, Ready, Engaged, Depleted, Reserve }
 
     /// <summary>

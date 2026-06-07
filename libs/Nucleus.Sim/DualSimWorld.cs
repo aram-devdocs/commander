@@ -5,6 +5,9 @@ using Nucleus.Core.Model;
 
 namespace Nucleus.Sim
 {
+    /// <summary>The recorded outcome of a headless two-commander match: per-tick alive counts for each side,
+    /// task/objective tallies, and a NaN guard. <see cref="Fingerprint"/> yields a stable string for
+    /// determinism regression tests.</summary>
     public sealed class DualSimResult
     {
         public readonly List<int> AAlive = new List<int>();

@@ -13,6 +13,8 @@ namespace Nucleus.Core.Model
         Move      // reposition: send a suitable subset to a point (no combat/threat semantics)
     }
 
+    /// <summary>A player-issued order at a world point: kind + pull radius + allowed domains (+ optional target).
+    /// The planner turns this into a <see cref="TaskPlan"/> of per-unit <see cref="UnitTask"/>s.</summary>
     public sealed class CommanderOrder
     {
         public string Id { get; }
@@ -37,6 +39,7 @@ namespace Nucleus.Core.Model
         }
     }
 
+    /// <summary>What a single unit is told to do in a <see cref="UnitTask"/>: move to a point, hold, or attack a target.</summary>
     public enum TaskVerb
     {
         MoveTo,
@@ -63,6 +66,7 @@ namespace Nucleus.Core.Model
         }
     }
 
+    /// <summary>The planner's output for one order: the set of per-unit <see cref="UnitTask"/>s to execute.</summary>
     public sealed class TaskPlan
     {
         public string OrderId { get; }
@@ -77,6 +81,7 @@ namespace Nucleus.Core.Model
         public bool IsEmpty => Tasks.Count == 0;
     }
 
+    /// <summary>Lifecycle of a managed order: being planned, actively tasked, finished, or abandoned.</summary>
     public enum OrderStatus { Planning, Active, Complete, Failed }
 
     /// <summary>The current battle-plan phase of an order, for the panel's plan view.</summary>

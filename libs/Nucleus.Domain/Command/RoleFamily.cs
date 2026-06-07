@@ -16,6 +16,7 @@ namespace Nucleus.Core.Command
         Other        // munitions / buildings / unclassified (not squadable)
     }
 
+    /// <summary>Maps a <see cref="Role"/> to its <see cref="RoleFamily"/> and reports which families act in a given combat phase.</summary>
     public static class Families
     {
         public static RoleFamily Of(Role role)

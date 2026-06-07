@@ -12,6 +12,7 @@ namespace Nucleus.Sim
         public int Generation;   // generation this genome was last (re)created in
     }
 
+    /// <summary>The result of an evolution run: the final population scored best-first, plus a per-generation log.</summary>
     public sealed class EvolveResult
     {
         public List<GenomeScore> Final = new List<GenomeScore>();   // sorted best-first
