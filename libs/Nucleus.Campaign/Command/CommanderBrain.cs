@@ -101,29 +101,16 @@ namespace Nucleus.Core.Command
             //    corrupt OperationFor / LastObjectiveByUnit / RemoveObjective).
             if (state.AiCreatesObjectives)
             {
-                // Cap the AI to the highest-priority targets (GenerateObjectives returns them best-first), so it
-                // orchestrates a focused war plan instead of one objective per cluster. Player objectives are
-                // never counted against the cap.
                 int autoCount = state.Objectives.Count(o => o.Source == ObjectiveSource.Auto);
                 int room = state.BrainConfig.MaxAutoObjectives - autoCount;
                 if (room > 0)
                 {
-                    // Defence first (highest priority), then the ranked offensive/recon mix — sharing the cap so a
-                    // threatened base is funded before attacks, and the AI fields a believable spread of kinds.
                     var planned = new List<Objective>();
                     var defense = GenerateDefense(snapshot, state);
                     if (defense != null) planned.Add(defense);
                     planned.AddRange(GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
                         state.HomeBase, state.Doctrine));
-                    foreach (var obj in planned.Take(room))
-                    {
-                        var created = new Objective(state.NextObjectiveId(), obj.Kind, obj.Position,
-                            obj.Source, obj.TargetId, obj.Priority);
-                        state.Objectives.Add(created);
-                        // Bark the decision so the player sees the AI thinking (one-shot per objective).
-                        state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.ObjectiveAdded,
-                            ObjectiveBark(created.Kind, state.HomeBase, created.Position)));
-                    }
+                    foreach (var obj in planned.Take(room)) AddAutoObjective(state, snapshot, obj);
                 }
             }
 
@@ -176,6 +163,10 @@ namespace Nucleus.Core.Command
                 var active = Families.ActiveInPhase(op.CombatPhase); // only this phase's families engage
                 var verb = op.Objective.TargetId != null && op.Objective.Kind == ObjectiveKind.DestroyTarget
                     ? TaskVerb.AttackTarget : TaskVerb.MoveTo;
+                // De-dup on the full TASK (id + destination + target + verb), not just the objective id — so an
+                // in-place Move/EditObjective (which mutates Position/Kind on the shared reference) re-routes the
+                // already-committed units instead of being short-circuited and left driving to the old point.
+                string sig = TaskSignature(op.Objective, verb);
                 foreach (var sid in op.SquadIds)
                 {
                     var squad = state.Squads.ById(sid);
@@ -184,9 +175,9 @@ namespace Nucleus.Core.Command
                     foreach (var uid in squad.MemberUnitIds)
                     {
                         tasked.Add(uid);
-                        if (state.LastObjectiveByUnit.TryGetValue(uid, out var last) && last == op.Objective.Id) continue;
+                        if (state.LastObjectiveByUnit.TryGetValue(uid, out var last) && last == sig) continue;
                         tasks.Add(new UnitTask(uid, verb, op.Objective.Position, op.Objective.TargetId));
-                        state.LastObjectiveByUnit[uid] = op.Objective.Id;
+                        state.LastObjectiveByUnit[uid] = sig;
                     }
                 }
             }
@@ -195,6 +186,17 @@ namespace Nucleus.Core.Command
                 state.LastObjectiveByUnit.Remove(k);
 
             return tasks;
+        }
+
+        /// <summary>Materialize a planned objective into live state with a unique MONOTONIC id (tick-local
+        /// generator ids would collide across ticks) and bark the decision once so the player sees the AI think.</summary>
+        private static void AddAutoObjective(CommanderState state, WorldSnapshot snapshot, Objective planned)
+        {
+            var created = new Objective(state.NextObjectiveId(), planned.Kind, planned.Position,
+                planned.Source, planned.TargetId, planned.Priority);
+            state.Objectives.Add(created);
+            state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.ObjectiveAdded,
+                ObjectiveBark(created.Kind, state.HomeBase, created.Position)));
         }
 
         /// <summary>When an operation's objective is "done" and should auto-complete: an offence (DestroyTarget)
@@ -228,6 +230,21 @@ namespace Nucleus.Core.Command
                 && o.Position.HorizontalDistanceTo(home) <= state.BrainConfig.CoverageRadius);
             if (covered) return null;
             return new Objective("auto-def", ObjectiveKind.DefendArea, home, ObjectiveSource.Auto, priority: DefendPriority);
+        }
+
+        /// <summary>A deterministic signature of the actual command a unit is being given — objective id +
+        /// verb + destination + target. Stored in LastObjectiveByUnit so the per-tick de-dup re-tasks when ANY
+        /// of these change (move/retype/retarget), not just when the objective id changes. Uses Fnv1a over the
+        /// position's raw float bits — never string.GetHashCode (process-randomized → breaks save/resume).</summary>
+        private static string TaskSignature(Objective obj, TaskVerb verb)
+        {
+            var p = obj.Position;
+            string raw = obj.Id + "|" + (int)verb + "|"
+                + System.BitConverter.SingleToInt32Bits(p.X) + ","
+                + System.BitConverter.SingleToInt32Bits(p.Y) + ","
+                + System.BitConverter.SingleToInt32Bits(p.Z) + "|"
+                + (obj.TargetId ?? "");
+            return Fnv1a.Hash(raw).ToString();
         }
 
         private static ThreatPicture ThreatNear(WorldSnapshot snapshot, Vec3 point, float radius)

@@ -140,6 +140,29 @@ namespace Nucleus.Tests
         }
 
         [Fact]
+        public void Tick_re_tasks_units_when_their_objective_moves()
+        {
+            // Drag-to-move (and re-type) mutate Objective.Position/Kind in place. The brain must re-route the
+            // already-committed units to the new point — not de-dup them away on the unchanged objective id and
+            // leave them driving to the old spot (stale-position desync regression, review A1).
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { AiCreatesObjectives = false };
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            var enemy = new List<EnemyView> { E("e1", P(5000, 0)) };
+            state.Objectives.Add(new Objective("obj-1", ObjectiveKind.DestroyTarget, P(5000, 0), ObjectiveSource.Player, priority: 5f));
+
+            var first = CommanderBrain.Tick(new WorldSnapshot(roster, enemy), state);
+            Assert.Contains(first, t => t.UnitId == "a1" && t.Position.HorizontalDistanceTo(P(5000, 0)) < 1f);
+
+            // Unchanged -> no re-task (the de-dup still suppresses per-tick SetDestination spam).
+            Assert.Empty(CommanderBrain.Tick(new WorldSnapshot(roster, enemy), state));
+
+            // Move it (still within coverage of the live enemy so the op stays Active) -> the unit re-tasks.
+            state.Objectives[0].Position = P(5400, 0);
+            var moved = CommanderBrain.Tick(new WorldSnapshot(roster, enemy), state);
+            Assert.Contains(moved, t => t.UnitId == "a1" && t.Position.HorizontalDistanceTo(P(5400, 0)) < 1f);
+        }
+
+        [Fact]
         public void Tick_excludes_manually_committed_units()
         {
             var state = new CommanderState(SquadCfg(), null, Cfg());
