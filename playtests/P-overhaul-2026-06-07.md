@@ -52,7 +52,14 @@ Legend: [ ] to verify · screenshots are the loop's evidence, your eyes are the 
 - [ ] In a live war where the enemy is AI-driven, check the BepInEx log for `[NUCLEUS:METRIC] enemy-commander archetype=…` — confirm distinct archetypes per faction across runs.
 - [ ] FOLLOW-UP: the enemy-AI driver (DriveEnemyAi) didn't execute in the autoloaded+joined harness scenario — confirm whether the enemy commander actually runs our brain in real play, or if WarSetup/native-AI gating prevents it (this also affects whether the enemy "feels" personalized). Possibly the same "war advances only with map open" tick issue from WS5.
 
+## WS9 — Visual polish
+- Evidence: `artifacts/screenshots/ws9-verify/02-map-open-map.png` (markers/labels), `01-inflight-hud.png` (HUD contrast).
+- [ ] Confirm map objective markers + labels read clearly at normal zoom.
+- [ ] Confirm the in-flight HUD is legible over bright sky (higher opacity).
+- [ ] Bigger picture: the panels are still plain MFD chrome — tell me if you want a fuller native-UI restyle (deferred as higher-risk).
+
 <!-- The loop appends one block per workstream below as it completes them. -->
+
 
 
 
