@@ -92,3 +92,16 @@ NO push, NO smoke/visual probe. Verify each wave: full no-deploy build (0 warn) 
   when the throttled tick swaps in a new roster list. Full build 0 warn + Core 141 + Sim 41 + arch 9 PASS.
 - D15 (HqView.Build micro-allocs) + D28 (GameRoster id-string) — DEFERRED to a later pass (lower value; D15 has a
   MemberUnitIds-aliasing caveat to handle carefully).
+- **F3/F23/F24/F25 DONE** — closed four pure-logic coverage gaps (no behavior change): Recon op completes only
+  after contacts go accurate (F3); brain FAILED "lost the force" path (F23); SquadRoster Ready→Depleted strict-'<'
+  threshold (F24); defence wins the single slot at a tight cap (F25). Core 144 (+3) + Sim 42 (+1) PASS.
+
+## Remaining (next iterations)
+- Wave C — dead-code removal (C7 CommanderPanel Orders block + Render overload, C8 MapOverlay Render/SetHover,
+  C9 CommanderService PlaceOrder/PreviewAt + _mgr + ICampaign.Orders, C10 OrderColors.cs, C26 BattlePlan.Label).
+  Large, must be done together; behavior-preserving subtraction. HIGH value.
+- Wave G — public API (G11 ModData init-props + ModRegistry guard, G12 Vec3/ColorRgba value equality, G13 fix
+  false namespace comment, G14 Nullable=annotations, G27 WarScore arg validation).
+- Wave E remainder — E21 BUY affordability nets queued spend, E22 ASSIGN RELEASE comment fix, E29 SquadStatus.Forming reachable.
+- Deferred: A4 (home-defense cap, needs redesign), D15 (HqView micro-allocs), D28 (GameRoster id-string).
+- Then: Pass 2 — re-run the competing-agent review on the improved codebase.

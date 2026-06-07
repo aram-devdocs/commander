@@ -74,6 +74,25 @@ namespace Nucleus.Sim.Tests
         }
 
         [Fact]
+        public void Defense_wins_the_last_objective_slot_when_the_cap_is_tight()
+        {
+            // review F25: with a single auto slot, a threatened home wins it over a higher-count offensive
+            // pocket (defence is funded before attacks WITHIN the cap — defence is prepended before Take(room)).
+            var cfg = new BrainConfig { MaxAutoObjectives = 1 };
+            var state = new CommanderState(null, null, cfg) { HomeBase = new Vec3(2000f, 0f, 2000f) };
+            var known = new List<EnemyView>
+            {
+                Enemy("a1", 20000f, 0f, Role.Armor, false, UnitClass.GroundVehicle, 3f),  // big offensive pocket far out
+                Enemy("a2", 20100f, 0f, Role.Armor, false, UnitClass.GroundVehicle, 3f),
+                Enemy("r1", 2500f, 0f, Role.Armor, false, UnitClass.GroundVehicle, 2f),   // raider on home
+            };
+            CommanderBrain.Tick(new WorldSnapshot(new List<UnitView>(), known, 0f, null, 0f), state);
+            var autos = state.Objectives.Where(o => o.Source == ObjectiveSource.Auto).ToList();
+            Assert.Single(autos);
+            Assert.Equal(ObjectiveKind.DefendArea, autos[0].Kind);
+        }
+
+        [Fact]
         public void Mixed_battlefield_yields_more_than_one_objective_kind()
         {
             var state = new CommanderState { HomeBase = new Vec3(0f, 0f, 0f) };

@@ -163,6 +163,45 @@ namespace Nucleus.Tests
         }
 
         [Fact]
+        public void Tick_fails_operation_and_reports_when_force_is_wiped_but_threat_remains()
+        {
+            // Core repertoire behavior (review F23): an active op that loses its whole force while the threat
+            // remains is set Failed and reported "lost the force"; its terminal op is then pruned + squad freed.
+            var state = new CommanderState(SquadCfg(), null, Cfg());
+            var roster = new List<UnitView> { U("a1", Role.Armor, P(0, 0)) };
+            var enemy = new List<EnemyView> { E("e1", P(5000, 0)) };
+            CommanderBrain.Tick(new WorldSnapshot(roster, enemy, 0f, null, 10f), state);
+            Assert.Single(state.Operations);
+
+            CommanderBrain.Tick(new WorldSnapshot(new List<UnitView>(), enemy, 0f, null, 20f), state); // force wiped
+            Assert.Contains(state.Log.Recent(20), e => e.Kind == ReportKind.Blocked && e.Text.Contains("lost the force"));
+            Assert.Empty(state.Operations);      // terminal op pruned
+            Assert.Empty(state.Squads.Squads);   // force wiped → no squads remain
+        }
+
+        [Fact]
+        public void Recon_op_completes_only_after_all_contacts_become_accurate()
+        {
+            // review F3: a Recon op resolves only once no low-confidence (inaccurate) contact remains near it.
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { AiCreatesObjectives = false };
+            var roster = new List<UnitView> { U("recu0", Role.GroundRadar, P(0, 0)) };
+            state.Squads.Add(Sq("rec", RoleFamily.Recon, 1));   // member "recu0" → matches the Recon objective
+            state.Objectives.Add(new Objective("obj-r", ObjectiveKind.Recon, P(5000, 0), ObjectiveSource.Player, priority: 5f));
+
+            var inaccurate = new List<EnemyView> { new EnemyView("e1", P(5000, 0), UnitClass.GroundVehicle, default, false, 1f, 0) };
+            CommanderBrain.Tick(new WorldSnapshot(roster, inaccurate, 0f, null, 10f), state);
+            Assert.Single(state.Operations);
+
+            CommanderBrain.Tick(new WorldSnapshot(roster, inaccurate, 0f, null, 20f), state); // still fuzzy → not resolved
+            Assert.Single(state.Operations);
+            Assert.Equal(OperationStatus.Active, state.Operations[0].Status);
+
+            var accurate = new List<EnemyView> { E("e1", P(5000, 0)) };   // E(...) builds an accurate contact
+            CommanderBrain.Tick(new WorldSnapshot(roster, accurate, 0f, null, 30f), state); // resolved → complete
+            Assert.Contains(state.Log.Recent(20), e => e.Kind == ReportKind.ObjectiveComplete);
+        }
+
+        [Fact]
         public void Tick_excludes_manually_committed_units()
         {
             var state = new CommanderState(SquadCfg(), null, Cfg());

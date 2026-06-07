@@ -88,6 +88,26 @@ namespace Nucleus.Tests
         }
 
         [Fact]
+        public void Reconcile_marks_a_squad_depleted_below_its_strength_threshold()
+        {
+            // review F24: a squad with a TargetComposition is Depleted once Strength < Total * DepletedFraction
+            // (0.5). Pins the strict '<' boundary at Strength == threshold.
+            var sr = new SquadRoster(Cfg());
+            var comp = new Composition();
+            comp.Set(RoleFamily.Armor, 4);
+            sr.Add(new Squad("p1", "Sq", RoleFamily.Armor, SquadOrigin.Player, new[] { "a1", "a2", "a3", "a4" }) { TargetComposition = comp });
+
+            sr.Reconcile(new List<UnitView> { U("a1", Role.Armor, P(0, 0)), U("a2", Role.Armor, P(0, 0)), U("a3", Role.Armor, P(0, 0)), U("a4", Role.Armor, P(0, 0)) });
+            Assert.NotEqual(SquadStatus.Depleted, sr.Squads[0].Status);   // full strength (4)
+
+            sr.Reconcile(new List<UnitView> { U("a1", Role.Armor, P(0, 0)), U("a2", Role.Armor, P(0, 0)) });
+            Assert.NotEqual(SquadStatus.Depleted, sr.Squads[0].Status);   // Strength 2 == 4*0.5 → NOT < threshold
+
+            sr.Reconcile(new List<UnitView> { U("a1", Role.Armor, P(0, 0)) });
+            Assert.Equal(SquadStatus.Depleted, sr.Squads[0].Status);      // Strength 1 < 2 → Depleted
+        }
+
+        [Fact]
         public void Reconcile_keeps_empty_player_squads_as_reserve()
         {
             var sr = new SquadRoster(Cfg());
