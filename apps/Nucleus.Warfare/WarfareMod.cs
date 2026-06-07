@@ -6,14 +6,9 @@ using Nucleus.Ui;
 
 namespace Nucleus.Warfare
 {
-    /// <summary>
-    /// Nucleus Dynamic Warfare: a persistent two-faction war where both sides run the autonomous commander.
-    /// Owns the <see cref="WarfareCampaign"/> and its save/resume to disk (resumes any existing save on load).
-    /// The headless substrate — dual-faction stepping + lossless save/resume + continuation determinism — is
-    /// proven in Nucleus.Sim.Tests; this mod drives it in-game. The per-faction battlefield views come from the
-    /// "Nucleus Dynamic Warfare" mission (which grants both sides' rosters); until that mission runs, the WAR
-    /// button reports campaign status and the campaign persists across sessions.
-    /// </summary>
+    /// <summary>Nucleus Dynamic Warfare: a persistent two-faction war where both sides run the autonomous
+    /// commander. Owns the <see cref="WarfareCampaign"/> and its save/resume. Per-faction battlefield views come
+    /// from the "Nucleus Dynamic Warfare" mission, which grants both sides' rosters.</summary>
     public sealed class WarfareMod : IMod
     {
         private readonly string _savePath;
@@ -53,8 +48,6 @@ namespace Nucleus.Warfare
                 Label = "WAR",
                 BuildContent = parent =>
                 {
-                    // Campaign view: operations + battle feed of the shared commander. Save/resume of the
-                    // two-faction war is automatic (resume on load, persist on shutdown).
                     _panel = new CommanderPanel(parent, ctx.Ui.Theme,
                         onToggleOpManual: id => ctx.Campaign?.ToggleOperationManual(id),
                         sections: CommanderPanel.PanelSections.Scoreboard | CommanderPanel.PanelSections.Operations
@@ -81,10 +74,9 @@ namespace Nucleus.Warfare
         private bool _setupApplied;
         private string _lastMission;
 
-        // Apply the pre-mission setup choices once the player has started: per-side commander kinds on the war
-        // scoreboard, and the local side's two command toggles. Runs only after the war sides are name-bound
-        // (FeedAttrition), and latches ONLY when a side actually matched — otherwise it retries next tick, so a
-        // transient empty/single census on the START tick can't silently drop the config.
+        // Apply pre-mission setup (per-side commander kinds + the local toggles) once sides are name-bound.
+        // Latches only when a side actually matched, else retries next tick — a transient START-tick census
+        // can't silently drop the config.
         private void ApplySetup()
         {
             if (_setupApplied || !Nucleus.Core.War.WarSetup.Configured || _campaign == null) return;
@@ -119,10 +111,8 @@ namespace Nucleus.Warfare
 
         private float _enemyClock;
 
-        // Drive the ENEMY (non-local) faction with our AI brain — the north-star "either side human or AI". We
-        // are the offline host, so we can read that faction's own roster + fog-of-war intel and task its units.
-        // The local faction is driven by the Commander mod; this handles the other side. Throttled (the brain
-        // doesn't need frame rate, and it reads ~400 units).
+        // Drive the ENEMY (non-local) faction with our brain, reading its own roster + fog-of-war intel and
+        // tasking its units. The local faction is driven by the Commander mod; this handles the other side.
         private void DriveEnemyAi()
         {
             if (_ctx?.Game == null || _campaign == null || _bluforFaction == null) return;
@@ -140,9 +130,8 @@ namespace Nucleus.Warfare
 
             var state = enemy == _bluforFaction ? _campaign.Blufor : _campaign.Opfor;
 
-            // Give the enemy commander a deterministic PERSONALITY (archetype + genome) so it plays like a
-            // character — aggressive armor-rusher vs patient turtle — derived from its faction name (reproducible
-            // across runs + save/resume; only drives the persisted RiskTolerance/ForceRatio, so resume stays identical).
+            // Deterministic personality from the faction name (only drives persisted RiskTolerance/ForceRatio,
+            // so resume stays identical).
             if (!_enemyGenomeApplied)
             {
                 _enemyGenomeApplied = true;
@@ -154,8 +143,7 @@ namespace Nucleus.Warfare
 
             var roster = _ctx.Game.RosterFor(enemy);
             var intel = _ctx.Game.KnownEnemiesFor(enemy, new Nucleus.Core.Model.Vec3(0, 0, 0), 5_000_000f);
-            // Give the enemy brain a home base (roster centroid) so it can mount a DefendArea when threatened —
-            // without this its HomeBase stays at the origin and home defense never triggers for the AI side.
+            // Home base = roster centroid, else HomeBase stays at origin and the AI's home defence never triggers.
             state.HomeBase = Nucleus.Core.Model.RosterGeometry.Centroid(roster);
             var snapshot = new Nucleus.Core.Command.WorldSnapshot(roster, intel, 0f, null, 0f);
             var tasks = Nucleus.Core.Command.CommanderBrain.Tick(snapshot, state);
@@ -177,24 +165,20 @@ namespace Nucleus.Warfare
             _enemyClock += t.UnscaledDeltaTime;
             if (_enemyClock >= 1.5f) { _enemyClock = 0f; DriveEnemyAi(); }
 
-            // Throttle the panel render to ~7Hz like CommanderRuntime — rebuilding the whole HQ snapshot
-            // (LINQ over all ops/squads + per-squad composition strings) EVERY frame over hundreds of units was
-            // the in-mission lag the commander runtime already fixed; the WAR panel must not reintroduce it.
+            // Throttle the panel render to ~7Hz like CommanderRuntime — rebuilding the HQ snapshot every frame
+            // over hundreds of units was the in-mission lag.
             _renderClock += t.UnscaledDeltaTime;
             if (_renderClock < RenderInterval) return;
             _renderClock = 0f;
             var c = _ctx?.Campaign;
             if (_panel != null && c != null) _panel.RenderHq(c.Hq(), c.Catalog(), c.Funds());
-            // The attrition board reads from the Warfare campaign (both factions' score/funds/losses + win state).
             if (_panel != null && _campaign != null) _panel.RenderScoreboard(_campaign.SnapshotBoard());
         }
         private float _renderClock;
         private const float RenderInterval = 0.14f;
 
         // Diff the live per-faction census against last tick; feed unit/base drops into the attrition score.
-        // The two MAJOR combatants (by force, so neutral/tiny factions are excluded) bind to the Blufor/Opfor
-        // war sides on first sight, name-sorted for a stable mapping across sessions. Exception-safe — a missing
-        // census just doesn't advance the score.
+        // The two biggest combatants bind to Blufor/Opfor on first sight, name-sorted for stability.
         private void FeedAttrition()
         {
             if (_ctx?.Game == null || _campaign == null) return;
@@ -214,9 +198,8 @@ namespace Nucleus.Warfare
             }
             if (_bluforFaction == null) return; // not yet bound (only one faction present so far)
 
-            // Diff each bound faction. A faction that has been WIPED drops out of the census entirely, so we
-            // can't just iterate it — we iterate the bound names and treat a missing faction as zero forces,
-            // which feeds the decisive final losses (down to 0) instead of silently dropping them.
+            // Iterate the bound names (a WIPED faction leaves the census), treating a missing faction as zero
+            // forces, so the decisive final losses still feed instead of being dropped.
             FeedSide(census, _bluforFaction, blufor: true);
             FeedSide(census, _opforFaction, blufor: false);
         }

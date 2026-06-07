@@ -4,10 +4,8 @@ using Nucleus.Core.Model;
 
 namespace Nucleus.Game
 {
-    /// <summary>
-    /// Orchestrates the commander: gathers the roster + fog-of-war threat, runs the pure planner/manager,
-    /// and executes the resulting per-unit commands. This is the seam between Core logic and the game.
-    /// </summary>
+    /// <summary>The seam between Core logic and the game: gathers the roster + fog-of-war threat, runs the pure
+    /// brain, and executes the resulting per-unit commands.</summary>
     public sealed class CommanderService : Nucleus.Core.Command.ICampaign
     {
         private readonly CommanderConfig _cfg;
@@ -30,8 +28,7 @@ namespace Nucleus.Game
         /// <summary>Roster from the last Place/Tick (refreshed on the throttled management loop).</summary>
         public IReadOnlyList<UnitView> LastRoster { get; private set; } = new List<UnitView>();
 
-        // Unit-id -> Role map, rebuilt only when LastRoster changes (the throttled 3s tick) rather than on every
-        // render (~7Hz commander, ~2Hz HUD, and the WAR panel) — AutoHq reuses it for squad composition labels.
+        // Unit-id -> Role map, rebuilt only when LastRoster changes (not per render); AutoHq reuses it for labels.
         private readonly Dictionary<string, Role> _roleMap = new Dictionary<string, Role>();
 
         private void SetRoster(IReadOnlyList<UnitView> roster)
@@ -41,21 +38,16 @@ namespace Nucleus.Game
             foreach (var u in roster) _roleMap[u.Id] = u.Role;
         }
 
-        // Committed-units snapshot, refreshed on Place/Tick and reused by the per-frame hover preview so we
-        // don't rebuild it every frame (review S1).
         /// <summary>Management tick (throttled by the runtime): refresh the roster + buy menu, then run the brain.</summary>
         public void Tick()
         {
             var roster = _roster.BuildRoster();
             SetRoster(roster);
-            _catalog = _prodService.Catalog(); // refresh the buy menu once per (throttled) tick, not per frame
+            _catalog = _prodService.Catalog();
 
-            // The commander is ALWAYS on — without it, units idle (the game gives no objectives in this mode).
-            // The brain forms squads, advances operations, and tasks them; the two toggles inside it gate
-            // objective generation (AiCreatesObjectives) and squad assignment/recruit (AiAutoFill).
-            var known = _intel.KnownEnemiesNear(new Vec3(0f, 0f, 0f), float.MaxValue); // all tracked enemies
+            // The commander is ALWAYS on — without it units idle (the game gives no objectives in this mode).
+            var known = _intel.KnownEnemiesNear(new Vec3(0f, 0f, 0f), float.MaxValue);
             _auto.HomeBase = RosterGeometry.Centroid(roster);
-            // No manual orders in this mode, so nothing is externally committed — the brain owns all tasking.
             var snapshot = new WorldSnapshot(roster, known, 0f, null, UnityEngine.Time.unscaledTime);
             foreach (var t in CommanderBrain.Tick(snapshot, _auto)) _cmds.Execute(t);
 
@@ -74,8 +66,7 @@ namespace Nucleus.Game
                 }
             }
 
-            // Drain the production queue every tick (manual buys go through even when the commander is OFF).
-            // Announce a dispatched convoy on the feed so the player sees their purchase take effect.
+            // Drain the queue every tick (manual buys go through even when the commander is OFF).
             var dispatched = _prodService.Drain(_prodQueue);
             if (dispatched != null)
                 _auto.Log.Append(new Core.Command.ReportEvent(0f, Core.Command.ReportKind.ProductionArrived,
@@ -86,9 +77,8 @@ namespace Nucleus.Game
             _debug.Tick();   // S0 instrumentation (no-op unless CommanderDebug)
         }
 
-        // Publish aircraft ingress zones (consumed by the NoTarget patch) from the autonomous operations whose
-        // combined-arms phase engages aircraft (recon/air-superiority/SEAD/strike), so jets join the auto war
-        // while ground holds back for the assault phase.
+        // Publish aircraft ingress zones (consumed by the NoTarget patch) for operations whose phase engages
+        // aircraft, so jets join the auto war while ground holds back for the assault phase.
         private void RefreshAirIntent()
         {
             var zones = new List<Vec3>();
@@ -101,8 +91,7 @@ namespace Nucleus.Game
             AircraftIntent.SetZones(zones);
         }
 
-        /// <summary>Render-ready snapshot of the autonomous commander (ops/squads/production/feed) for the HQ UI.
-        /// Passes a unit-id→role map (from the live roster) so squad rows can show composition ("2× MBT, 1× IFV").</summary>
+        /// <summary>Render-ready HQ snapshot, with a unit-id→role map so squad rows can show composition.</summary>
         public Core.Command.HqSnapshot AutoHq()
         {
             return Core.Command.HqView.Build(_auto, _auto.Log, _prodQueue, 10, _roleMap);
@@ -127,8 +116,8 @@ namespace Nucleus.Game
             return id;
         }
 
-        // Edit/Move mutate the Objective IN PLACE — the live operation shares the reference, so its tasking,
-        // completion and phase logic follow the change (no stale-position desync).
+        // Edit/Move mutate the Objective IN PLACE — the live operation shares the reference, so its tasking
+        // follows the change (no stale-position desync).
         public void EditObjective(string id, ObjectiveKind? kind = null, float? priority = null)
         {
             var o = _auto.Objectives.Find(x => x.Id == id);
@@ -168,13 +157,11 @@ namespace Nucleus.Game
         }
 
         // ---- Manual production (buy troops) ----
-        /// <summary>The buyable convoy menu (name + cost + real contents) for the build UI. Cached: refreshed
-        /// on the throttled Tick, NOT rebuilt every frame.</summary>
+        /// <summary>The cached buyable convoy menu for the build UI (refreshed on the throttled Tick).</summary>
         public Core.Command.ConvoyCatalog BuildCatalog() => _catalog;
-        /// <summary>Current faction funds (0 if no HQ) so the build UI can grey out unaffordable buys.</summary>
+        /// <summary>Current faction funds (0 if no HQ).</summary>
         public float Funds() => GameManager.GetLocalHQ(out var hq) && hq != null ? hq.factionFunds : 0f;
-        /// <summary>Player queues a convoy buy by name; it drains (when affordable) like an AI buy but is
-        /// tagged as yours. Works in any mode.</summary>
+        /// <summary>Player queues a convoy buy by name; drains like an AI buy but tagged as yours.</summary>
         public void BuyConvoy(string name)
         {
             foreach (var o in _prodService.Catalog().Options)
@@ -187,16 +174,14 @@ namespace Nucleus.Game
         }
 
         // ---- Squad management ----
-        /// <summary>Take a single squad off the AI (Manual) or hand it back (Auto) — the player owns those
-        /// units while Manual (brain never tasks or re-assigns them).</summary>
+        /// <summary>Take a squad off the AI (Manual) or hand it back (Auto). Manual squads are never tasked by the brain.</summary>
         public void ToggleSquadManual(string squadId)
         {
             var s = _auto.Squads.ById(squadId);
             if (s != null) s.Autonomy = s.Autonomy == AutonomyLevel.Manual ? AutonomyLevel.Auto : AutonomyLevel.Manual;
         }
 
-        /// <summary>Take a single operation Manual (AI yields that slice) or hand it back to Auto — the per-op
-        /// autonomy control. Other operations keep running on their own.</summary>
+        /// <summary>Take one operation Manual (AI yields it) or hand it back to Auto; others keep running.</summary>
         public void ToggleOperationManual(string operationId)
         {
             foreach (var op in _auto.Operations)
@@ -208,13 +193,10 @@ namespace Nucleus.Game
         }
 
         // ---- Campaign persistence (save / resume) ----
-        /// <summary>Save the autonomous campaign — objectives, operations, squads, doctrine, autonomy and the
-        /// id counters — to disk so a multi-hour war can be resumed exactly. Transient per-tick intel is not
-        /// saved (it is re-derived from the live game next tick). See <see cref="Core.Persistence.CampaignStore"/>.</summary>
+        /// <summary>Save the campaign so a multi-hour war resumes exactly. Transient intel is re-derived, not saved.</summary>
         public void SaveCampaign(string path) => Core.Persistence.CampaignStore.Save(path, _auto);
 
-        /// <summary>Resume a saved campaign from disk, replacing the live autonomous state. Returns false (and
-        /// changes nothing) if no save exists at <paramref name="path"/>.</summary>
+        /// <summary>Resume a saved campaign, replacing live state. False (no change) if no save exists.</summary>
         public bool LoadCampaign(string path)
         {
             if (!Core.Persistence.CampaignStore.TryLoad(path, out var restored)) return false;

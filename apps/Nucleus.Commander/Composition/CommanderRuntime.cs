@@ -10,12 +10,9 @@ using UnityEngine.UI;
 
 namespace Nucleus.Composition
 {
-    /// <summary>
-    /// Composition root: builds the commander service, renders the Commander panel INTO a native MFD screen
-    /// the host provides (so the game owns the window's placement, green highlight, and close-on-map-minimize),
-    /// draws the order overlay + live placement ring on the map's icon layer, routes clicks to order placement,
-    /// runs the throttled management loop. Driven by the DynamicMap.Update Harmony postfix.
-    /// </summary>
+    /// <summary>Composition root: builds the commander service, renders the panel into the host's native MFD
+    /// screen, draws the map overlay, routes map clicks to objective CRUD, and runs the throttled management
+    /// loop. Driven by the DynamicMap.Update Harmony postfix.</summary>
     public sealed class CommanderRuntime
     {
         private readonly IPlayerContext _player;
@@ -36,9 +33,8 @@ namespace Nucleus.Composition
         private bool _loggedPanel;
         private float _nextManage;
         private float _nextRender;
-        // The heavy projection (AutoHq) + overlay/panel render run at this rate, not every frame — clicks/drag
-        // stay per-frame for responsiveness, but re-rendering the whole map+panel each frame over hundreds of
-        // units was the in-mission lag. ~7 Hz is smooth enough for strategic markers.
+        // Heavy projection + render run at ~7 Hz, not per-frame (re-rendering map+panel over hundreds of units
+        // each frame was the in-mission lag); clicks/drag stay per-frame for responsiveness.
         private const float RenderIntervalSeconds = 0.14f;
 
         public CommanderRuntime()
@@ -53,11 +49,8 @@ namespace Nucleus.Composition
         /// Warfare render their slices of the same state.</summary>
         public Nucleus.Core.Command.ICampaign Campaign => _service;
 
-        /// <summary>
-        /// Build the Commander panel into the host-provided native MFD-screen content RectTransform. Called
-        /// once by the host when the map's bezel screens are created. The native MFDScreen shows/hides this;
-        /// our content stays active inside it.
-        /// </summary>
+        /// <summary>Build the Commander panel into the host-provided native MFD-screen content. Called once when
+        /// the map's bezel screens are created; the native MFDScreen shows/hides it.</summary>
         public void BuildPanel(RectTransform parent)
         {
             if (_panel != null || parent == null) return;
@@ -65,9 +58,6 @@ namespace Nucleus.Composition
             CaptureNativeAssets();
             _player.TryGetLocalFaction(out var faction);
             _theme = Theme.FromFaction(faction);
-            // CMD screen = objective management + the two command toggles — built the SAME way as every other
-            // mod (a CommanderPanel filling the host's standard ModPanel chrome). Build/Squad/Warfare own the
-            // rest. Everything is objectives now: pick a kind, click the map to drop, select a marker to edit.
             _panel = new CommanderPanel(parent, _theme,
                 onSetAiCommander: on => _service.SetAiCreatesObjectives(on),
                 onSetAutoFill: on => _service.SetAiAutoFill(on),
@@ -131,12 +121,9 @@ namespace Nucleus.Composition
 
         private float _nextHud;
 
-        /// <summary>
-        /// Render the in-flight objective HUD. Driven by a MissionManager.Update patch (NOT the DynamicMap.Update
-        /// tick that drives the rest of this runtime) because that one stops firing while the map is closed —
-        /// exactly when the flight HUD must be visible. Self-contained: lazy-builds the widget on a screen-space
-        /// canvas, refreshes the Hq snapshot on its own throttle, shows while flying, hides while the map is open.
-        /// </summary>
+        /// <summary>Render the in-flight objective HUD. Driven by a MissionManager.Update patch — NOT the
+        /// DynamicMap.Update tick, which stops firing while the map is closed, exactly when the HUD must show.
+        /// Lazy-builds on a screen-space canvas, hides while the map is open.</summary>
         public void TickHud()
         {
             if (!CommanderPlugin.ShowFlightHud) { _hud?.SetVisible(false); return; }
@@ -279,10 +266,8 @@ namespace Nucleus.Composition
         private static bool IsPointerOverUi()
             => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
-        // Capture the game's own visual resources (font, HUD colors, map/threat icons) from the single
-        // codegen'd source of truth — NativeAssets, a typed snapshot of GameAssets — and mirror them into
-        // the Ui-layer caches so our labels/cues/icons read as native. One read point; no scattered
-        // GameAssets reads, no hardcoded/duplicated values. Drift in any asset fails the contract test.
+        // Mirror the game's font/HUD-colors/icons from the codegen'd NativeAssets snapshot into the Ui-layer
+        // caches, so our labels/cues read as native. One read point; asset drift fails the contract test.
         private static void CaptureNativeAssets()
         {
             var assets = Nucleus.Game.Generated.NativeAssets.Capture();
