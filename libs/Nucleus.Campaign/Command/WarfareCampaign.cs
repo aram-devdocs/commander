@@ -4,24 +4,16 @@ using Nucleus.Core.War;
 
 namespace Nucleus.Core.Command
 {
-    /// <summary>
-    /// The north-star campaign object: a persistent, two-faction dynamic war where BOTH sides run their own
-    /// <see cref="CommanderBrain"/> over the same battlefield. Pure and engine-free — the caller supplies each
-    /// faction's fog-of-war <see cref="WorldSnapshot"/> (built from the live game, or from the headless sim)
-    /// and applies the returned tasks. This is the reusable substrate the <c>Nucleus.Warfare</c> mod and the
-    /// "Nucleus Dynamic Warfare" mission drive; the dual-faction determinism + save/resume is proven headless.
-    /// </summary>
+    /// <summary>A persistent two-faction dynamic war where both sides run their own <see cref="CommanderBrain"/>
+    /// over the same battlefield. The caller supplies each faction's fog-of-war <see cref="WorldSnapshot"/> (live
+    /// game or headless sim) and applies the returned tasks. Dual-faction determinism + save/resume proven headless.</summary>
     public sealed class WarfareCampaign
     {
-        /// <summary>The two factions' commander states. Each is a full autonomous commander.</summary>
         public CommanderState Blufor { get; }
         public CommanderState Opfor { get; }
-
-        /// <summary>The attrition scoreboard — the win condition. Each side's score, funds, and commander kind.
-        /// Falls as a side loses units/bases and spends on reinforcement; the war ends when one side hits zero.</summary>
+        /// <summary>The attrition scoreboard / win condition. War ends when one side's score hits zero.</summary>
         public WarState War { get; }
-
-        /// <summary>How many <see cref="Step"/>s have run — the campaign clock, persisted across save/resume.</summary>
+        /// <summary>How many <see cref="Step"/>s have run — the campaign clock, persisted.</summary>
         public int Turn { get; set; }
 
         // Last observed roster size per side; a drop between ticks is attrition (units lost). -1 = uninitialized.
@@ -52,11 +44,8 @@ namespace Nucleus.Core.Command
             }
         }
 
-        /// <summary>
-        /// Run one campaign tick: each faction's brain decides over its own view (its roster + the enemies it
-        /// has detected) and returns the per-unit tasks the caller should execute. Deterministic — same states
-        /// + same snapshots ⇒ same tasks. Advances <see cref="Turn"/>.
-        /// </summary>
+        /// <summary>One campaign tick: each faction's brain decides over its own view and returns its tasks.
+        /// Deterministic — same states + snapshots ⇒ same tasks. Advances <see cref="Turn"/>.</summary>
         public StepResult Step(WorldSnapshot bluforView, WorldSnapshot opforView)
         {
             ApplyAttrition(bluforView.Roster.Count, opforView.Roster.Count);
@@ -66,10 +55,8 @@ namespace Nucleus.Core.Command
             return new StepResult(a, b);
         }
 
-        // FALLBACK attrition: infer unit losses from roster shrinkage between ticks. This sees only the NET
-        // change, so if a side both loses units and gains reinforcements the same tick it under-counts. The
-        // live mission driver should instead feed exact kill events via RecordUnitLost (and toggle
-        // UseRosterAttrition off); the heuristic exists for the headless sim, where no reinforcements arrive.
+        // Fallback attrition for the headless sim: infer losses from net roster shrinkage (under-counts if a side
+        // loses and reinforces the same tick). The live driver feeds exact kills via RecordUnitLost instead.
         private void ApplyAttrition(int bluNow, int opNow)
         {
             if (UseRosterAttrition)

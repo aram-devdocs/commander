@@ -7,16 +7,11 @@ using UnityEngine.UI;
 
 namespace Nucleus.Ui.Native
 {
-    /// <summary>
-    /// The codegenned native-UI kit: instead of hand-rolling uGUI, the mod COMPOSES the game's own UI widgets
-    /// so its panels ARE the game's UI (same font/sprites/borders/toggle behaviour). Each factory finds a live
-    /// instance of a native widget (the proven harvest idiom — Resources.FindObjectsOfTypeAll&lt;T&gt; filtered to
-    /// scene-valid), clones it, and rewires its events (dropping the prefab's persistent listeners so the clone
-    /// does ONLY what we ask). The widget TYPES are guarded by the codegen contract manifest
-    /// (NuclearOption.UI.BoxToggle / BetterBorder / BetterToggleGroup / BaseToggle) — a game rename fails the
-    /// contract test, not the panel. Every method degrades gracefully (returns null) when no live template is
-    /// available (e.g. headless), so callers fall back to a built atom.
-    /// </summary>
+    /// <summary>Composes the game's own UI widgets so the mod's panels ARE the game's UI: each factory harvests a
+    /// live native widget (FindObjectsOfTypeAll, scene-valid), clones it, and rewires its events (dropping the
+    /// prefab's persistent listeners). Widget types are guarded by the codegen contract — a game rename fails the
+    /// contract test, not the panel. Returns null when no live template exists (headless), so callers fall back
+    /// to a built atom.</summary>
     public static class NativeUi
     {
         /// <summary>Frame a panel with the game's procedural border (accent edges, transparent fill).</summary>

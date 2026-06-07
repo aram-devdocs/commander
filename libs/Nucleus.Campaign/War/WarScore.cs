@@ -2,13 +2,9 @@ using System;
 
 namespace Nucleus.Core.War
 {
-    /// <summary>
-    /// A faction's attrition score — the win currency of the dynamic war (no scripted objectives). Pure and
-    /// engine-free. It falls when the faction loses units and bases, and ALSO when it spends money on
-    /// reinforcements — and that spend penalty grows EXPONENTIALLY as the faction loses bases. So a side whose
-    /// bases are wiped can still buy off-map carrier groups with cash, but each purchase bleeds its score far
-    /// faster than a side fighting from intact bases. A faction is defeated when its score reaches zero.
-    /// </summary>
+    /// <summary>A faction's attrition score — the dynamic war's win currency. Falls on lost units/bases and on
+    /// reinforcement spend, where the spend penalty grows EXPONENTIALLY per base lost (so a baseless side can
+    /// still buy with cash, but each buy bleeds score far faster). Defeated at zero.</summary>
     public sealed class WarScore
     {
         public float Score { get; private set; }
@@ -24,8 +20,7 @@ namespace Nucleus.Core.War
         public WarScore(float start = 1000f, float unitValue = 8f, float baseValue = 120f,
             float spendPenaltyBase = 0.02f, float falloffPerBaseLost = 0.6f)
         {
-            // Five same-typed float knobs — guard each so a transposed/negative tuning argument fails loudly
-            // (with the offending parameter name) instead of silently producing a broken score curve.
+            // Same-typed float knobs — guard each so a transposed/negative argument fails loudly, not silently.
             if (start < 0f) throw new ArgumentOutOfRangeException(nameof(start));
             if (unitValue < 0f) throw new ArgumentOutOfRangeException(nameof(unitValue));
             if (baseValue < 0f) throw new ArgumentOutOfRangeException(nameof(baseValue));

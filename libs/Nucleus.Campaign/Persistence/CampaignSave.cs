@@ -8,14 +8,9 @@ using Nucleus.Core.Model;
 
 namespace Nucleus.Core.Persistence
 {
-    /// <summary>
-    /// Dependency-free, versioned text (de)serializer for a <see cref="CampaignSnapshot"/>. Uses a simple
-    /// line/record, tab-delimited format — no JSON/NuGet dependency, so it is safe inside the game's
-    /// Mono/BepInEx runtime and keeps the pure Campaign lib leaf-clean. Invariant-culture and round-trippable
-    /// (floats via "R"). Enums are stored by name (tolerant of additions); unknown trailing record types are
-    /// ignored (forward-compat). Strings (squad names, ids) are escaped so tabs/newlines survive, and null is
-    /// distinguished from empty.
-    /// </summary>
+    /// <summary>Dependency-free, versioned, tab-delimited text (de)serializer for a <see cref="CampaignSnapshot"/>
+    /// (no JSON/NuGet, safe in the game's Mono/BepInEx runtime). Invariant-culture, round-trippable (floats "R"),
+    /// enums by name, unknown record types ignored (forward-compat), strings escaped with a null sentinel.</summary>
     public static class CampaignSave
     {
         private const string Header = "NUCLEUS-CAMPAIGN";

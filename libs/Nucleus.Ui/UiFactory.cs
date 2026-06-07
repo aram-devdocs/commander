@@ -16,10 +16,7 @@ namespace Nucleus.Ui
         /// <summary>A native game button sprite (captured at runtime) so our buttons match the game's look.</summary>
         public static Sprite ButtonSprite;
 
-        /// <summary>
-        /// The TMP font used by all labels. Resolved lazily; composition may set it explicitly from a
-        /// cloned in-game label for guaranteed-correct material.
-        /// </summary>
+        /// <summary>The TMP font for all labels. Resolved lazily; composition may set it from a cloned in-game label.</summary>
         public static TMP_FontAsset Font
         {
             get
@@ -101,9 +98,8 @@ namespace Nucleus.Ui
             return btn;
         }
 
-        /// <summary>A button with a PINNED height (UiTokens.ButtonHeight) and optional fixed width, so buttons
-        /// never jitter in size as their text/state changes — the atomic, even button used across the panels.
-        /// Pass width &lt;= 0 to let it flex to the row.</summary>
+        /// <summary>A button with pinned height (UiTokens.ButtonHeight) + optional fixed width, so it never
+        /// jitters as text/state changes. width &lt;= 0 flexes to the row.</summary>
         public static Button ButtonFixed(string name, Transform parent, string text, Theme theme,
             UnityAction onClick, float width = 0f)
         {
@@ -148,8 +144,7 @@ namespace Nucleus.Ui
             return img;
         }
 
-        /// <summary>A functional vertical scrollbar (track + draggable handle) to attach to a ScrollRect — so the
-        /// player can SEE and grab the scroll, not just wheel blindly. Anchored to the parent's right edge.</summary>
+        /// <summary>A vertical scrollbar (track + draggable handle) for a ScrollRect, anchored to the parent's right edge.</summary>
         public static Scrollbar VerticalScrollbar(Transform parent, Theme theme, float width = 10f)
         {
             var go = new GameObject("Scrollbar", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Scrollbar));
@@ -185,8 +180,7 @@ namespace Nucleus.Ui
             return img;
         }
 
-        /// <summary>A section header (accent, slightly larger) preceded by a divider — one consistent way to
-        /// start a panel section so the panel scans top-to-bottom instead of running together.</summary>
+        /// <summary>An accent section header preceded by a divider — the one consistent way to start a panel section.</summary>
         public static TextMeshProUGUI SectionHeader(Transform parent, string text, Theme theme)
         {
             Divider(parent, theme.Muted);
