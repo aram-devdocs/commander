@@ -217,22 +217,6 @@ namespace Nucleus.Composition
             return dict;
         }
 
-        private Dictionary<string, string> NamesById()
-        {
-            var dict = new Dictionary<string, string>();
-            foreach (var u in _service.LastRoster) dict[u.Id] = u.Name;
-            return dict;
-        }
-
-        // Positions of the units a hover preview would assign — drawn as lines so the player sees who responds.
-        private static List<Vec3> PreviewPositions(AssignmentPreview preview)
-        {
-            if (preview == null) return null;
-            var list = new List<Vec3>(preview.Assignable.Count);
-            foreach (var u in preview.Assignable) list.Add(u.Position);
-            return list;
-        }
-
         private static bool IsPointerOverUi()
             => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
