@@ -16,4 +16,11 @@ Legend: [ ] to verify · screenshots are the loop's evidence, your eyes are the 
 - [ ] Provoke a threat near your HQ and confirm the AI spawns a DEFEND objective there.
 - [ ] Confirm capture operations actually progress (air superiority → soften → assault) rather than stalling.
 
+## WS3 — AI narration / barks
+- Evidence: `artifacts/screenshots/ws3-verify/03-cmd-panel.png` — CMD panel now has a FEED listing narrated AI ops.
+- [ ] Open CMD (or WAR) in a live game and confirm the feed reads in plain language: "AI: capture E 12km", "DestroyTarget … moving in", phase reasons like "softening the target — ground holding".
+- [ ] Confirm the feed doesn't spam duplicate lines and updates as the AI makes new decisions.
+- [ ] Confirm phase-reason lines help you understand why ground units hold back during SEAD/Strike.
+
 <!-- The loop appends one block per workstream below as it completes them. -->
+
