@@ -12,6 +12,10 @@ namespace Nucleus.Core.Command
         /// <summary>An enemy cluster already within this distance of an existing objective is not re-targeted.</summary>
         public float CoverageRadius { get; set; } = 4000f;
         public int MaxSquadsPerOperation { get; set; } = 2;
+        /// <summary>The most AUTO objectives the AI keeps active at once — it orchestrates the highest-priority
+        /// targets instead of spamming one per enemy cluster across a huge map (which buried the map in markers
+        /// and spread squads thin). Player-dropped objectives are NOT counted/capped.</summary>
+        public int MaxAutoObjectives { get; set; } = 6;
     }
 
     /// <summary>
@@ -88,10 +92,18 @@ namespace Nucleus.Core.Command
             //    gets a unique MONOTONIC id (GenerateObjectives' tick-local ids would collide across ticks and
             //    corrupt OperationFor / LastObjectiveByUnit / RemoveObjective).
             if (state.AiCreatesObjectives)
-                foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
-                             state.HomeBase, state.Doctrine))
-                    state.Objectives.Add(new Objective(state.NextObjectiveId(), obj.Kind, obj.Position,
-                        obj.Source, obj.TargetId, obj.Priority));
+            {
+                // Cap the AI to the highest-priority targets (GenerateObjectives returns them best-first), so it
+                // orchestrates a focused war plan instead of one objective per cluster. Player objectives are
+                // never counted against the cap.
+                int autoCount = state.Objectives.Count(o => o.Source == ObjectiveSource.Auto);
+                int room = state.BrainConfig.MaxAutoObjectives - autoCount;
+                if (room > 0)
+                    foreach (var obj in GenerateObjectives(snapshot.KnownEnemies, state.Objectives, state.BrainConfig,
+                                 state.HomeBase, state.Doctrine).Take(room))
+                        state.Objectives.Add(new Objective(state.NextObjectiveId(), obj.Kind, obj.Position,
+                            obj.Source, obj.TargetId, obj.Priority));
+            }
 
             // 4. AUTO-FILL: when on, open an operation for each uncovered objective and assign suitable squads —
             //    one per needed family (so each combat phase has its squad), regardless of location (no range).

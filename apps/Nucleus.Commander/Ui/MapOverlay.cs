@@ -15,6 +15,7 @@ namespace Nucleus.Ui
         private readonly Transform _layer;
         private readonly IMapProjection _projection;
         private readonly List<Image> _markers = new List<Image>();
+        private readonly List<TMPro.TextMeshProUGUI> _objLabels = new List<TMPro.TextMeshProUGUI>();
         private readonly List<Image> _lines = new List<Image>();
         private readonly List<Image> _hoverLines = new List<Image>();
         private readonly List<Image> _hoverMarks = new List<Image>(); // highlight ring on each selected unit
@@ -58,13 +59,22 @@ namespace Nucleus.Ui
                     if (op.Status == Nucleus.Core.Command.OperationStatus.Complete
                         || op.Status == Nucleus.Core.Command.OperationStatus.Failed) continue;
                     var local = _projection.WorldToMapLocal(op.Position);
-                    var marker = Marker(mi++);
+                    var marker = Marker(mi);
+                    bool sel = op.ObjectiveId == selectedId;
                     ((RectTransform)marker.transform).localPosition = new Vector3(local.X, local.Y, 0f);
                     marker.color = ObjectiveColor(op.Kind);
-                    if (op.ObjectiveId == selectedId) { selLocal = local; haveSel = true; }
+                    // A compact label so the player can read what each marker is without selecting it.
+                    var lbl = Label(mi);
+                    ((RectTransform)lbl.transform).localPosition = new Vector3(local.X + 10f, local.Y, 0f);
+                    lbl.text = $"{KindTag(op.Kind)} P{op.Priority:0.#}";
+                    lbl.color = sel ? NativeColors.Friendly : ObjectiveColor(op.Kind);
+                    lbl.fontSize = sel ? 12f : 10f;
+                    mi++;
+                    if (sel) { selLocal = local; haveSel = true; }
                 }
             }
             for (int i = mi; i < _markers.Count; i++) _markers[i].gameObject.SetActive(false);
+            for (int i = mi; i < _objLabels.Count; i++) _objLabels[i].gameObject.SetActive(false);
             for (int i = 0; i < _lines.Count; i++) _lines[i].gameObject.SetActive(false);
 
             EnsureSelRing();
@@ -76,6 +86,36 @@ namespace Nucleus.Ui
                 _selRing.gameObject.SetActive(true);
             }
             else _selRing.gameObject.SetActive(false);
+        }
+
+        // A short tag per objective kind for the map label.
+        private static string KindTag(Nucleus.Core.Command.ObjectiveKind kind)
+        {
+            switch (kind)
+            {
+                case Nucleus.Core.Command.ObjectiveKind.CapturePoint: return "CAP";
+                case Nucleus.Core.Command.ObjectiveKind.DestroyTarget: return "DESTROY";
+                case Nucleus.Core.Command.ObjectiveKind.DefendArea: return "DEFEND";
+                case Nucleus.Core.Command.ObjectiveKind.ControlAirspace: return "AIR";
+                case Nucleus.Core.Command.ObjectiveKind.Resupply: return "SUPPLY";
+                default: return "RECON";
+            }
+        }
+
+        // Pooled map label (objective tag + priority), drawn next to its marker.
+        private TMPro.TextMeshProUGUI Label(int i)
+        {
+            while (_objLabels.Count <= i)
+            {
+                var t = UiFactory.Label("ObjLabel" + _objLabels.Count, _layer, "", 10f, Color.white);
+                var rt = t.rectTransform;
+                rt.pivot = new Vector2(0f, 0.5f);
+                rt.sizeDelta = new Vector2(120f, 16f);
+                t.alignment = TMPro.TextAlignmentOptions.Left;
+                _objLabels.Add(t);
+            }
+            _objLabels[i].gameObject.SetActive(true);
+            return _objLabels[i];
         }
 
         // A distinct color per objective kind so the map reads at a glance.
@@ -202,7 +242,9 @@ namespace Nucleus.Ui
         public void Clear()
         {
             foreach (var m in _markers) m.gameObject.SetActive(false);
+            foreach (var l in _objLabels) l.gameObject.SetActive(false);
             foreach (var l in _lines) l.gameObject.SetActive(false);
+            if (_selRing != null) _selRing.gameObject.SetActive(false);
             ClearHover();
         }
 
@@ -234,14 +276,14 @@ namespace Nucleus.Ui
                 var rt = (RectTransform)img.transform;
                 rt.pivot = new Vector2(0.5f, 0.5f);
                 // Use the game's own target sprite so the marker reads as native iconography (tinted by the
-                // order color). Falls back to a plain square only if assets aren't captured (headless / early).
+                // order color). Kept small so a cluster of objectives doesn't bury the map (was 20px).
                 if (NativeIcons.Warhead != null)
                 {
                     img.sprite = NativeIcons.Warhead;
                     img.preserveAspect = true;
-                    rt.sizeDelta = new Vector2(20f, 20f);
+                    rt.sizeDelta = new Vector2(12f, 12f);
                 }
-                else rt.sizeDelta = new Vector2(14f, 14f);
+                else rt.sizeDelta = new Vector2(9f, 9f);
                 _markers.Add(img);
             }
             _markers[i].gameObject.SetActive(true);

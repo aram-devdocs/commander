@@ -31,6 +31,24 @@ namespace Nucleus.Tests
                 new UnitCapability(role, true, false, false, false, false), 1f, 0f, 1);
 
         [Fact]
+        public void Auto_objectives_are_capped_to_the_highest_priority_targets()
+        {
+            // A huge spread-out front: 20 well-separated enemy clusters (each its own pocket). The AI must NOT
+            // open an objective on every one — it caps to the top MaxAutoObjectives by priority.
+            var cfg = new BrainConfig { ClusterRadius = 3000f, CoverageRadius = 4000f, MaxAutoObjectives = 6 };
+            var state = new CommanderState(SquadCfg(), null, cfg);
+            var known = new List<EnemyView>();
+            for (int i = 0; i < 20; i++) known.Add(E("e" + i, P(20000 + i * 12000, 0), priority: i)); // far apart, varied priority
+
+            // Run several ticks (objectives could otherwise accrue across ticks).
+            for (int t = 0; t < 5; t++) CommanderBrain.Tick(new WorldSnapshot(new List<UnitView>(), known, 0f, null, t), state);
+
+            int auto = state.Objectives.Count(o => o.Source == ObjectiveSource.Auto);
+            Assert.True(auto <= 6, $"auto objectives {auto} should be capped at 6");
+            Assert.True(auto > 0, "should still create the top targets");
+        }
+
+        [Fact]
         public void Tick_generates_operation_and_tasks_from_threat()
         {
             var state = new CommanderState(SquadCfg(), null, Cfg());
