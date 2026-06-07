@@ -228,15 +228,18 @@ namespace Nucleus.Core.Command
         }
 
         /// <summary>If known enemies are pressing the home base (within <see cref="BrainConfig.DefendRadius"/>) and
-        /// no DefendArea already covers it, emit ONE high-priority DefendArea at home so the AI mounts a defence
-        /// instead of only ever attacking. Returns null when home is unknown, unthreatened, or already covered.</summary>
+        /// no DefendArea already covers it, emit ONE high-priority DefendArea at home so the AI mounts a defence.
+        /// The "covered" radius is DefendRadius (the band the defence is raised + pruned over), NOT CoverageRadius:
+        /// home is a MOVING centroid, so checking the tighter 4000m would spawn a fresh chase DefendArea every time
+        /// home drifts past it while the previous one (still threatened within 8000m) lingers — proliferation that
+        /// starved the offence. Aligning covered-check with the prune radius keeps it to a single, stable defence.</summary>
         private static Objective GenerateDefense(WorldSnapshot snapshot, CommanderState state)
         {
             var home = state.HomeBase;
             if (home.X == 0f && home.Y == 0f && home.Z == 0f) return null;   // home unknown / unset
             if (!AnyThreatNear(snapshot, home, state.BrainConfig.DefendRadius)) return null;
             bool covered = state.Objectives.Any(o => o.Kind == ObjectiveKind.DefendArea
-                && o.Position.HorizontalDistanceTo(home) <= state.BrainConfig.CoverageRadius);
+                && o.Position.HorizontalDistanceTo(home) <= state.BrainConfig.DefendRadius);
             if (covered) return null;
             return new Objective("auto-def", ObjectiveKind.DefendArea, home, ObjectiveSource.Auto, priority: DefendPriority);
         }

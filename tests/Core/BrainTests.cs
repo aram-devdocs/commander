@@ -183,6 +183,25 @@ namespace Nucleus.Tests
         }
 
         [Fact]
+        public void Home_defense_does_not_proliferate_as_home_drifts()
+        {
+            // review A4: home is a MOVING centroid. A defence must NOT spawn a fresh DefendArea every time home
+            // drifts past CoverageRadius while the previous one still lingers (the proliferation that starved the
+            // offence). The covered-check spans DefendRadius, so a home drifting within that band stays covered.
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { HomeBase = P(1000, 1000) };
+            var roster = new List<UnitView> { U("d0", Role.Armor, P(1000, 1000)) };   // forms a defensive squad
+            var enemy = new List<EnemyView> { E("e1", P(3500, 1000)) };               // within DefendRadius of both homes
+
+            CommanderBrain.Tick(new WorldSnapshot(roster, enemy, 0f, null, 0f), state);
+            Assert.Single(state.Objectives, o => o.Kind == ObjectiveKind.DefendArea);
+
+            state.HomeBase = P(6000, 1000);   // drifts 5000m: past CoverageRadius (4000) but within DefendRadius (8000)
+            CommanderBrain.Tick(new WorldSnapshot(roster, enemy, 0f, null, 1f), state);
+
+            Assert.Single(state.Objectives, o => o.Kind == ObjectiveKind.DefendArea);  // still covered → no 2nd chase objective
+        }
+
+        [Fact]
         public void AutoFill_gives_a_contested_squad_to_the_higher_priority_objective()
         {
             // review P2-#4: with one Armor squad and both an older low-priority DestroyTarget (5) and a newer
