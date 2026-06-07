@@ -120,7 +120,10 @@ namespace Nucleus.Core.Command
             var fieldable = new HashSet<string>();
             if (state.AiAutoFill)
             {
-                foreach (var obj in state.Objectives)
+                // Allocate scarce squads in PRIORITY order (a freshly-raised home defence outranks an older
+                // low-priority offensive), not raw creation order — a squad picked for an earlier objective is
+                // marked AssignedOperationId so it can't be reused this tick. Deterministic (Id tie-break).
+                foreach (var obj in state.Objectives.OrderByDescending(o => o.Priority).ThenBy(o => o.Id))
                 {
                     if (state.OperationFor(obj.Id) != null) continue;
                     var squadIds = MatchSquads(obj, state.Squads.Squads, state.BrainConfig);

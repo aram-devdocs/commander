@@ -183,6 +183,24 @@ namespace Nucleus.Tests
         }
 
         [Fact]
+        public void AutoFill_gives_a_contested_squad_to_the_higher_priority_objective()
+        {
+            // review P2-#4: with one Armor squad and both an older low-priority DestroyTarget (5) and a newer
+            // high-priority DefendArea (50) lacking ops, auto-fill must hand the squad to the DefendArea
+            // (priority order), not to whichever objective was created first.
+            var state = new CommanderState(SquadCfg(), null, Cfg()) { AiCreatesObjectives = false };
+            var roster = new List<UnitView> { U("au0", Role.Armor, P(0, 0)) };
+            state.Squads.Add(Sq("a", RoleFamily.Armor, 1));   // member au0
+            state.Objectives.Add(new Objective("off-1", ObjectiveKind.DestroyTarget, P(5000, 0), ObjectiveSource.Player, priority: 5f));  // older, lower
+            state.Objectives.Add(new Objective("def-1", ObjectiveKind.DefendArea, P(0, 0), ObjectiveSource.Player, priority: 50f));        // newer, higher
+
+            CommanderBrain.Tick(new WorldSnapshot(roster, new List<EnemyView>(), 0f, null, 0f), state);
+
+            Assert.Single(state.Operations);
+            Assert.Equal(ObjectiveKind.DefendArea, state.Operations[0].Objective.Kind);
+        }
+
+        [Fact]
         public void DefendArea_op_is_stable_against_a_mid_range_threat()
         {
             // review P2-#2: a DefendArea is raised at DefendRadius (8000m) but was advanced/pruned at the tighter
