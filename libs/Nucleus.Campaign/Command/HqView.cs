@@ -62,7 +62,7 @@ namespace Nucleus.Core.Command
         public bool Depleted => Status == SquadStatus.Depleted;
         public string AssignedOperationId { get; }
         public AutonomyLevel Autonomy { get; }
-        /// <summary>What the squad is doing right now, e.g. "DestroyTarget — Strike" or "Reserve". For the UI.</summary>
+        /// <summary>What the squad is doing right now, e.g. "Destroy target — Strike" or "Reserve". For the UI.</summary>
         public string Activity { get; }
         /// <summary>The squad's member unit ids — so the map can track its units + draw lines to its objective.</summary>
         public IReadOnlyList<string> MemberUnitIds { get; }
@@ -206,7 +206,7 @@ namespace Nucleus.Core.Command
             if (!string.IsNullOrEmpty(s.AssignedOperationId))
             {
                 var op = state.Operations.Find(o => o.Id == s.AssignedOperationId);
-                if (op != null) return $"{op.Objective.Kind} — {op.CombatPhase}";
+                if (op != null) return $"{ObjectiveText.Name(op.Objective.Kind)} — {ObjectiveText.PhaseLabel(op.CombatPhase)}";
             }
             return s.Status.ToString();
         }

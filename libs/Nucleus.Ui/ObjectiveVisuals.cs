@@ -28,50 +28,15 @@ namespace Nucleus.Ui
         /// <summary>Hex (RRGGBB) derived from <see cref="Color"/> — for TMP rich-text bullets. Never hand-typed.</summary>
         public static string Hex(Cmd.ObjectiveKind kind) => ColorUtility.ToHtmlStringRGB(Color(kind));
 
+        // Wording is the pure-Domain SSOT (Cmd.ObjectiveText) so the brain's feed and the UI read identically;
+        // this Ui type owns only the colors.
         /// <summary>Terse tag for tight contexts (map marker label / HUD row): CAP / DESTROY / DEFEND / AIR / SUPPLY / RECON.</summary>
-        public static string Tag(Cmd.ObjectiveKind kind)
-        {
-            switch (kind)
-            {
-                case Cmd.ObjectiveKind.CapturePoint:    return "CAP";
-                case Cmd.ObjectiveKind.DestroyTarget:   return "DESTROY";
-                case Cmd.ObjectiveKind.DefendArea:      return "DEFEND";
-                case Cmd.ObjectiveKind.ControlAirspace: return "AIR";
-                case Cmd.ObjectiveKind.Resupply:        return "SUPPLY";
-                default:                                return "RECON";
-            }
-        }
+        public static string Tag(Cmd.ObjectiveKind kind) => Cmd.ObjectiveText.Tag(kind);
 
-        /// <summary>Readable label for a combat phase — so every surface (HUD/map/panel) says "SEAD" /
-        /// "Air superiority" / "Scouting" instead of the raw PascalCase enum ("Sead", "AirSuperiority").
-        /// SSOT for phase wording, mirroring how the brain narrates phases in the feed.</summary>
-        public static string PhaseLabel(Cmd.CombatPhase phase)
-        {
-            switch (phase)
-            {
-                case Cmd.CombatPhase.Recon:          return "Scouting";
-                case Cmd.CombatPhase.AirSuperiority: return "Air superiority";
-                case Cmd.CombatPhase.Sead:           return "SEAD";
-                case Cmd.CombatPhase.Strike:         return "Strike";
-                case Cmd.CombatPhase.Assault:        return "Assault";
-                case Cmd.CombatPhase.Capture:        return "Capturing";
-                case Cmd.CombatPhase.Hold:           return "Holding";
-                default:                             return phase.ToString();
-            }
-        }
+        /// <summary>Readable label for a combat phase — "SEAD" / "Air superiority" / "Scouting".</summary>
+        public static string PhaseLabel(Cmd.CombatPhase phase) => Cmd.ObjectiveText.PhaseLabel(phase);
 
         /// <summary>Full readable name for headers/labels: "Capture point", "Destroy target", …</summary>
-        public static string Name(Cmd.ObjectiveKind kind)
-        {
-            switch (kind)
-            {
-                case Cmd.ObjectiveKind.CapturePoint:    return "Capture point";
-                case Cmd.ObjectiveKind.DestroyTarget:   return "Destroy target";
-                case Cmd.ObjectiveKind.DefendArea:      return "Defend area";
-                case Cmd.ObjectiveKind.ControlAirspace: return "Control airspace";
-                case Cmd.ObjectiveKind.Resupply:        return "Resupply";
-                default:                                return "Recon";
-            }
-        }
+        public static string Name(Cmd.ObjectiveKind kind) => Cmd.ObjectiveText.Name(kind);
     }
 }

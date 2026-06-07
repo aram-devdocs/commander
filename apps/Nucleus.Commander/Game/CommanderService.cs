@@ -133,7 +133,7 @@ namespace Nucleus.Game
         {
             var id = "obj-" + (++_counter);
             _auto.Objectives.Add(new Objective(id, kind, world, ObjectiveSource.Player, targetId, priority: 5f));
-            _auto.Log.Append(new ReportEvent(UnityEngine.Time.unscaledTime, ReportKind.ObjectiveAdded, $"You set {kind}", null));
+            _auto.Log.Append(new ReportEvent(UnityEngine.Time.unscaledTime, ReportKind.ObjectiveAdded, $"You set {ObjectiveText.Name(kind)}", null));
             return id;
         }
 

@@ -58,13 +58,13 @@ namespace Nucleus.Core.Command
                 {
                     op.Status = OperationStatus.Complete;
                     op.Phase = OrderPhase.Complete;
-                    state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.ObjectiveComplete, $"Secured: {op.Objective.Kind}", op.Id));
+                    state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.ObjectiveComplete, CompletionText(op.Objective.Kind), op.Id));
                     continue;
                 }
                 if (op.SquadIds.Count == 0)
                 {
                     op.Status = OperationStatus.Failed;
-                    state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.Blocked, $"{op.Objective.Kind}: lost the force", op.Id));
+                    state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.Blocked, $"{ObjectiveText.Name(op.Objective.Kind)}: lost the force", op.Id));
                     continue;
                 }
                 // Advance the combined-arms cursor: air superiority -> SEAD -> soften -> assault, per gates.
@@ -139,7 +139,7 @@ namespace Nucleus.Core.Command
                     op.CombatPhase = PhaseGates.ActivePhase(initial, initial, new ForceState(FighterStrength(op, state)), state.Doctrine);
                     state.Operations.Add(op);
                     state.Log.Append(new ReportEvent(snapshot.Time, ReportKind.OperationStarted,
-                        $"{obj.Kind} {Bearing(state.HomeBase, obj.Position)} — {squadIds.Count} squad{(squadIds.Count == 1 ? "" : "s")} moving in", op.Id));
+                        $"{ObjectiveText.Name(obj.Kind)} {Bearing(state.HomeBase, obj.Position)} — {squadIds.Count} squad{(squadIds.Count == 1 ? "" : "s")} moving in", op.Id));
                 }
             }
             else
@@ -339,6 +339,18 @@ namespace Nucleus.Core.Command
             }
         }
 
+        /// <summary>Feed line when an objective auto-resolves — worded per kind (a defended area being clear or a
+        /// recon being resolved is not "secured").</summary>
+        private static string CompletionText(ObjectiveKind kind)
+        {
+            switch (kind)
+            {
+                case ObjectiveKind.DefendArea: return "Threat cleared at " + ObjectiveText.Name(kind);
+                case ObjectiveKind.Recon:      return "Recon complete: " + ObjectiveText.Name(kind);
+                default:                       return "Secured: " + ObjectiveText.Name(kind);
+            }
+        }
+
         /// <summary>Why a combat phase is what it is — so the player understands why ground holds back, etc.</summary>
         private static string PhaseReason(ObjectiveKind kind, CombatPhase phase)
         {
@@ -354,7 +366,7 @@ namespace Nucleus.Core.Command
                 case CombatPhase.Hold: reason = "holding the ground"; break;
                 default: reason = phase.ToString(); break;
             }
-            return kind + ": " + reason;
+            return ObjectiveText.Name(kind) + ": " + reason;
         }
 
         /// <summary>
