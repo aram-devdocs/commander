@@ -34,6 +34,10 @@ complaint addressed + harness + evolution infra + usability polish. Director cal
 before the deadline rather than gamble the clean green branch on the low-value/higher-risk WS4 refactor.
 Final consolidated PR `master ← auto/overnight` opened for human review (UNMERGED). Loop ended; no more wakeups.
 
+### Polish pass (after the user asked to polish existing UI) — COMPLETE
+PWS1 color semantics (#13), PWS2 hierarchy/dividers (#14), PWS3 row kind-dots (#15), PWS4 map label pill (#16),
+PWS5 HUD accent rule (#17). All audit-PASS + screenshot-verified, on `auto/overnight`, folded into PR #12. See docs/dev/POLISH-PLAN.md.
+
 ### Flagged follow-ups for the human
 - War may advance only while the map is open (host ticks off DynamicMap.Update) — see WS5 note. Possible "feels janky" cause.
 - Enemy-AI driver (DriveEnemyAi) didn't execute its body in the autoloaded+joined harness — confirm enemy actually runs our brain (WS2).

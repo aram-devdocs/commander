@@ -31,6 +31,14 @@ Same loop: branch per item off `auto/overnight` → check → audit PASS → vis
   terrain; nudge marker/label offset.
 - **PWS5 — HUD styling.** Accent top rule + per-row kind dot + tighter alignment in `FlightHud`.
 
+## STATUS — POLISH PASS COMPLETE (Sun ~07:05 MDT)
+All five shipped to `auto/overnight`, each audit-PASS + screenshot-verified, folded into PR #12 (unmerged).
+- PWS1 — coherent color semantics (grey idle / green active / red destructive) — PR #13
+- PWS2 — visual hierarchy: dividers + stronger section headers — PR #14
+- PWS3 — row legibility: kind-colored dots on objective/operation rows — PR #15
+- PWS4 — map label contrast pill — PR #16
+- PWS5 — in-flight HUD accent rule — PR #17
+
 ## Guardrails (unchanged)
 Merge only to `auto/overnight`; full `audit.ps1` PASS per item; arch canary (Ui lib free of Nucleus.Squads);
 new tests only; no publish/tag/admin. Verify every item by reading the before/after crops. Fold results into
