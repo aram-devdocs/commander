@@ -7,18 +7,12 @@ using UnityEngine;
 
 namespace Nucleus.Host
 {
-    /// <summary>
-    /// Dev test harness: programmatically load + start a singleplayer mission and emit in-mission self-test
-    /// markers, so in-mission behaviour (objectives, faction binding, scoreboard, the live census) can be
-    /// verified WITHOUT a human navigating menus. Gated on a trigger file (&lt;gameroot&gt;/nucleus-autoload.txt,
-    /// written by scripts/inmission-smoke.ps1) or the NUCLEUS_AUTOLOAD_MISSION env var; a no-op otherwise.
-    ///
-    /// This game does NOT pump MonoBehaviour.Update on our plugin objects and runs no coroutines for us, so the
-    /// loader is a frame-driven state machine: <see cref="TickMenu"/> is driven by a MainMenu.Update patch (the
-    /// only per-frame hook at the menu), issues the load (TryLoad -> SetMission -> StartHost, like
-    /// SinglePlayerMenu), then <see cref="TickMission"/> — driven by the in-mission DynamicMap.Update tick —
-    /// waits for units and emits the census once.
-    /// </summary>
+    /// <summary>Dev harness: programmatically load + start a singleplayer mission and emit self-test markers so
+    /// in-mission behaviour can be verified without navigating menus. Gated on a trigger file
+    /// (&lt;gameroot&gt;/nucleus-autoload.txt) or the NUCLEUS_AUTOLOAD_MISSION env var; a no-op otherwise.
+    /// The game pumps no Update/coroutines on our objects, so this is a frame-driven state machine:
+    /// <see cref="TickMenu"/> (MainMenu.Update patch) issues the load, then <see cref="TickMission"/>
+    /// (DynamicMap.Update tick) waits for units and emits the census.</summary>
     internal static class MissionAutoLoader
     {
         private enum Phase { Off, WaitNetwork, LoadIssued, Joining, Probing, Done }
@@ -157,7 +151,7 @@ namespace Nucleus.Host
         }
 
         // After joining, let the Commander brain run, then probe OUR objectives: count them, and count how many
-        // sit on top of a FRIENDLY unit (within 2 km) — the #17 phantom-objective regression. Should be 0.
+        // sit on top of a FRIENDLY unit (within 2 km) — the phantom-objective regression. Should be 0.
         private static void TickProbe()
         {
             if (Time.realtimeSinceStartup - _joinAt < 8f) return; // give the brain time to generate objectives

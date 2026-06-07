@@ -7,18 +7,11 @@ using UnityEngine.UI;
 
 namespace Nucleus.Host
 {
-    /// <summary>
-    /// Dev VISUAL harness: once in a mission, programmatically drive the mod UI (minimise/maximise the map,
-    /// open each bezel panel) and capture a PNG screenshot at each beat, so UI/UX changes can be SEEN and
-    /// verified headlessly — not just "it compiled / it loaded". Writes shots to &lt;gameroot&gt;/nucleus-shots/
-    /// and emits one <c>[NUCLEUS:SHOT] name=… file=… bytes=…</c> marker per capture, then
-    /// <c>[NUCLEUS:SELFTEST] PASS shots-complete count=N</c>.
-    ///
-    /// Gated on a trigger file (&lt;gameroot&gt;/nucleus-autoshot.txt, written by scripts/visual-probe.ps1) or the
-    /// NUCLEUS_AUTOSHOT env var; a complete no-op otherwise. Like <see cref="MissionAutoLoader"/> this is a
-    /// frame-driven state machine — the game pumps no Update/coroutine on our objects, so it is ticked from the
-    /// in-mission DynamicMap.Update patch. Runs AFTER a warm-up so the auto-loader's load+join+probe finishes.
-    /// </summary>
+    /// <summary>Dev visual harness: once in a mission, drives the mod UI (map min/maximise, open each bezel
+    /// panel) and captures a PNG per beat, so UI changes can be verified headlessly. Writes to
+    /// &lt;gameroot&gt;/nucleus-shots/ and emits one <c>[NUCLEUS:SHOT]</c> marker per capture.
+    /// Gated on a trigger file (&lt;gameroot&gt;/nucleus-autoshot.txt) or the NUCLEUS_AUTOSHOT env var; a no-op
+    /// otherwise. Frame-driven state machine ticked from the in-mission patch, after a warm-up.</summary>
     internal static class VisualProbe
     {
         private const float WarmupSec = 12f;     // let mission load + faction join + brain spin up first
@@ -97,8 +90,6 @@ namespace Nucleus.Host
             _shots.Add(new Shot { Name = "03-cmd", SettleSec = 2.0f, Action = () => OpenPanel("commander") });
             // Select the first objective so the map shows the selection detail (header + squad lines/labels).
             _shots.Add(new Shot { Name = "03cmd-selected", SettleSec = 2.0f, Action = ClickFirstSelect });
-            // OpenPanel closes the previously-open panel first so each panel shot is clean (bezels are on
-            // different sides and otherwise overlap — CMD would sit on top of BLD).
             _shots.Add(new Shot { Name = "04-bld", SettleSec = 2.0f, Action = () => OpenPanel("build") });
             _shots.Add(new Shot { Name = "05-sqd", SettleSec = 2.0f, Action = () => OpenPanel("squad") });
             _shots.Add(new Shot { Name = "06-war", SettleSec = 2.0f, Action = () => OpenPanel("warfare") });
