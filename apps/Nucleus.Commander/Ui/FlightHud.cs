@@ -83,8 +83,8 @@ namespace Nucleus.Composition
                 var row = Row(i);
                 bool top = i == 0;
                 row.text = (top ? "▶ " : "  ") +
-                    $"{KindTag(op.Kind)}  {op.Phase}  {op.SquadCount} sq";
-                var c = ObjectiveColor(op.Kind);
+                    $"{Nucleus.Ui.ObjectiveVisuals.Tag(op.Kind)}  {op.Phase}  {op.SquadCount} sq";
+                var c = Nucleus.Ui.ObjectiveVisuals.Color(op.Kind);
                 row.color = top ? Color.Lerp(c, Color.white, 0.35f) : c;
                 row.fontSize = top ? 13f : 12f;
             }
@@ -104,30 +104,5 @@ namespace Nucleus.Composition
             return _rows[i];
         }
 
-        private static string KindTag(Cmd.ObjectiveKind kind)
-        {
-            switch (kind)
-            {
-                case Cmd.ObjectiveKind.CapturePoint: return "CAPTURE";
-                case Cmd.ObjectiveKind.DestroyTarget: return "DESTROY";
-                case Cmd.ObjectiveKind.DefendArea: return "DEFEND";
-                case Cmd.ObjectiveKind.ControlAirspace: return "AIR";
-                case Cmd.ObjectiveKind.Resupply: return "SUPPLY";
-                default: return "RECON";
-            }
-        }
-
-        private static Color ObjectiveColor(Cmd.ObjectiveKind kind)
-        {
-            switch (kind)
-            {
-                case Cmd.ObjectiveKind.CapturePoint: return new Color(0.4f, 0.8f, 1f);
-                case Cmd.ObjectiveKind.DestroyTarget: return new Color(1f, 0.45f, 0.4f);
-                case Cmd.ObjectiveKind.DefendArea: return new Color(0.45f, 0.9f, 0.55f);
-                case Cmd.ObjectiveKind.ControlAirspace: return new Color(0.7f, 0.6f, 1f);
-                case Cmd.ObjectiveKind.Resupply: return new Color(1f, 0.85f, 0.4f);
-                default: return new Color(0.85f, 0.85f, 0.85f);
-            }
-        }
     }
 }

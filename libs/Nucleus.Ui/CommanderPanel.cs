@@ -390,21 +390,9 @@ namespace Nucleus.Ui
         /// <summary>The kind the player has armed to drop on the next map click (null = none).</summary>
         public Cmd.ObjectiveKind? ArmedObjective => _armedObjective;
         /// <summary>The objective currently selected for editing (null = none).</summary>
-        // A small kind-colored bullet (TMP rich-text) so objective/op rows read by kind at a glance. Colors
-        // mirror the map's ObjectiveColor. Domain enum only — keeps the Ui lib free of Nucleus.Squads.
-        private static string KindHex(Cmd.ObjectiveKind kind)
-        {
-            switch (kind)
-            {
-                case Cmd.ObjectiveKind.CapturePoint: return "66CCFF";
-                case Cmd.ObjectiveKind.DestroyTarget: return "FF7366";
-                case Cmd.ObjectiveKind.DefendArea: return "73E68C";
-                case Cmd.ObjectiveKind.ControlAirspace: return "B399FF";
-                case Cmd.ObjectiveKind.Resupply: return "FFD966";
-                default: return "DDDDDD"; // Recon
-            }
-        }
-        private static string Dot(Cmd.ObjectiveKind kind) => $"<color=#{KindHex(kind)}>●</color> ";
+        // A small kind-colored bullet (TMP rich-text) so rows read by kind at a glance — color from the single
+        // source of truth (ObjectiveVisuals), so the row dot and the map marker can never drift apart.
+        private static string Dot(Cmd.ObjectiveKind kind) => $"<color=#{ObjectiveVisuals.Hex(kind)}>●</color> ";
 
         public string SelectedObjectiveId => _selectedObjectiveId;
         /// <summary>Set the selected objective (e.g. when the player clicks its map marker).</summary>

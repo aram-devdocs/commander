@@ -68,12 +68,12 @@ namespace Nucleus.Ui
                     var marker = Marker(mi);
                     bool sel = op.ObjectiveId == selectedId;
                     ((RectTransform)marker.transform).localPosition = new Vector3(local.X, local.Y, 0f);
-                    marker.color = ObjectiveColor(op.Kind);
+                    marker.color = ObjectiveVisuals.Color(op.Kind);
                     // A compact label so the player can read what each marker is without selecting it.
                     var lbl = Label(mi);
                     ((RectTransform)lbl.transform).localPosition = new Vector3(local.X + 10f, local.Y, 0f);
-                    lbl.text = KindName(op.Kind);   // a plain word ("Capture point"), not "CAP P0.8"
-                    lbl.color = sel ? NativeColors.Friendly : ObjectiveColor(op.Kind);
+                    lbl.text = ObjectiveVisuals.Name(op.Kind);   // a plain word ("Capture point"), not "CAP P0.8"
+                    lbl.color = sel ? NativeColors.Friendly : ObjectiveVisuals.Color(op.Kind);
                     lbl.fontSize = sel ? 13f : 11f;
                     // Contrast pill behind the label so it reads over any terrain; sized to the text, drawn behind.
                     var bg = LabelBg(mi);
@@ -134,7 +134,7 @@ namespace Nucleus.Ui
                 string threat = selOp.ThreatCount > 0
                     ? $"Threat {selOp.ThreatCount}" + (selOp.ThreatAirDefense > 0 ? $" ({selOp.ThreatAirDefense} SAM)" : "")
                     : "Threat —";
-                _selInfo.text = $"{KindName(selOp.Kind)}\n{selOp.Phase} · {selOp.Status}\n{threat}\n"
+                _selInfo.text = $"{ObjectiveVisuals.Name(selOp.Kind)}\n{selOp.Phase} · {selOp.Status}\n{threat}\n"
                     + $"{(selOp.PlayerOwned ? "yours" : "AI")} · {selOp.SquadCount} squad{(selOp.SquadCount == 1 ? "" : "s")}";
                 _selInfo.gameObject.SetActive(true);
             }
@@ -149,20 +149,6 @@ namespace Nucleus.Ui
                 _selRing.gameObject.SetActive(true);
             }
             else _selRing.gameObject.SetActive(false);
-        }
-
-        // A short tag per objective kind for the map label.
-        private static string KindTag(Nucleus.Core.Command.ObjectiveKind kind)
-        {
-            switch (kind)
-            {
-                case Nucleus.Core.Command.ObjectiveKind.CapturePoint: return "CAP";
-                case Nucleus.Core.Command.ObjectiveKind.DestroyTarget: return "DESTROY";
-                case Nucleus.Core.Command.ObjectiveKind.DefendArea: return "DEFEND";
-                case Nucleus.Core.Command.ObjectiveKind.ControlAirspace: return "AIR";
-                case Nucleus.Core.Command.ObjectiveKind.Resupply: return "SUPPLY";
-                default: return "RECON";
-            }
         }
 
         // Pooled map label (objective tag + priority), drawn next to its marker.
@@ -196,20 +182,6 @@ namespace Nucleus.Ui
             return _labelBgs[i];
         }
 
-        // A distinct color per objective kind so the map reads at a glance.
-        private static Color ObjectiveColor(Nucleus.Core.Command.ObjectiveKind kind)
-        {
-            switch (kind)
-            {
-                case Nucleus.Core.Command.ObjectiveKind.CapturePoint: return new Color(0.4f, 0.8f, 1f);
-                case Nucleus.Core.Command.ObjectiveKind.DestroyTarget: return new Color(1f, 0.45f, 0.4f);
-                case Nucleus.Core.Command.ObjectiveKind.DefendArea: return new Color(0.45f, 0.9f, 0.55f);
-                case Nucleus.Core.Command.ObjectiveKind.ControlAirspace: return new Color(0.7f, 0.6f, 1f);
-                case Nucleus.Core.Command.ObjectiveKind.Resupply: return new Color(1f, 0.85f, 0.4f);
-                default: return Color.white; // Recon
-            }
-        }
-
         private void EnsureSelRing()
         {
             if (_selRing != null) return;
@@ -218,19 +190,6 @@ namespace Nucleus.Ui
             rt.pivot = new Vector2(0.5f, 0.5f);
         }
 
-        // Full readable name for the selected-objective header (vs. the terse per-marker KindTag).
-        private static string KindName(Nucleus.Core.Command.ObjectiveKind kind)
-        {
-            switch (kind)
-            {
-                case Nucleus.Core.Command.ObjectiveKind.CapturePoint: return "Capture point";
-                case Nucleus.Core.Command.ObjectiveKind.DestroyTarget: return "Destroy target";
-                case Nucleus.Core.Command.ObjectiveKind.DefendArea: return "Defend area";
-                case Nucleus.Core.Command.ObjectiveKind.ControlAirspace: return "Control airspace";
-                case Nucleus.Core.Command.ObjectiveKind.Resupply: return "Resupply";
-                default: return "Recon";
-            }
-        }
 
         // Short phrase + color for a squad's status, so a line/label reads as "what is this squad doing".
         private static string StatusPhrase(Nucleus.Core.Command.SquadStatus s)
