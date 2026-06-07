@@ -11,7 +11,7 @@ namespace Nucleus.Abstractions
         public string Version { get; init; }
         public string Author { get; init; }
         public string Description { get; init; }
-        public Sprite Icon { get; init; }
+        public Sprite? Icon { get; init; }
     }
 
     /// <summary>
@@ -27,8 +27,8 @@ namespace Nucleus.Abstractions
         /// <summary>Populate the mod's native MFD screen. Called once with the screen's content RectTransform.</summary>
         public Action<RectTransform> BuildContent { get; init; }
         /// <summary>Optional: fired when the native bezel button is pressed (screen opened).</summary>
-        public Action OnClick { get; init; }
-        public Func<Color> LabelColor { get; init; }
+        public Action? OnClick { get; init; }
+        public Func<Color>? LabelColor { get; init; }
     }
 
     /// <summary>A row a mod contributes to the main-menu loader.</summary>

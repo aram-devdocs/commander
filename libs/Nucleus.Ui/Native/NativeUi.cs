@@ -48,7 +48,7 @@ namespace Nucleus.Ui.Native
         /// <summary>A native game toggle (BoxToggle) — same look + animation as the game's options. Sets its
         /// label, its initial state without firing, and rewires onValueChanged to <paramref name="onChanged"/>.
         /// Returns null if no live template exists yet (caller should fall back to a built control).</summary>
-        public static NuclearOption.UI.BoxToggle Toggle(Transform parent, string label, bool isOn, Action<bool> onChanged)
+        public static NuclearOption.UI.BoxToggle? Toggle(Transform parent, string label, bool isOn, Action<bool> onChanged)
         {
             if (!_boxSearched) { _boxTpl = FindLiveTemplate<NuclearOption.UI.BoxToggle>(); _boxSearched = true; }
             if (_boxTpl == null) return null;
@@ -78,11 +78,11 @@ namespace Nucleus.Ui.Native
 
         /// <summary>The game's sliced button chrome sprite (from the live button template), so built atoms can
         /// match the native look. Null when no live template exists yet (headless / pre-scene).</summary>
-        public static Sprite SlicedButtonSprite() => ButtonTemplate()?.image?.sprite;
+        public static Sprite? SlicedButtonSprite() => ButtonTemplate()?.image?.sprite;
 
         /// <summary>A native game button (cloned from a live sliced-sprite Button), label + onClick rewired.
         /// Returns null if no live template exists yet (caller should fall back to UiFactory.Button).</summary>
-        public static Button Button(Transform parent, string label, Action onClick)
+        public static Button? Button(Transform parent, string label, Action onClick)
         {
             if (ButtonTemplate() == null) return null;
 

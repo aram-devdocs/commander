@@ -19,12 +19,12 @@ namespace Nucleus.Abstractions
 
         private readonly List<Entry> _entries = new List<Entry>();
         private readonly Func<IMod, IModContext> _contextFor;
-        private readonly Action<string, bool> _persist;
+        private readonly Action<string, bool>? _persist;
 
         /// <param name="contextFor">Factory that builds a mod's context at initialize time.</param>
         /// <param name="persist">Optional: called with (modId, enabled) whenever a mod is toggled, so the host
         /// can save the choice (e.g. to BepInEx config). No-op by default.</param>
-        public ModRegistry(Func<IMod, IModContext> contextFor, Action<string, bool> persist = null)
+        public ModRegistry(Func<IMod, IModContext> contextFor, Action<string, bool>? persist = null)
         {
             _contextFor = contextFor ?? throw new ArgumentNullException(nameof(contextFor));
             _persist = persist;
