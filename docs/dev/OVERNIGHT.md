@@ -18,8 +18,8 @@
 | WS0 | In-game visual harness (screenshots) | DONE | live: 6/6 shots, CMD crop legible | #1 |
 | WS1 | AI objective mix (capture/destroy/defend) | DONE | audit PASS (sim 33) + live CMD shows 2×Capture+1×Destroy | #2 |
 | WS3 | AI narration / barks in feed | DONE | audit PASS (sim 36) + live CMD FEED shows narrated ops | #3 |
-| WS6 | Map selection legibility | NEXT | — | — |
-| WS5 | In-flight HUD + world markers | TODO | — | — |
+| WS6 | Map selection legibility | DONE | audit PASS + live: intent header + status-colored squad lines | #4 |
+| WS5 | In-flight HUD + world markers | NEXT | — | — |
 | WS7 | Squad legibility & usability | TODO | — | — |
 | WS8 | Build clarity | TODO | — | — |
 | WS2 | Personality genomes | TODO | — | — |

@@ -22,5 +22,12 @@ Legend: [ ] to verify · screenshots are the loop's evidence, your eyes are the 
 - [ ] Confirm the feed doesn't spam duplicate lines and updates as the AI makes new decisions.
 - [ ] Confirm phase-reason lines help you understand why ground units hold back during SEAD/Strike.
 
+## WS6 — Map selection legibility
+- Evidence: `artifacts/screenshots/ws6-verify/03cmd-selected-map.png` — selected objective shows an intent header + status-colored squad lines.
+- [ ] Click an objective on the map; confirm a header appears (kind, phase, threat incl. SAM count, priority, owner, squad count).
+- [ ] Confirm lines to assigned squads are colored by status (engaged=red, en route=cyan) and each squad cluster has a label.
+- [ ] Edge case to eyeball: when the objective is near the map border the header can clip — flag if it bothers you (clamp is a known follow-up).
+
 <!-- The loop appends one block per workstream below as it completes them. -->
+
 
