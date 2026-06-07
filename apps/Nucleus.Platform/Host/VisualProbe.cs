@@ -95,7 +95,7 @@ namespace Nucleus.Host
             _shots.Add(new Shot { Name = "02-map-open", SettleSec = 3.0f, Action = () => Map()?.Maximize() });
             // 3-6) Each mod panel, opened by invoking its native bezel button's click.
             _shots.Add(new Shot { Name = "03-cmd", SettleSec = 2.0f, Action = () => OpenPanel("commander") });
-            // Select the first objective so the map shows the WS6 selection detail (header + squad lines/labels).
+            // Select the first objective so the map shows the selection detail (header + squad lines/labels).
             _shots.Add(new Shot { Name = "03cmd-selected", SettleSec = 2.0f, Action = ClickFirstSelect });
             // OpenPanel closes the previously-open panel first so each panel shot is clean (bezels are on
             // different sides and otherwise overlap — CMD would sit on top of BLD).

@@ -74,7 +74,7 @@ namespace Nucleus.Game
 
             // Publish aircraft ingress zones AFTER the brain runs so they reflect fresh operation phases.
             RefreshAirIntent();
-            _debug.Tick();   // S0 instrumentation (no-op unless CommanderDebug)
+            _debug.Tick();   // optional probe (no-op unless CommanderDebug)
         }
 
         // Publish aircraft ingress zones (consumed by the NoTarget patch) for operations whose phase engages

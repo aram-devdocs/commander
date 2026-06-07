@@ -28,12 +28,9 @@ namespace Nucleus.Sim
         }
     }
 
-    /// <summary>
-    /// The north-star headless model: BOTH factions run their own <see cref="CommanderBrain"/> over the same
-    /// battlefield — each sees the other as fog-of-war enemies, tasks its own units, and they move + fight.
-    /// Proves a self-running dynamic war (the core of Nucleus Dynamic Warfare) end-to-end without the game.
-    /// Deterministic: same seed ⇒ identical trace.
-    /// </summary>
+    /// <summary>Headless model where both factions run their own <see cref="CommanderBrain"/> over the same
+    /// battlefield — each sees the other as fog-of-war, tasks its own units, and they move + fight. Proves a
+    /// self-running dynamic war end-to-end without the game. Deterministic: same seed ⇒ identical trace.</summary>
     public sealed class DualSimWorld
     {
         private const float Dt = 1f;

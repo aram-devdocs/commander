@@ -126,7 +126,7 @@ namespace Nucleus.Core.Command
                         state.ProductionNeeds.Add(RequiredComposition(obj.Kind));
 
             // 5. Issue tasking, but only when a unit's task signature CHANGED — re-spamming SetDestination every
-            //    tick fights the game AI (S1).
+            //    tick fights the game AI.
             var tasked = new HashSet<string>();
             foreach (var op in state.Operations)
             {
@@ -134,7 +134,7 @@ namespace Nucleus.Core.Command
                 if (op.Autonomy == AutonomyLevel.Manual) continue;
                 // DefendArea holds ground — it skips the offensive phase sequence, so gate its squads by the
                 // families that FILL it, not by CombatPhase. Otherwise its squads never match the active phase,
-                // zero tasks issue, and the defence is a silent in-game no-op (review P2-#1).
+                // zero tasks issue, and the defence is a silent in-game no-op.
                 var active = op.Objective.Kind == ObjectiveKind.DefendArea
                     ? Families.SuitableFor(ObjectiveKind.DefendArea)
                     : Families.ActiveInPhase(op.CombatPhase);
