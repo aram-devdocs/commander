@@ -28,6 +28,9 @@ jobs:
       - name: Log-audit parser
         run: dotnet test tests/Nucleus.LogAudit.Tests/Nucleus.LogAudit.Tests.csproj -c Release
 
+      - name: Installer (Unity-free)
+        run: dotnet test tests/Nucleus.Installer.Tests/Nucleus.Installer.Tests.csproj -c Release
+
       # The full solution build + game-contract tests require the proprietary game DLLs in lib/, which are
       # gitignored (the game's IP) and produced locally by scripts/setup-sandbox.ps1. On GitHub-hosted
       # runners they are absent, so this step no-ops; a self-hosted runner with lib/ provisioned runs the
