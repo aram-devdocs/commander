@@ -1,0 +1,19 @@
+Nucleus self-play report  (seed=1337, generations=6)
+Deterministic genetic self-play over the headless DualSimWorld. Fitness = round-robin
+survival score (more units alive than the opponent at match end). REVIEW ONLY — the coarse
+sim's fitness is a proxy; shipped gameplay still uses the hand-authored archetypes.
+
+  gen 0: best='Bastion' fitness=0.0 agg=0.25 cau=0.75
+  gen 1: best='Bastion' fitness=0.0 agg=0.25 cau=0.75
+  gen 2: best='Bastion' fitness=0.0 agg=0.25 cau=0.75
+  gen 3: best='Bastion' fitness=0.0 agg=0.25 cau=0.75
+  gen 4: best='Bastion' fitness=0.0 agg=0.25 cau=0.75
+  gen 5: best='Bastion' fitness=0.0 agg=0.25 cau=0.75
+
+Final ranking:
+  Bastion        fitness=   0.0  agg=0.25 cau=0.75
+  Bastion*       fitness=   0.0  agg=0.17 cau=0.68
+  Bastion*       fitness=   0.0  agg=0.17 cau=0.76
+  Bastion*       fitness=   0.0  agg=0.17 cau=0.77
+  Bastion**      fitness=   0.0  agg=0.27 cau=0.71
+  Bastion**      fitness=   0.0  agg=0.16 cau=0.78

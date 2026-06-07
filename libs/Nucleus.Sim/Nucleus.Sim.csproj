@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Nucleus.Sim</AssemblyName>
+    <!-- Headless, deterministic battlefield simulation: steps the pure CommanderBrain over a seeded world so
+         the brain can be regression-tested AND played against itself (genome self-play / evolution). Pure —
+         refs Domain + Campaign only, no Unity. Consumed by tests/Nucleus.Sim.Tests and tools/Nucleus.Evolve. -->
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nucleus.Domain\Nucleus.Domain.csproj" />
+    <ProjectReference Include="..\Nucleus.Campaign\Nucleus.Campaign.csproj" />
+  </ItemGroup>
+</Project>

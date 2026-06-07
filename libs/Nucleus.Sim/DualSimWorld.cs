@@ -40,15 +40,21 @@ namespace Nucleus.Sim
         private readonly List<SimUnit> _a;
         private readonly List<SimUnit> _b;
         private readonly Pcg _rng;
-        private readonly CommanderState _sa = new CommanderState();
-        private readonly CommanderState _sb = new CommanderState();
+        private readonly CommanderState _sa;
+        private readonly CommanderState _sb;
         private float _time;
 
-        public DualSimWorld(IEnumerable<SimUnit> a, IEnumerable<SimUnit> b, ulong seed)
+        /// <summary>Optionally inject each side's CommanderState (e.g. with a genome-derived Doctrine) so two
+        /// personalities can play each other for self-play / evolution. Null ⇒ a default commander (so the
+        /// existing 3-arg call sites — and the determinism tests — are unchanged).</summary>
+        public DualSimWorld(IEnumerable<SimUnit> a, IEnumerable<SimUnit> b, ulong seed,
+            CommanderState sa = null, CommanderState sb = null)
         {
             _a = a.ToList();
             _b = b.ToList();
             _rng = new Pcg(seed);
+            _sa = sa ?? new CommanderState();
+            _sb = sb ?? new CommanderState();
         }
 
         public DualSimResult Run(int ticks)
