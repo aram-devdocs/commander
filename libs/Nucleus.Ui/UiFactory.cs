@@ -101,6 +101,19 @@ namespace Nucleus.Ui
             return btn;
         }
 
+        /// <summary>A button with a PINNED height (UiTokens.ButtonHeight) and optional fixed width, so buttons
+        /// never jitter in size as their text/state changes — the atomic, even button used across the panels.
+        /// Pass width &lt;= 0 to let it flex to the row.</summary>
+        public static Button ButtonFixed(string name, Transform parent, string text, Theme theme,
+            UnityAction onClick, float width = 0f)
+        {
+            var btn = Button(name, parent, text, theme, onClick);
+            var le = btn.gameObject.GetComponent<LayoutElement>() ?? btn.gameObject.AddComponent<LayoutElement>();
+            le.minHeight = le.preferredHeight = UiTokens.ButtonHeight; le.flexibleHeight = 0f;
+            if (width > 0f) { le.minWidth = le.preferredWidth = width; le.flexibleWidth = 0f; }
+            return btn;
+        }
+
         /// <summary>Pin a control to an exact size (atomic sizing) so changing its text never resizes it.</summary>
         public static LayoutElement Fixed(GameObject go, float width, float height)
         {
