@@ -28,8 +28,6 @@ namespace Nucleus.Ui
         private Image _aiCmdImg, _autoFillImg;
         private TextMeshProUGUI _aiCmdLabel, _autoFillLabel;
 
-        private static readonly Color OnColor = new Color(0.30f, 0.85f, 0.45f, 1f);
-
         public RectTransform Root => _panel.Root;
 
         public WarSetupScreen(Transform parent, Theme theme, IReadOnlyList<string> factions,
@@ -44,7 +42,7 @@ namespace Nucleus.Ui
             // Center the setup panel (override ModPanel's default top-left anchor).
             Root.anchorMin = Root.anchorMax = Root.pivot = new Vector2(0.5f, 0.5f);
             Root.anchoredPosition = Vector2.zero;
-            Root.sizeDelta = new Vector2(480f, 520f);
+            Root.sizeDelta = new Vector2(UiTokens.SetupPanelWidth, UiTokens.SetupPanelHeight);
 
             var col = UiFactory.VerticalLayout("SetupCol", _panel.Content, 8f, new RectOffset(16, 16, 14, 16));
             UiFactory.Stretch((RectTransform)col.transform);
@@ -81,7 +79,7 @@ namespace Nucleus.Ui
             var start = UiFactory.Button("Start", col.transform, "START WAR", theme,
                 () => _onStart?.Invoke(_playerFaction, _aiCommander, _aiAutoFill));
             UiFactory.PreferredHeight(start.gameObject, 38f);
-            start.GetComponent<Image>().color = OnColor;
+            start.GetComponent<Image>().color = _theme.Active;
 
             Refresh();
         }
@@ -91,11 +89,11 @@ namespace Nucleus.Ui
             foreach (var (faction, img, label) in _sideRows)
             {
                 bool sel = faction == _playerFaction;
-                img.color = sel ? OnColor : _theme.ButtonIdle;
+                img.color = sel ? _theme.Active : _theme.ButtonIdle;
                 if (label != null) label.text = sel ? $"{faction}  [YOU]" : $"{faction}  (AI)";
             }
-            if (_aiCmdImg != null) _aiCmdImg.color = _aiCommander ? OnColor : _theme.ButtonIdle;
-            if (_autoFillImg != null) _autoFillImg.color = _aiAutoFill ? OnColor : _theme.ButtonIdle;
+            if (_aiCmdImg != null) _aiCmdImg.color = _aiCommander ? _theme.Active : _theme.ButtonIdle;
+            if (_autoFillImg != null) _autoFillImg.color = _aiAutoFill ? _theme.Active : _theme.ButtonIdle;
             if (_aiCmdLabel != null) _aiCmdLabel.text = _aiCommander ? "AI COMMANDER: ON" : "AI COMMANDER: OFF";
             if (_autoFillLabel != null) _autoFillLabel.text = _aiAutoFill ? "AI AUTO-FILL: ON" : "AI AUTO-FILL: OFF";
         }

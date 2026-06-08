@@ -95,7 +95,7 @@ namespace Nucleus.Host
                     var capId = spec.ModId;
                     var capImg = btn.image != null ? btn.image : btn.GetComponent<Image>();
                     var capOrig = capImg != null ? capImg.color : Color.white;
-                    var capGreen = new Color(0.30f, 0.95f, 0.45f, 1f);
+                    var capGreen = Nucleus.Ui.Theme.Default.Active;   // one canonical "open/active" cue
                     // Drop the clone's inherited onClick (it would toggle the template's screen); drive ours via
                     // PressButton, and tint green while open.
                     NativeButtons.Rewire(btn, () =>

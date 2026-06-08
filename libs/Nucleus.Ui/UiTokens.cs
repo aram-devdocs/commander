@@ -27,5 +27,24 @@ namespace Nucleus.Ui
         public const float FontHeader = 13f;
         public const float FontBody = 12f;
         public const float FontHint = 11f;
+
+        // Panel footprints (fixed so they never reflow as content changes)
+        public const float ModPanelWidth = 460f;
+        public const float ModPanelHeight = 880f;
+        public const float SetupPanelWidth = 480f;
+        public const float SetupPanelHeight = 520f;
+        public const float HudWidth = 360f;
+        public const float HudHeight = 168f;
+        public const float BadgeWidth = 330f;
+        public const float BadgeHeight = 30f;
+
+        // Map overlay sizes
+        public const float MarkerSize = 16f;          // objective marker with the native sprite
+        public const float MarkerSizeFallback = 11f;  // procedural marker when no sprite captured
+        public const float SelectionRingSize = 42f;   // ring around the selected objective
+        public const float MapLabelOffsetX = 10f;     // label gap from its marker
+        public const float RingThickness = 3f;        // range-ring band (px in the 128px sprite)
+        public const float DashedRingThickness = 4f;
+        public const int RingDashes = 32;
     }
 }

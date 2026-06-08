@@ -50,8 +50,6 @@ namespace Nucleus.Ui
         private TextMeshProUGUI _scoreTitle, _scoreBlu, _scoreOp, _scoreStatus;
         private Image _scoreBluBar, _scoreOpBar;
         private float _scoreMax;  // highest score seen = the full-bar reference, so bars shrink as sides attrit
-        private static readonly Color BluColor = new Color(0.35f, 0.6f, 1f, 1f);
-        private static readonly Color OpColor = new Color(1f, 0.45f, 0.4f, 1f);
 
         private struct OpRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string OpId; }
         private struct EntityRow { public GameObject Go; public TextMeshProUGUI Label; public Image BtnImg; public TextMeshProUGUI BtnLabel; public string Id; }
@@ -118,7 +116,7 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Objectives))
             {
-                UiFactory.SectionHeader(layout.transform, "OBJECTIVES — drop on the map", theme);
+                UiFactory.SectionHeader(layout.transform, UiStrings.ObjectivesHeader, theme);
 
                 var pRow1 = UiFactory.HorizontalLayout("ObjPalette1", layout.transform, 4f);
                 UiFactory.PreferredHeight(pRow1.gameObject, 28f);
@@ -131,7 +129,7 @@ namespace Nucleus.Ui
                 AddKindButton(pRow2.transform, "RECON", Cmd.ObjectiveKind.Recon);
                 AddKindButton(pRow2.transform, "RESUPPLY", Cmd.ObjectiveKind.Resupply);
 
-                _objHint = UiFactory.Label("ObjHint", layout.transform, "Pick a kind, then click the map to drop an objective.", 11f, theme.Muted);
+                _objHint = UiFactory.Label("ObjHint", layout.transform, UiStrings.ObjectivesHint, 11f, theme.Muted);
                 UiFactory.PreferredHeight(_objHint.gameObject, 30f);
 
                 _objContainer = UiFactory.VerticalLayout("ObjList", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
@@ -153,7 +151,7 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Mode))
             {
-                _hqHeader = UiFactory.SectionHeader(layout.transform, "COMMANDER", theme);
+                _hqHeader = UiFactory.SectionHeader(layout.transform, UiStrings.CommanderHeader, theme);
 
                 var aiCmdBtn = UiFactory.Button("AiCommander", layout.transform, "AI COMMANDER", theme,
                     () => onSetAiCommander?.Invoke(!_aiCommanderOn));
@@ -168,65 +166,60 @@ namespace Nucleus.Ui
                 _autoFillLabel = autoFillBtn.GetComponentInChildren<TextMeshProUGUI>();
 
                 UiFactory.PreferredHeight(UiFactory.Label("ToggleHint", layout.transform,
-                    "AI COMMANDER: the AI creates objectives (off = only you do).  AI AUTO-FILL: the AI forms squads, recruits, and assigns them to objectives (off = you assign).",
-                    11f, theme.Muted).gameObject, 44f);
+                    UiStrings.ModeHint, 11f, theme.Muted).gameObject, 44f);
             }
 
             if (Has(PanelSections.Operations))
             {
-                UiFactory.SectionHeader(layout.transform, "OPERATIONS", theme);
+                UiFactory.SectionHeader(layout.transform, UiStrings.OperationsHeader, theme);
                 UiFactory.PreferredHeight(UiFactory.Label("OpsHint", layout.transform,
-                    "Each operation is run by AI (the commander sequences its phases) or YOU (manual). Tap the AI/YOU button to switch.",
-                    11f, theme.Muted).gameObject, 30f);
+                    UiStrings.OperationsHint, 11f, theme.Muted).gameObject, 30f);
                 _opsContainer = UiFactory.VerticalLayout("HqOps", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
-                _opsEmpty = UiFactory.Label("OpsEmpty", layout.transform, "No operations running. Drop an objective on the map (or enable AI COMMANDER) and the squads will form up and fight.", 12f, theme.Muted);
+                _opsEmpty = UiFactory.Label("OpsEmpty", layout.transform, UiStrings.OpsEmpty, 12f, theme.Muted);
                 UiFactory.PreferredHeight(_opsEmpty.gameObject, 48f);
             }
 
             if (Has(PanelSections.Squads))
             {
-                UiFactory.SectionHeader(layout.transform, "SQUADS", theme);
+                UiFactory.SectionHeader(layout.transform, UiStrings.SquadsHeader, theme);
                 UiFactory.PreferredHeight(UiFactory.Label("SquadsHint", layout.transform,
-                    "Each squad is AI-run (the commander tasks it) or YOURS (you hold it for manual orders). Tap the AI/YOU button to switch.",
-                    11f, theme.Muted).gameObject, 30f);
+                    UiStrings.SquadsHint, 11f, theme.Muted).gameObject, 30f);
                 _squadsContainer = UiFactory.VerticalLayout("HqSquads", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
-                _squadsEmpty = UiFactory.Label("SquadsEmpty", layout.transform, "No squads yet. Squads form automatically from your forces as the war starts.", 12f, theme.Muted);
+                _squadsEmpty = UiFactory.Label("SquadsEmpty", layout.transform, UiStrings.SquadsEmpty, 12f, theme.Muted);
                 UiFactory.PreferredHeight(_squadsEmpty.gameObject, 48f);
             }
 
             if (Has(PanelSections.Build))
             {
-                UiFactory.SectionHeader(layout.transform, "BUILD — reinforce", theme);
+                UiFactory.SectionHeader(layout.transform, UiStrings.BuildHeader, theme);
                 UiFactory.PreferredHeight(UiFactory.Label("BuildAircraft", layout.transform,
-                    "AIRCRAFT — spawn from your airbases (not bought here).", 11f, theme.Muted).gameObject, 16f);
+                    UiStrings.BuildAircraftNote, 11f, theme.Muted).gameObject, 16f);
                 UiFactory.PreferredHeight(UiFactory.Label("BuildHint", layout.transform,
-                    "Spend faction funds on reinforcement convoys (they arrive off-map and drive to the front). Aircraft are flown from your airbases via the game's spawn menu. Every purchase also costs attrition — more so once your bases are lost.",
-                    11f, theme.Muted).gameObject, 56f);
-                _buildFunds = UiFactory.Label("BuildFunds", layout.transform, "Funds: —", 12f, theme.Accent);
+                    UiStrings.BuildHint, 11f, theme.Muted).gameObject, 56f);
+                _buildFunds = UiFactory.Label("BuildFunds", layout.transform, UiStrings.FundsPlaceholder, 12f, theme.Accent);
                 UiFactory.PreferredHeight(_buildFunds.gameObject, 18f);
                 _buildContainer = UiFactory.VerticalLayout("HqBuild", layout.transform, 3f, new RectOffset(0, 0, 0, 0)).transform;
-                _buildEmpty = UiFactory.Label("BuildEmpty", layout.transform, "No convoys offered for this faction/map. Aircraft still spawn from your airbases.", 12f, theme.Muted);
+                _buildEmpty = UiFactory.Label("BuildEmpty", layout.transform, UiStrings.BuildEmpty, 12f, theme.Muted);
                 UiFactory.PreferredHeight(_buildEmpty.gameObject, 36f);
-                UiFactory.PreferredHeight(UiFactory.Label("BuildQHdr", layout.transform, "ORDERS", 11f, theme.Muted).gameObject, 16f);
-                _buildStatus = UiFactory.Label("BuildStatus", layout.transform, "No orders yet. Pick a convoy above to reinforce.", 11f, theme.Text);
+                UiFactory.PreferredHeight(UiFactory.Label("BuildQHdr", layout.transform, UiStrings.OrdersHeader, 11f, theme.Muted).gameObject, 16f);
+                _buildStatus = UiFactory.Label("BuildStatus", layout.transform, UiStrings.NoOrders, 11f, theme.Text);
                 UiFactory.PreferredHeight(_buildStatus.gameObject, 64f);
             }
 
             if (Has(PanelSections.Scoreboard))
             {
-                UiFactory.SectionHeader(layout.transform, "ATTRITION", theme);
+                UiFactory.SectionHeader(layout.transform, UiStrings.AttritionHeader, theme);
                 _scoreTitle = UiFactory.Label("ScoreTitle", layout.transform,
-                    "Drive the enemy's score to zero. It falls as a side loses units and bases — and as it spends on reinforcement (faster once bases are lost).",
-                    11f, theme.Muted);
+                    UiStrings.AttritionHint, 11f, theme.Muted);
                 UiFactory.PreferredHeight(_scoreTitle.gameObject, 40f);
 
-                _scoreBlu = UiFactory.Label("ScoreBlu", layout.transform, "BLUFOR", 13f, BluColor);
+                _scoreBlu = UiFactory.Label("ScoreBlu", layout.transform, "BLUFOR", 13f, theme.ScoreBlufor);
                 UiFactory.PreferredHeight(_scoreBlu.gameObject, 20f);
-                _scoreBluBar = MakeBar("BluBar", layout.transform, BluColor);
+                _scoreBluBar = MakeBar("BluBar", layout.transform, theme.ScoreBlufor);
 
-                _scoreOp = UiFactory.Label("ScoreOp", layout.transform, "OPFOR", 13f, OpColor);
+                _scoreOp = UiFactory.Label("ScoreOp", layout.transform, "OPFOR", 13f, theme.ScoreOpfor);
                 UiFactory.PreferredHeight(_scoreOp.gameObject, 20f);
-                _scoreOpBar = MakeBar("OpBar", layout.transform, OpColor);
+                _scoreOpBar = MakeBar("OpBar", layout.transform, theme.ScoreOpfor);
 
                 _scoreStatus = UiFactory.Label("ScoreStatus", layout.transform, "", 12f, theme.Text);
                 UiFactory.PreferredHeight(_scoreStatus.gameObject, 22f);
@@ -234,18 +227,16 @@ namespace Nucleus.Ui
 
             if (Has(PanelSections.Feed))
             {
-                UiFactory.SectionHeader(layout.transform, "FEED", theme);
+                UiFactory.SectionHeader(layout.transform, UiStrings.FeedHeader, theme);
                 _hqBody = UiFactory.Label("HqBody", layout.transform, "", 12f, theme.Muted);
                 UiFactory.PreferredHeight(_hqBody.gameObject, 110f);
             }
         }
 
-        private static readonly Color OnColor = new Color(0.30f, 0.85f, 0.45f, 1f);
-
         // A thin progress bar: a dark track with a colored fill child whose right anchor encodes the fraction.
-        private static Image MakeBar(string name, Transform parent, Color fill)
+        private Image MakeBar(string name, Transform parent, Color fill)
         {
-            var track = UiFactory.Panel(name + "Track", parent, new Color(0.15f, 0.15f, 0.18f, 1f));
+            var track = UiFactory.Panel(name + "Track", parent, _theme.BarTrack);
             UiFactory.PreferredHeight(track.gameObject, 12f);
             var bar = UiFactory.Panel(name + "Fill", track, fill);
             bar.anchorMin = new Vector2(0f, 0f);
@@ -267,12 +258,12 @@ namespace Nucleus.Ui
 
             if (b.Over)
             {
-                _scoreStatus.text = b.WinnerName != null ? $"WAR OVER — {b.WinnerName} WINS" : "WAR OVER — DRAW";
-                _scoreStatus.color = OnColor;
+                _scoreStatus.text = b.WinnerName != null ? $"WAR OVER — {b.WinnerName} WINS" : UiStrings.WarOverDraw;
+                _scoreStatus.color = _theme.Active;
             }
             else
             {
-                _scoreStatus.text = "War in progress — drive a faction to zero to win.";
+                _scoreStatus.text = UiStrings.WarInProgress;
                 _scoreStatus.color = _theme.Muted;
             }
         }
@@ -313,13 +304,13 @@ namespace Nucleus.Ui
             if (_objContainer == null) return;
 
             foreach (var kb in _kindButtons)
-                kb.Img.color = _armedObjective == kb.Kind ? OnColor : _theme.ButtonIdle;
+                kb.Img.color = _armedObjective == kb.Kind ? _theme.Active : _theme.ButtonIdle;
 
             if (_objHint != null)
             {
                 _objHint.text = _armedObjective.HasValue
                     ? $"Drop {ObjectiveVisuals.Name(_armedObjective.Value)}: click a spot on the map."
-                    : "Pick a kind, then click the map. Click a marker to select & edit it.";
+                    : UiStrings.ObjectivesHintArmedPrompt;
             }
 
             var ops = hq?.Operations;
@@ -336,9 +327,9 @@ namespace Nucleus.Ui
                     bool sel = op.ObjectiveId == _selectedObjectiveId;
                     string owner = op.PlayerOwned ? "you" : "AI";
                     r.Label.text = $"{(sel ? "▸ " : "")}{Dot(op.Kind)}{ObjectiveVisuals.Name(op.Kind)} · {ObjectiveVisuals.PhaseLabel(op.Phase)} · {op.SquadCount} sq [{owner}]";
-                    r.Label.color = sel ? OnColor : _theme.Text;
+                    r.Label.color = sel ? _theme.Active : _theme.Text;
                     r.BtnLabel.text = "SELECT";
-                    r.BtnImg.color = sel ? OnColor : _theme.ButtonIdle;
+                    r.BtnImg.color = sel ? _theme.Active : _theme.ButtonIdle;
                     r.Go.SetActive(true);
                     _objRows[i] = r;
                 }
@@ -347,7 +338,7 @@ namespace Nucleus.Ui
 
             if (_objEditor != null)
             {
-                if (_selectedObjectiveId == null) { _objEditor.text = "No objective selected."; }
+                if (_selectedObjectiveId == null) { _objEditor.text = UiStrings.NoObjectiveSelected; }
                 else
                 {
                     string text = "Editing selected objective.";
@@ -407,7 +398,7 @@ namespace Nucleus.Ui
                     string comp = !string.IsNullOrEmpty(s.Composition) ? s.Composition : $"{s.Family} ×{s.Strength}";
                     r.Label.text = $"{s.Name} · {comp}";
                     r.BtnLabel.text = "ASSIGN";
-                    r.BtnImg.color = OnColor;
+                    r.BtnImg.color = _theme.Active;
                     r.Go.SetActive(true);
                     _assignRows[i] = r;
                 }
@@ -424,8 +415,8 @@ namespace Nucleus.Ui
             {
                 _aiCommanderOn = hq.AiCreatesObjectives;
                 _autoFillOn = hq.AiAutoFill;
-                _aiCmdImg.color = _aiCommanderOn ? OnColor : _theme.ButtonIdle;
-                _autoFillImg.color = _autoFillOn ? OnColor : _theme.ButtonIdle;
+                _aiCmdImg.color = _aiCommanderOn ? _theme.Active : _theme.ButtonIdle;
+                _autoFillImg.color = _autoFillOn ? _theme.Active : _theme.ButtonIdle;
                 if (_aiCmdLabel != null) _aiCmdLabel.text = _aiCommanderOn ? "AI COMMANDER: ON" : "AI COMMANDER: OFF";
                 if (_autoFillLabel != null) _autoFillLabel.text = _autoFillOn ? "AI AUTO-FILL: ON" : "AI AUTO-FILL: OFF";
             }
@@ -436,7 +427,7 @@ namespace Nucleus.Ui
             {
                 float after = funds - hq.QueuedCost;
                 _buildFunds.text = $"Funds: {funds:0}  ·  Queued: {hq.QueuedCost:0}  ·  After: {after:0}";
-                _buildFunds.color = after < 0f ? new Color(1f, 0.5f, 0.5f) : _theme.Accent;
+                _buildFunds.color = after < 0f ? _theme.WarnText : _theme.Accent;
             }
             if (_buildStatus != null)
             {
@@ -448,7 +439,7 @@ namespace Nucleus.Ui
                         if (e.Kind == Cmd.ReportKind.ProductionQueued) { sb.AppendLine("· " + e.Text); break; }
                 }
                 _buildStatus.text = sb.Length > 0 ? sb.ToString().TrimEnd()
-                    : "No orders in progress. Pick a convoy above to reinforce (it arrives off-map and drives in).";
+                    : UiStrings.NoOrdersInProgress;
             }
 
             if (_opsContainer != null) RenderOpRows(running ? hq.Operations : null);
@@ -483,10 +474,10 @@ namespace Nucleus.Ui
                     string comp = !string.IsNullOrEmpty(s.Composition) ? s.Composition : $"{s.Family} ×{s.Strength}";
                     string need = s.TargetStrength > s.Strength ? $" ({s.Strength}/{s.TargetStrength})" : "";
                     r.Label.text = $"{s.Name} · {comp}{need} — {s.Activity}";
-                    r.Label.color = s.Depleted ? new Color(1f, 0.5f, 0.5f) : _theme.Text;
+                    r.Label.color = s.Depleted ? _theme.WarnText : _theme.Text;
                     bool manual = s.Autonomy == Cmd.AutonomyLevel.Manual;
                     r.BtnLabel.text = manual ? "YOU" : "AI";
-                    r.BtnImg.color = manual ? _theme.Accent : OnColor;
+                    r.BtnImg.color = manual ? _theme.Accent : _theme.Active;
                     r.Go.SetActive(true);
                     _squadRows[i] = r;
                 }
@@ -561,7 +552,7 @@ namespace Nucleus.Ui
                     r.Label.text = $"{Dot(op.Kind)}{ObjectiveVisuals.Name(op.Kind)} — {ObjectiveVisuals.PhaseLabel(op.Phase)} [{op.Status}]";
                     bool manual = op.Autonomy == Nucleus.Core.Command.AutonomyLevel.Manual;
                     r.BtnLabel.text = manual ? "YOU" : "AI";
-                    r.BtnImg.color = manual ? _theme.Accent : OnColor;
+                    r.BtnImg.color = manual ? _theme.Accent : _theme.Active;
                     r.Go.SetActive(true);
                     _opRows[i] = r;
                 }

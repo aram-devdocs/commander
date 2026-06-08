@@ -143,7 +143,7 @@ namespace Nucleus.Ui
             rt.SetParent(parent, false);
             rt.anchorMin = new Vector2(1f, 0f); rt.anchorMax = new Vector2(1f, 1f); rt.pivot = new Vector2(1f, 0.5f);
             rt.sizeDelta = new Vector2(width, 0f); rt.anchoredPosition = Vector2.zero;
-            go.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.35f);   // track
+            go.GetComponent<Image>().color = theme.ScrollbarTrack;
 
             var area = new GameObject("SlidingArea", typeof(RectTransform));
             var art = (RectTransform)area.transform; art.SetParent(rt, false);
