@@ -26,6 +26,11 @@ namespace Nucleus.Installer
     {
         public const string PluginPrefix = "Nucleus.";
 
+        /// <summary>True when <paramref name="dir"/> directly contains at least one Nucleus.* plugin folder.</summary>
+        public static bool HasPlugins(string dir) =>
+            !string.IsNullOrEmpty(dir) && Directory.Exists(dir) &&
+            Directory.GetDirectories(dir).Any(d => Path.GetFileName(d).StartsWith(PluginPrefix, StringComparison.Ordinal));
+
         /// <summary>Copy every <c>Nucleus.*</c> plugin folder from <paramref name="sourceDir"/> into the game's
         /// BepInEx plugins folder. <paramref name="dryRun"/> reports what would happen without writing.</summary>
         public static InstallResult Install(string sourceDir, string gameDir, bool dryRun = false)
