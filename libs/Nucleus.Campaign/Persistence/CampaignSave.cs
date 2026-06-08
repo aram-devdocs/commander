@@ -42,7 +42,8 @@ namespace Nucleus.Core.Persistence
             foreach (var ord in s.Orders)
             {
                 Line(sb, "ORDER", Enc(ord.Id), E(ord.GoalKind), F(ord.Position.X), F(ord.Position.Y), F(ord.Position.Z),
-                    F(ord.Priority), E(ord.Source), E(ord.Autonomy), E(ord.Status), Enc(ord.GoalObjectiveId), F(ord.TerminalTime));
+                    F(ord.Priority), E(ord.Source), E(ord.Autonomy), E(ord.Status), Enc(ord.GoalObjectiveId),
+                    F(ord.TerminalTime), F(ord.CreatedTime));
                 foreach (var cid in ord.ChildObjectiveIds)
                     Line(sb, "ORDERCHILD", Enc(ord.Id), Enc(cid));
             }
@@ -52,7 +53,8 @@ namespace Nucleus.Core.Persistence
                 Line(sb, "SQUAD", Enc(sq.Id), Enc(sq.Name), E(sq.Family), E(sq.Origin), E(sq.Status),
                     E(sq.Autonomy), Enc(sq.AssignedOperationId));
                 if (sq.TargetComposition != null)
-                    foreach (var kv in sq.TargetComposition.Items)
+                    // Sort by family — Items is a dictionary, whose order is process-randomized; sort so the save is byte-stable.
+                    foreach (var kv in sq.TargetComposition.Items.OrderBy(kv => kv.Key))
                         Line(sb, "SQUADCOMP", Enc(sq.Id), E(kv.Key), I(kv.Value));
                 foreach (var m in sq.MemberUnitIds)
                     Line(sb, "SQUADMEM", Enc(sq.Id), Enc(m));
@@ -252,6 +254,7 @@ namespace Nucleus.Core.Persistence
                     Status = PE(of, 9, OrderStatus.Active),
                     GoalObjectiveId = PS(of, 10),
                     TerminalTime = PF(of, 11),
+                    CreatedTime = PF(of, 12),
                 };
                 if (orderChildren.TryGetValue(oid, out var ch)) order.ChildObjectiveIds.AddRange(ch);
                 snap.Orders.Add(order);

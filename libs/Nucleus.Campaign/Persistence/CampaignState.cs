@@ -97,6 +97,7 @@ namespace Nucleus.Core.Persistence
                     Status = o.Status,
                     GoalObjectiveId = o.GoalObjectiveId,
                     TerminalTime = o.TerminalTime,
+                    CreatedTime = o.CreatedTime,
                 };
                 copy.ChildObjectiveIds.AddRange(o.ChildObjectiveIds);
                 state.Orders.Add(copy);

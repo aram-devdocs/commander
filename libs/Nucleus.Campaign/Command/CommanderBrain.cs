@@ -19,6 +19,7 @@ namespace Nucleus.Core.Command
     {
         private const float DefendPriority = 50f;   // outranks offensive scores so a threatened base funds first
         private const float OrderFadeSeconds = 3f;   // grace window a completed order lingers (fade) before prune
+        private const float OrderEscalateSeconds = 120f; // a goal gated this long proceeds anyway (no deadlocks)
 
         /// <summary>One decision tick (pure, mutates <paramref name="state"/>): reconcile squads, generate
         /// objectives, open/advance/prune operations, return the per-unit tasking to issue. Tasks only the
@@ -241,6 +242,16 @@ namespace Nucleus.Core.Command
         private static bool DependencyPending(Objective obj, CommanderState state, WorldSnapshot snapshot)
         {
             var deps = obj.DependsOn;
+            if (deps.Count == 0) return false;
+            // Escalation valve: a goal that has waited too long for a prerequisite that won't resolve (e.g. a
+            // fuzzy contact the recon can't classify) proceeds anyway, so an order can never deadlock forever.
+            if (obj.OrderId != null)
+                for (int k = 0; k < state.Orders.Count; k++)
+                    if (state.Orders[k].Id == obj.OrderId)
+                    {
+                        if (snapshot.Time - state.Orders[k].CreatedTime > OrderEscalateSeconds) return false;
+                        break;
+                    }
             for (int i = 0; i < deps.Count; i++)
             {
                 Objective dep = null;
@@ -277,6 +288,7 @@ namespace Nucleus.Core.Command
             var order = new Order(orderId, plan.GoalKind, plan.Position, plan.Priority, plan.Source)
             {
                 GoalObjectiveId = childIds[plan.GoalIndex],
+                CreatedTime = snapshot.Time,
             };
             order.ChildObjectiveIds.AddRange(childIds);
             state.Orders.Add(order);

@@ -26,6 +26,9 @@ namespace Nucleus.Core.Command
         public List<string> ChildObjectiveIds { get; } = new List<string>();
         /// <summary>The child that IS the goal — the order completes when this one is achieved.</summary>
         public string GoalObjectiveId { get; set; }
+        /// <summary>Game time (seconds) the order was created — the escalation clock so a goal can't be gated
+        /// forever by a prerequisite that never resolves.</summary>
+        public float CreatedTime { get; set; }
         /// <summary>Game time (seconds) the order went terminal — drives the deterministic fade-then-prune grace
         /// window. <see cref="float.NaN"/> while active.</summary>
         public float TerminalTime { get; set; } = float.NaN;

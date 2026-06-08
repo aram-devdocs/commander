@@ -72,6 +72,33 @@ namespace Nucleus.Tests
         }
 
         [Fact]
+        public void A_goal_gated_by_an_unresolvable_prerequisite_escalates_so_it_never_deadlocks()
+        {
+            var state = new CommanderState();
+            state.Squads.Add(new Squad("sq-air", "Air", RoleFamily.AirCombat, SquadOrigin.Auto, new[] { "u-air" }));
+            state.Squads.Add(new Squad("sq-arm", "Armor", RoleFamily.Armor, SquadOrigin.Auto, new[] { "u-arm" }));
+            state.AiCreatesObjectives = false;   // only the forced player order under test
+            var roster = new List<UnitView> { Unit("u-air", Role.Fighter, UnitClass.Aircraft), Unit("u-arm", Role.Armor, UnitClass.GroundVehicle) };
+            // A fuzzy (unclassified) contact near the drop -> a Recon prerequisite that never resolves while fuzzy.
+            var fuzzy = new List<EnemyView>
+            {
+                new EnemyView("f1", new Vec3(4000, 0, 0), UnitClass.GroundVehicle, new UnitCapability(Role.Armor, true, false, true, false, false), false, 2f, 3),
+                new EnemyView("f2", new Vec3(4100, 0, 0), UnitClass.GroundVehicle, new UnitCapability(Role.Armor, true, false, true, false, false), false, 2f, 3),
+            };
+            var snap = new WorldSnapshot(roster, fuzzy, 0f, null, 1f);
+            // Force a CapturePoint goal so the Recon prerequisite genuinely gates it (a fuzzy pocket would itself be Recon).
+            var goalId = CommanderBrain.CreatePlayerObjective(state, snap, ObjectiveKind.CapturePoint, new Vec3(4050, 0, 0));
+            Assert.True(state.Objectives.First(o => o.Id == goalId).DependsOn.Count > 0, "goal should have a Recon prerequisite");
+
+            CommanderBrain.Tick(snap, state);
+            Assert.Null(state.OperationFor(goalId));   // gated: Recon can't classify the fuzzy contacts
+
+            // Long after creation, the escalation valve lets the goal proceed anyway.
+            CommanderBrain.Tick(new WorldSnapshot(roster, fuzzy, 0f, null, 200f), state);
+            Assert.NotNull(state.OperationFor(goalId));
+        }
+
+        [Fact]
         public void A_player_drop_decomposes_into_an_order_and_returns_the_goal()
         {
             var state = new CommanderState();
