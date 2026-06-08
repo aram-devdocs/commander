@@ -119,11 +119,16 @@ namespace Nucleus.Core.Command
             }
 
             // 4b. Production needs: an unfielded objective becomes a recruit request (auto-fill only). Per tick.
+            //     Bark the block once so the player sees WHY an objective isn't moving (no suitable squad yet).
             state.ProductionNeeds.Clear();
             if (state.AiAutoFill)
                 foreach (var obj in state.Objectives)
                     if (state.OperationFor(obj.Id) == null && !fieldable.Contains(obj.Id))
+                    {
                         state.ProductionNeeds.Add(RequiredComposition(obj.Kind));
+                        state.Log.AppendDistinct(new ReportEvent(snapshot.Time, ReportKind.Blocked,
+                            $"{ObjectiveText.Name(obj.Kind)} {Bearing(state.HomeBase, obj.Position)}: no suitable squad — recruiting"));
+                    }
 
             // 5. Issue tasking, but only when a unit's task signature CHANGED — re-spamming SetDestination every
             //    tick fights the game AI.
