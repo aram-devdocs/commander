@@ -146,6 +146,73 @@ namespace Nucleus.Presentation
             return new ScoreboardVm(blu, b.BluforScore / denom, op, b.OpforScore / denom, status, statusColor, rules);
         }
 
+        /// <summary>The command-center order tree: a parent row per order (the goal) followed by indented child
+        /// rows for its prerequisites, each pre-resolved to label/colors/owner-badge with selection + reachability.</summary>
+        public static IReadOnlyList<OrderRowVm> BuildOrderTree(HqSnapshot hq, string selectedId)
+        {
+            var rows = new List<OrderRowVm>();
+            if (hq?.Orders == null) return rows;
+            foreach (var order in hq.Orders)
+            {
+                bool playerOwned = order.PlayerOwned || order.Autonomy == AutonomyLevel.Manual;
+                string owner = playerOwned ? "YOU" : "AI";
+                var ownerColor = playerOwned ? UiColor.Accent : UiColor.Active;
+                bool psel = order.GoalObjectiveId == selectedId;
+                string plabel = $"{ObjectiveText.Name(order.GoalKind)} · {OrderStatusLabel(order.Status)}";
+                rows.Add(new OrderRowVm(order.GoalObjectiveId, true, 0, plabel, psel ? UiColor.Active : UiColor.Text,
+                    order.GoalKind, true, owner, ownerColor, psel, false));
+
+                if (order.Nodes == null) continue;
+                foreach (var n in order.Nodes)
+                {
+                    if (n.IsGoal) continue;   // the goal is the parent row; children are its prerequisites
+                    bool sel = n.ObjectiveId == selectedId;
+                    string state = n.Complete ? "done" : n.Active ? ObjectiveText.PhaseLabel(n.Phase)
+                        : n.DependenciesMet ? "ready" : "waiting";
+                    var lc = n.Unreachable ? UiColor.Warn : n.Complete ? UiColor.Muted : sel ? UiColor.Active : UiColor.Text;
+                    bool nManual = n.Autonomy == AutonomyLevel.Manual;
+                    rows.Add(new OrderRowVm(n.ObjectiveId, false, 1, $"{ObjectiveText.Name(n.Kind)} · {state}", lc,
+                        n.Kind, true, nManual ? "YOU" : "AI", nManual ? UiColor.Accent : UiColor.Active, sel, n.Unreachable));
+                }
+            }
+            return rows;
+        }
+
+        /// <summary>The selection-detail pane for a picked node (goal or prerequisite) — status, force, the live
+        /// phase, and the take-over/release primary action. Default (HasSelection=false) when nothing is picked.</summary>
+        public static NodeDetailVm BuildNodeDetail(HqSnapshot hq, string selectedId)
+        {
+            if (hq?.Orders == null || selectedId == null) return default;
+            foreach (var order in hq.Orders)
+            {
+                if (order.Nodes == null) continue;
+                foreach (var n in order.Nodes)
+                {
+                    if (n.ObjectiveId != selectedId) continue;
+                    string status = n.Complete ? "Complete"
+                        : n.Active ? $"Active · {ObjectiveText.PhaseLabel(n.Phase)}"
+                        : n.DependenciesMet ? "Ready — awaiting force"
+                        : "Blocked — waiting on prerequisites";
+                    string force = n.SquadCount > 0 ? $"{n.SquadCount} squad{(n.SquadCount == 1 ? "" : "s")}" : "no force yet";
+                    bool manual = n.Autonomy == AutonomyLevel.Manual;
+                    return new NodeDetailVm(true, ObjectiveText.Name(n.Kind), n.Unreachable ? UiColor.Warn : UiColor.Kind,
+                        n.Kind, status, force, manual ? "Release" : "Take Over", manual ? UiColor.Accent : UiColor.Active,
+                        n.Unreachable);
+                }
+            }
+            return default;
+        }
+
+        private static string OrderStatusLabel(OrderStatus s)
+        {
+            switch (s)
+            {
+                case OrderStatus.Complete: return "complete";
+                case OrderStatus.Failed: return "failed";
+                default: return "active";
+            }
+        }
+
         /// <summary>The one concrete "what should I do" line for the flight strip + map scoreboard, derived from
         /// the highest-priority active order's current node. Honours the involvement dial: when the AI is
         /// commanding and the player isn't driving anything, it reassures rather than nags.</summary>

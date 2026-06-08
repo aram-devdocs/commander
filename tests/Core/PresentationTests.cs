@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Nucleus.Core.Command;
 using Nucleus.Presentation;
 using Xunit;
@@ -134,5 +135,44 @@ namespace Nucleus.Tests
                 new List<ReportEvent>(), true, true, 0f, new List<OrderView>());
             Assert.Contains("Fly freely", PresentationBuilder.Guidance(hq));
         }
+
+        private static HqSnapshot HqWithTree()
+            => new HqSnapshot(new List<OperationView>(), new List<SquadView>(), new List<string>(),
+                new List<ReportEvent>(), true, true, 0f, new List<OrderView>
+                {
+                    Order(ObjectiveKind.CapturePoint,
+                        Node(ObjectiveKind.SuppressAirDefense, active: true, complete: false, depsMet: true, isGoal: false),
+                        Node(ObjectiveKind.CapturePoint, active: false, complete: false, depsMet: false, isGoal: true)),
+                });
+
+        [Fact]
+        public void Order_tree_renders_a_parent_row_then_indented_prerequisite_rows()
+        {
+            var rows = PresentationBuilder.BuildOrderTree(HqWithTree(), selectedId: null);
+            Assert.Equal(2, rows.Count);
+            Assert.True(rows[0].IsParent);
+            Assert.Equal(0, rows[0].Indent);
+            Assert.Equal(ObjectiveKind.CapturePoint, rows[0].Kind);   // goal is the parent
+            Assert.False(rows[1].IsParent);
+            Assert.Equal(1, rows[1].Indent);
+            Assert.Equal(ObjectiveKind.SuppressAirDefense, rows[1].Kind);   // prerequisite is indented
+        }
+
+        [Fact]
+        public void Selecting_a_node_marks_its_row_and_drives_the_detail_pane()
+        {
+            var hq = HqWithTree();
+            var rows = PresentationBuilder.BuildOrderTree(hq, selectedId: "SuppressAirDefense");
+            Assert.True(rows.Single(r => r.Kind == ObjectiveKind.SuppressAirDefense && !r.IsParent).Selected);
+
+            var detail = PresentationBuilder.BuildNodeDetail(hq, "SuppressAirDefense");
+            Assert.True(detail.HasSelection);
+            Assert.Equal("Take Over", detail.Action);          // AI-owned -> offer take over
+            Assert.StartsWith("Active", detail.Status);
+        }
+
+        [Fact]
+        public void No_selection_yields_an_empty_detail_pane()
+            => Assert.False(PresentationBuilder.BuildNodeDetail(HqWithTree(), null).HasSelection);
     }
 }
