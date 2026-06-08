@@ -134,13 +134,66 @@ namespace Nucleus.Presentation
         /// so a half-full bar means half the war's attrition budget is spent.</summary>
         public static ScoreboardVm BuildScoreboard(WarfareCampaign.Scoreboard b)
         {
-            const float denom = 1000f;
+            const float denom = Nucleus.Core.War.WarScore.DefaultStart;
             string blu = $"{b.BluforName} [{(b.BluforAi ? "AI" : "YOU")}]  {b.BluforScore:0}  ·  ${b.BluforFunds:0}  ·  -{b.BluforUnitsLost}u/-{b.BluforBasesLost}b";
             string op = $"{b.OpforName} [{(b.OpforAi ? "AI" : "YOU")}]  {b.OpforScore:0}  ·  ${b.OpforFunds:0}  ·  -{b.OpforUnitsLost}u/-{b.OpforBasesLost}b";
             string status; UiColor statusColor;
             if (b.Over) { status = b.WinnerName != null ? $"WAR OVER — {b.WinnerName} WINS" : "WAR OVER — DRAW"; statusColor = UiColor.Active; }
             else { status = "War in progress — drive a faction to zero to win."; statusColor = UiColor.Muted; }
-            return new ScoreboardVm(blu, b.BluforScore / denom, op, b.OpforScore / denom, status, statusColor);
+            // The rules, derived from the WarScore knobs so the UI never drifts from the model.
+            string rules = $"Score starts {Nucleus.Core.War.WarScore.DefaultStart:0} · -{Nucleus.Core.War.WarScore.DefaultUnitValue:0} per unit · "
+                + $"-{Nucleus.Core.War.WarScore.DefaultBaseValue:0} per base · reinforcing costs score, rising sharply as bases fall · reach 0 to lose.";
+            return new ScoreboardVm(blu, b.BluforScore / denom, op, b.OpforScore / denom, status, statusColor, rules);
+        }
+
+        /// <summary>The one concrete "what should I do" line for the flight strip + map scoreboard, derived from
+        /// the highest-priority active order's current node. Honours the involvement dial: when the AI is
+        /// commanding and the player isn't driving anything, it reassures rather than nags.</summary>
+        public static string Guidance(HqSnapshot hq)
+        {
+            if (hq == null) return "";
+            var orders = hq.Orders;
+            if (orders == null || orders.Count == 0)
+                return hq.AiCreatesObjectives
+                    ? "Fly freely — the AI is scouting for objectives."
+                    : "AI commander off — drop your own objectives on the map.";
+
+            OrderView top = default; bool found = false; float best = float.NegativeInfinity;
+            foreach (var o in orders)
+            {
+                if (o.Status != OrderStatus.Active) continue;
+                if (o.Priority > best) { best = o.Priority; top = o; found = true; }
+            }
+            if (!found) return "Orders complete — hold the line.";
+
+            // Current node = the live one if any, else the first incomplete node whose prerequisites are met.
+            OrderNodeView cur = default; bool haveCur = false;
+            if (top.Nodes != null)
+            {
+                foreach (var n in top.Nodes) if (n.Active) { cur = n; haveCur = true; break; }
+                if (!haveCur)
+                    foreach (var n in top.Nodes)
+                        if (!n.Complete && n.DependenciesMet) { cur = n; haveCur = true; break; }
+            }
+            string who = top.PlayerOwned || top.Autonomy == AutonomyLevel.Manual ? "You" : "AI";
+            if (!haveCur) return $"{who}: {ObjectiveText.Name(top.GoalKind)} — forming up.";
+            return $"{who}: {ObjectiveText.Name(top.GoalKind)} — {NodeAction(cur)}.";
+        }
+
+        // A terse present-tense action for the order's current node.
+        private static string NodeAction(OrderNodeView n)
+        {
+            switch (n.Kind)
+            {
+                case ObjectiveKind.Recon: return "scouting the approach";
+                case ObjectiveKind.ControlAirspace: return "clearing the skies";
+                case ObjectiveKind.SuppressAirDefense: return "suppressing air defences";
+                case ObjectiveKind.NavalStrike: return "striking enemy ships";
+                case ObjectiveKind.CapturePoint: return "taking the ground";
+                case ObjectiveKind.DestroyTarget: return "destroying the target";
+                case ObjectiveKind.DefendArea: return "holding the line";
+                default: return ObjectiveText.PhaseLabel(n.Phase).ToLowerInvariant();
+            }
         }
     }
 }

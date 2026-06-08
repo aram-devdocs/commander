@@ -94,5 +94,45 @@ namespace Nucleus.Tests
             Assert.Equal(1.0f, vm.BluforFraction, 3);         // fresh war = full pool (1000/1000)
             Assert.Equal(UiColor.Muted, vm.StatusColor);      // not over
         }
+
+        [Fact]
+        public void Scoreboard_explains_the_rules_from_the_war_score_knobs()
+        {
+            var war = new WarfareCampaign();
+            war.War.Blufor.FactionName = "Blu"; war.War.Opfor.FactionName = "Op";
+            var vm = PresentationBuilder.BuildScoreboard(war.SnapshotBoard());
+            Assert.Contains("1000", vm.Rules);     // start
+            Assert.Contains("-8", vm.Rules);       // per unit
+            Assert.Contains("-120", vm.Rules);     // per base
+            Assert.Contains("reach 0", vm.Rules);
+        }
+
+        private static OrderView Order(ObjectiveKind goal, params OrderNodeView[] nodes)
+            => new OrderView("order-1", goal, OrderStatus.Active, AutonomyLevel.Auto, false, default, 9f, "g", nodes);
+
+        private static OrderNodeView Node(ObjectiveKind kind, bool active, bool complete, bool depsMet, bool isGoal)
+            => new OrderNodeView(isGoal ? "g" : kind.ToString(), kind, CombatPhase.Strike, active ? 2 : 0,
+                AutonomyLevel.Auto, default, isGoal, active, complete, depsMet, false);
+
+        [Fact]
+        public void Guidance_reads_the_current_node_of_the_top_order()
+        {
+            var hq = new HqSnapshot(new List<OperationView>(), new List<SquadView>(), new List<string>(),
+                new List<ReportEvent>(), true, true, 0f, new List<OrderView>
+                {
+                    Order(ObjectiveKind.CapturePoint,
+                        Node(ObjectiveKind.SuppressAirDefense, active: true, complete: false, depsMet: true, isGoal: false),
+                        Node(ObjectiveKind.CapturePoint, active: false, complete: false, depsMet: false, isGoal: true)),
+                });
+            Assert.Equal("AI: Capture point — suppressing air defences.", PresentationBuilder.Guidance(hq));
+        }
+
+        [Fact]
+        public void Guidance_reassures_when_the_AI_is_commanding_and_there_are_no_orders()
+        {
+            var hq = new HqSnapshot(new List<OperationView>(), new List<SquadView>(), new List<string>(),
+                new List<ReportEvent>(), true, true, 0f, new List<OrderView>());
+            Assert.Contains("Fly freely", PresentationBuilder.Guidance(hq));
+        }
     }
 }

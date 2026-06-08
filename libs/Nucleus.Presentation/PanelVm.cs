@@ -32,19 +32,20 @@ namespace Nucleus.Presentation
         }
     }
 
-    /// <summary>The attrition board as fractions (0..1 of the starting pool) + a worded status.</summary>
+    /// <summary>The attrition board as fractions (0..1 of the starting pool) + a worded status + the rules line
+    /// that explains how the score is won/lost.</summary>
     public readonly struct ScoreboardVm
     {
-        public readonly string BluforLine, OpforLine, Status;
+        public readonly string BluforLine, OpforLine, Status, Rules;
         public readonly float BluforFraction, OpforFraction;
         public readonly UiColor StatusColor;
 
         public ScoreboardVm(string bluforLine, float bluforFraction, string opforLine, float opforFraction,
-            string status, UiColor statusColor)
+            string status, UiColor statusColor, string rules)
         {
             BluforLine = bluforLine; BluforFraction = bluforFraction;
             OpforLine = opforLine; OpforFraction = opforFraction;
-            Status = status; StatusColor = statusColor;
+            Status = status; StatusColor = statusColor; Rules = rules;
         }
     }
 
