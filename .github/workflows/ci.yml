@@ -6,9 +6,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Always-on pure gate: the Unity-free projects build and test in the cloud without the proprietary
-  # game DLLs. The full solution (which references Assembly-CSharp) is gated below on lib/ being present.
-  headless:
+  # Always-on pure gate: the Unity-free projects build and test in the cloud without the proprietary game
+  # DLLs. The full solution (which references Assembly-CSharp) is gated below on lib/ being present.
+  # Job id is the branch-protection required status check ("test") — keep them in sync.
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
